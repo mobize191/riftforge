@@ -10,12 +10,14 @@ import TitleScreen from './screens/TitleScreen';
 import GameCanvas from './GameCanvas';
 import CombatScreen from './screens/CombatScreen';
 import { MONSTERS } from '../data/monsters';
+import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 
 type View = 'title' | 'game';
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [view, setView] = useState<View>('title');
+  const [combat, setCombat] = useState<CombatState | null>(null);
 
   const persist = useCallback((next: GameState) => {
     setState(next);
@@ -61,12 +63,37 @@ export default function App() {
   }, []);
 
   const onEncounter = useCallback((enemies: string[]) => {
-    setState((prev) => (prev ? reduce(prev, { type: 'ENTER_COMBAT', enemies }) : prev));
+    setState((prev) => {
+      if (!prev || !prev.run) return prev;
+      setCombat(
+        startCombat(
+          (prev.run.seed ^ prev.run.floor) >>> 0,
+          prev.run.playerHp,
+          prev.run.playerMaxHp,
+          prev.run.playerAttack,
+          enemies,
+        ),
+      );
+      return reduce(prev, { type: 'ENTER_COMBAT', enemies });
+    });
   }, []);
 
-  const onFlee = useCallback(() => {
-    setState((prev) => (prev ? reduce(prev, { type: 'EXIT_COMBAT', victory: false }) : prev));
+  const onCombatAction = useCallback((a: CombatAction) => {
+    setCombat((prev) => (prev ? combatReduce(prev, a) : prev));
   }, []);
+
+  const onCombatEnd = useCallback(
+    (result: 'won' | 'lost' | 'fled', loot: CombatState['loot']) => {
+      setCombat(null);
+      setState((prev) => {
+        if (!prev) return prev;
+        if (result === 'won') return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined });
+        if (result === 'fled') return reduce(prev, { type: 'EXIT_COMBAT', victory: false });
+        return reduce(prev, { type: 'DIE' });
+      });
+    },
+    [],
+  );
 
   const onQuit = useCallback(() => {
     setState((prev) => {
@@ -78,8 +105,26 @@ export default function App() {
     setView('title');
   }, []);
 
-  if (view === 'game' && state?.mode === 'COMBAT' && state.run?.encounter) {
-    return <CombatScreen enemies={state.run.encounter} onFlee={onFlee} />;
+  if (view === 'game' && state?.mode === 'COMBAT' && combat) {
+    return <CombatScreen combat={combat} onAction={onCombatAction} onEnd={onCombatEnd} />;
+  }
+
+  if (view === 'game' && state?.mode === 'RETOUR') {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0a0e1a] text-slate-100">
+        <h2 className="font-bold" style={{ fontSize: 'clamp(1.5rem, 6vw, 2.5rem)' }}>
+          RETOUR À LA FORGE
+        </h2>
+        <p>Butin conservé : {state.run?.lootCredits ?? 0} crédits.</p>
+        <button
+          onClick={onQuit}
+          className="rounded-lg border border-emerald-300 bg-emerald-700 px-6 py-3 font-semibold"
+          style={{ minHeight: '44px', fontSize: '1.05rem' }}
+        >
+          Entrer à la Forge
+        </button>
+      </main>
+    );
   }
 
   if (view === 'game' && state?.mode === 'RUN' && state.run && state.run.level) {

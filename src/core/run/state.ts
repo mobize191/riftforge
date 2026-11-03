@@ -2,13 +2,14 @@ import type { GameState, Position } from '../types';
 import { BALANCE } from '../../data/balance';
 import { MAP_WIDTH, MAP_HEIGHT } from './grid';
 import { generateLevel, type LevelMap } from './generate';
+import type { CombatLoot } from '../combat/combat';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
   | { type: 'ENTER_COMBAT'; enemies: string[] }
-  | { type: 'EXIT_COMBAT'; victory: boolean }
+  | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
   | { type: 'RETURN_FORGE' }
@@ -40,6 +41,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           playerLevel: BALANCE.START_PLAYER_LEVEL,
           playerHp: BALANCE.START_PLAYER_HP,
           playerMaxHp: BALANCE.START_PLAYER_HP,
+          playerAttack: BALANCE.PLAYER_ATTACK,
+          lootCredits: 0,
           orbs: [],
           modules: [],
         },
@@ -63,8 +66,24 @@ export function reduce(state: GameState, action: GameAction): GameState {
       };
     }
     case 'EXIT_COMBAT': {
-      if (state.mode !== 'COMBAT') return state;
-      return { ...state, mode: 'RUN' };
+      if (state.mode !== 'COMBAT' || !state.run) return state;
+      let run = { ...state.run, encounter: null };
+      if (action.victory && action.loot) {
+        run = {
+          ...run,
+          lootCredits: run.lootCredits + action.loot.credits,
+          orbs: [
+            ...run.orbs,
+            ...action.loot.orbs.map((el, i) => ({
+              id: `loot-${state.run!.floor}-${run.lootCredits}-${i}`,
+              kind: 'primordial' as const,
+              element: el,
+              tier: 1,
+            })),
+          ],
+        };
+      }
+      return { ...state, mode: 'RUN', run };
     }
     case 'DIE':
     case 'END_BIOME': {
@@ -73,7 +92,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'RETURN_FORGE': {
       if (state.mode !== 'RETOUR') return state;
-      return { ...state, mode: 'FORGE', run: null };
+      // Mort = fin de run, 100 % du butin conservé (§SPEC-3).
+      const gained = state.run?.lootCredits ?? 0;
+      return {
+        ...state,
+        mode: 'FORGE',
+        forge: { ...state.forge, credits: state.forge.credits + gained },
+        run: null,
+      };
     }
     case 'MOVE_PLAYER': {
       if (state.mode !== 'RUN' || !state.run) return state;
