@@ -1,17 +1,20 @@
 import type { GameState, Position } from '../types';
 import { BALANCE } from '../../data/balance';
+import { MAP_WIDTH, MAP_HEIGHT } from './grid';
+import { generateLevel, type LevelMap } from './generate';
 
-export const MAP_WIDTH = 32;
-export const MAP_HEIGHT = 24;
+export { MAP_WIDTH, MAP_HEIGHT };
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
-  | { type: 'ENTER_COMBAT' }
+  | { type: 'ENTER_COMBAT'; enemies: string[] }
   | { type: 'EXIT_COMBAT'; victory: boolean }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
   | { type: 'RETURN_FORGE' }
-  | { type: 'MOVE_PLAYER'; to: Position };
+  | { type: 'MOVE_PLAYER'; to: Position }
+  | { type: 'ENTER_COMBAT'; enemies: string[] }
+  | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
   return {
@@ -31,6 +34,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run: {
           seed: action.seed,
           floor: BALANCE.START_FLOOR,
+          level: generateLevel(action.seed, BALANCE.START_FLOOR),
+          encounter: null,
           playerPos: { x: 1, y: 1 },
           playerLevel: BALANCE.START_PLAYER_LEVEL,
           playerHp: BALANCE.START_PLAYER_HP,
@@ -41,8 +46,21 @@ export function reduce(state: GameState, action: GameAction): GameState {
       };
     }
     case 'ENTER_COMBAT': {
-      if (state.mode !== 'RUN') return state;
-      return { ...state, mode: 'COMBAT' };
+      if (state.mode !== 'RUN' || !state.run) return state;
+      return { ...state, mode: 'COMBAT', run: { ...state.run, encounter: action.enemies } };
+    }
+    case 'NEXT_FLOOR': {
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const floor = state.run.floor + 1;
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          floor,
+          level: generateLevel(state.run.seed, floor),
+          playerPos: { x: 1, y: 1 },
+        },
+      };
     }
     case 'EXIT_COMBAT': {
       if (state.mode !== 'COMBAT') return state;

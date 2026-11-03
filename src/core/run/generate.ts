@@ -1,5 +1,5 @@
 import { createRng, type Rng } from '../rng';
-import { MAP_WIDTH, MAP_HEIGHT } from './state';
+import { MAP_WIDTH, MAP_HEIGHT } from './grid';
 import type { Position } from '../types';
 
 export interface PlacedMonster {

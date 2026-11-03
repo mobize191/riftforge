@@ -8,6 +8,8 @@ import { loadFromPort, saveToPort } from '../core/save/storage';
 import { createLocalStoragePort } from './storage';
 import TitleScreen from './screens/TitleScreen';
 import GameCanvas from './GameCanvas';
+import CombatScreen from './screens/CombatScreen';
+import { MONSTERS } from '../data/monsters';
 
 type View = 'title' | 'game';
 
@@ -58,6 +60,14 @@ export default function App() {
     setState((prev) => (prev ? reduce(prev, { type: 'MOVE_PLAYER', to: pos }) : prev));
   }, []);
 
+  const onEncounter = useCallback((enemies: string[]) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'ENTER_COMBAT', enemies }) : prev));
+  }, []);
+
+  const onFlee = useCallback(() => {
+    setState((prev) => (prev ? reduce(prev, { type: 'EXIT_COMBAT', victory: false }) : prev));
+  }, []);
+
   const onQuit = useCallback(() => {
     setState((prev) => {
       if (!prev) return prev;
@@ -68,7 +78,12 @@ export default function App() {
     setView('title');
   }, []);
 
-  if (view === 'game' && state?.mode === 'RUN' && state.run) {
+  if (view === 'game' && state?.mode === 'COMBAT' && state.run?.encounter) {
+    return <CombatScreen enemies={state.run.encounter} onFlee={onFlee} />;
+  }
+
+  if (view === 'game' && state?.mode === 'RUN' && state.run && state.run.level) {
+    const familyIds = MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id);
     return (
       <main className="flex min-h-screen flex-col items-center gap-3 bg-[#0a0e1a] py-4 text-slate-100">
         <div className="flex w-full max-w-5xl items-center justify-between px-4">
@@ -83,8 +98,13 @@ export default function App() {
         </div>
         <GameCanvas
           key={`${state.run.seed}-${state.run.floor}`}
+          level={state.run.level}
           initialPos={state.run.playerPos}
+          seed={state.run.seed}
+          floor={state.run.floor}
+          familyIds={familyIds}
           onMove={onMove}
+          onEncounter={onEncounter}
         />
         <p className="text-sm opacity-60">
           Flèches / ZQSD / WASD pour se déplacer. Position : ({state.run.playerPos.x},{' '}

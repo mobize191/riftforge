@@ -68,6 +68,8 @@ export interface Position {
 export interface RunState {
   seed: number;
   floor: number;
+  level: import('./run/generate').LevelMap | null;
+  encounter: string[] | null;
   playerPos: Position;
   playerLevel: number;
   playerHp: number;

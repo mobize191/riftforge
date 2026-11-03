@@ -3,9 +3,9 @@ import { initialState, reduce, type GameAction } from '../src/core/run/state';
 
 const SCRIPT: GameAction[] = [
   { type: 'START_RUN', seed: 1234 },
-  { type: 'ENTER_COMBAT' },
+  { type: "ENTER_COMBAT", enemies: ["mousse"] },
   { type: 'EXIT_COMBAT', victory: true },
-  { type: 'ENTER_COMBAT' },
+  { type: "ENTER_COMBAT", enemies: ["mousse"] },
   { type: 'DIE' },
   { type: 'RETURN_FORGE' },
 ];

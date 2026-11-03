@@ -3,19 +3,32 @@
 import { useEffect, useRef } from 'react';
 import type Phaser from 'phaser';
 import type { Position } from '../core/types';
+import type { LevelMap } from '../core/run/generate';
 import { LOGICAL_WIDTH, LOGICAL_HEIGHT } from './scenes/mapConfig';
 
 export default function GameCanvas({
+  level,
   initialPos,
+  seed,
+  floor,
+  familyIds,
   onMove,
+  onEncounter,
 }: {
+  level: LevelMap;
   initialPos: Position;
+  seed: number;
+  floor: number;
+  familyIds: string[];
   onMove: (pos: Position) => void;
+  onEncounter: (enemies: string[]) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const onMoveRef = useRef(onMove);
+  const onEncounterRef = useRef(onEncounter);
   onMoveRef.current = onMove;
+  onEncounterRef.current = onEncounter;
 
   useEffect(() => {
     let disposed = false;
@@ -33,7 +46,17 @@ export default function GameCanvas({
             height: LOGICAL_HEIGHT,
           },
           render: { pixelArt: true, antialias: false },
-          scene: [new MapScene(initialPos, (p) => onMoveRef.current(p))],
+          scene: [
+            new MapScene(
+              level,
+              initialPos,
+              seed,
+              floor,
+              familyIds,
+              (p) => onMoveRef.current(p),
+              (e) => onEncounterRef.current(e),
+            ),
+          ],
         });
         gameRef.current = game;
       });
@@ -43,7 +66,7 @@ export default function GameCanvas({
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
-  }, [initialPos]);
+  }, [level, initialPos, seed, floor, familyIds]);
 
   return (
     <div
