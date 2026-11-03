@@ -1,44 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { initialState, reduce } from '../../core/run/state';
-import { serialize, deserialize, SAVE_KEY } from '../../core/save/save';
-import { loadFromPort, saveToPort } from '../../core/save/storage';
-import { createLocalStoragePort } from '../storage';
 import type { GameState } from '../../core/types';
 
-export default function TitleScreen() {
-  const [state, setState] = useState<GameState | null>(null);
-  const [hasSave, setHasSave] = useState(false);
-
-  useEffect(() => {
-    const port = createLocalStoragePort();
-    const raw = loadFromPort(port, SAVE_KEY);
-    if (raw) {
-      try {
-        setState(deserialize(raw));
-        setHasSave(true);
-      } catch {
-        setHasSave(false);
-      }
-    }
-  }, []);
-
-  const persist = (next: GameState) => {
-    setState(next);
-    saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
-  };
-
-  const onNewRun = () => {
-    persist(reduce(initialState(), { type: 'START_RUN', seed: 1 }));
-    setHasSave(true);
-  };
-
-  const onContinue = () => {
-    const raw = loadFromPort(createLocalStoragePort(), SAVE_KEY);
-    if (raw) setState(deserialize(raw));
-  };
-
+export default function TitleScreen({
+  state,
+  hasSave,
+  onNewRun,
+  onContinue,
+}: {
+  state: GameState | null;
+  hasSave: boolean;
+  onNewRun: () => void;
+  onContinue: () => void;
+}) {
   return (
     <main
       className="flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center"
@@ -77,7 +51,9 @@ export default function TitleScreen() {
       {state && (
         <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>
           État : {state.mode}
-          {state.run ? ` — sol ${state.run.floor}, PV ${state.run.playerHp}/${state.run.playerMaxHp}` : ''}
+          {state.run
+            ? ` — sol ${state.run.floor}, position (${state.run.playerPos.x}, ${state.run.playerPos.y})`
+            : ''}
         </p>
       )}
     </main>

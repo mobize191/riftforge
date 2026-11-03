@@ -60,9 +60,15 @@ export interface ForgeState {
   mineraiBrut: number;
 }
 
+export interface Position {
+  x: number;
+  y: number;
+}
+
 export interface RunState {
   seed: number;
   floor: number;
+  playerPos: Position;
   playerLevel: number;
   playerHp: number;
   playerMaxHp: number;

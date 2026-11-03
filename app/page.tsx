@@ -1,7 +1,7 @@
 'use client';
 
-import TitleScreen from '../src/ui/screens/TitleScreen';
+import App from '../src/ui/App';
 
 export default function Home() {
-  return <TitleScreen />;
+  return <App />;
 }

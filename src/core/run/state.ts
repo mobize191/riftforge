@@ -1,5 +1,8 @@
-import type { GameState } from '../types';
+import type { GameState, Position } from '../types';
 import { BALANCE } from '../../data/balance';
+
+export const MAP_WIDTH = 32;
+export const MAP_HEIGHT = 24;
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
@@ -7,7 +10,8 @@ export type GameAction =
   | { type: 'EXIT_COMBAT'; victory: boolean }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
-  | { type: 'RETURN_FORGE' };
+  | { type: 'RETURN_FORGE' }
+  | { type: 'MOVE_PLAYER'; to: Position };
 
 export function initialState(): GameState {
   return {
@@ -27,6 +31,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run: {
           seed: action.seed,
           floor: BALANCE.START_FLOOR,
+          playerPos: { x: 1, y: 1 },
           playerLevel: BALANCE.START_PLAYER_LEVEL,
           playerHp: BALANCE.START_PLAYER_HP,
           playerMaxHp: BALANCE.START_PLAYER_HP,
@@ -51,6 +56,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'RETURN_FORGE': {
       if (state.mode !== 'RETOUR') return state;
       return { ...state, mode: 'FORGE', run: null };
+    }
+    case 'MOVE_PLAYER': {
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const { x, y } = action.to;
+      if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) return state;
+      return { ...state, run: { ...state.run, playerPos: { x, y } } };
     }
     default:
       return state;
