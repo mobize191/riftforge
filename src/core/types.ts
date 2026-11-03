@@ -83,6 +83,8 @@ export interface RunState {
   playerAttack: number;
   xp: number;
   lootCredits: number;
+  lootEssence: number;
+  lootMinerai: number;
   orbs: Orb[];
   modules: Module[];
 }

@@ -26,6 +26,8 @@ export interface CombatLoot {
   credits: number;
   orbs: ElementId[];
   kills: number;
+  essence: number;
+  minerai: number;
 }
 
 export interface CombatState {
@@ -120,13 +122,15 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
   if (state.enemies.every((e) => e.hp <= 0)) {
     const credits = 5 + rng.int(10); // TODO-BALANCE
     const orbCount = 1 + rng.int(2); // TODO-BALANCE
+    const essence = 1 + rng.int(2); // TODO-BALANCE
+    const minerai = 1 + rng.int(3); // TODO-BALANCE
     const elements: ElementId[] = ['feu', 'eau', 'terre', 'air'];
     const orbs: ElementId[] = Array.from({ length: orbCount }, () => rng.pick(elements));
     return {
       ...state,
       phase: 'won',
-      loot: { credits, orbs, kills: state.enemies.length },
-      log: [...state.log, `Victoire ! Butin : ${credits} crédits, ${orbs.length} orbe(s).`],
+      loot: { credits, orbs, kills: state.enemies.length, essence, minerai },
+      log: [...state.log, `Victoire ! Butin : ${credits} crédits, ${essence} essence, ${minerai} minerai, ${orbs.length} orbe(s).`],
     };
   }
   return state;

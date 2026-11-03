@@ -1,6 +1,30 @@
 import type { GameState } from '../types';
 import { EQUIPMENT_BY_ID, type EquipmentDef } from '../../data/equipment';
 
+export interface Purse {
+  credits?: number;
+  essence?: number;
+  mineraiBrut?: number;
+}
+
+// Dépense atomique : jamais de solde négatif, tout ou rien.
+export function spendResources(state: GameState, cost: Purse): GameState {
+  const f = state.forge;
+  const credits = cost.credits ?? 0;
+  const essence = cost.essence ?? 0;
+  const mineraiBrut = cost.mineraiBrut ?? 0;
+  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut) return state;
+  return {
+    ...state,
+    forge: {
+      ...f,
+      credits: f.credits - credits,
+      essence: f.essence - essence,
+      mineraiBrut: f.mineraiBrut - mineraiBrut,
+    },
+  };
+}
+
 // Achat chez le Marchand : débite les crédits, l'équipement persiste entre les runs (§SPEC-2).
 export function buyEquipment(state: GameState, defId: string): GameState {
   if (state.mode !== 'FORGE') return state;

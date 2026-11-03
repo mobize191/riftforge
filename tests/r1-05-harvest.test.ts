@@ -38,7 +38,7 @@ describe('R1-05 harvest & progression', () => {
     let s = reduce(initialState(), { type: 'START_RUN', seed: 1 });
     const lvl0 = s.run!.playerLevel;
     s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['mousse', 'sporeling'] });
-    s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 5, orbs: [], kills: 2 } });
+    s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 5, orbs: [], kills: 2, essence: 1, minerai: 1 } });
     expect(s.run!.xp).toBe(2);
     expect(s.run!.playerLevel).toBeGreaterThan(lvl0);
     expect(s.run!.playerMaxHp).toBeGreaterThan(20);

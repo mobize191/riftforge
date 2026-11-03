@@ -60,6 +60,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           playerAttack: attack,
           xp: 0,
           lootCredits: 0,
+          lootEssence: 0,
+          lootMinerai: 0,
           orbs: startOrbs,
           modules: [],
         },
@@ -89,6 +91,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run = {
           ...run,
           lootCredits: run.lootCredits + action.loot.credits,
+          lootEssence: run.lootEssence + action.loot.essence,
+          lootMinerai: run.lootMinerai + action.loot.minerai,
           xp: run.xp + action.loot.kills,
           orbs: [
             ...run.orbs,
@@ -124,11 +128,16 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'RETURN_FORGE': {
       if (state.mode !== 'RETOUR') return state;
       // Mort = fin de run, 100 % du butin conservé (§SPEC-3).
-      const gained = state.run?.lootCredits ?? 0;
+      const run = state.run;
       return {
         ...state,
         mode: 'FORGE',
-        forge: { ...state.forge, credits: state.forge.credits + gained },
+        forge: {
+          ...state.forge,
+          credits: state.forge.credits + (run?.lootCredits ?? 0),
+          essence: state.forge.essence + (run?.lootEssence ?? 0),
+          mineraiBrut: state.forge.mineraiBrut + (run?.lootMinerai ?? 0),
+        },
         run: null,
       };
     }
