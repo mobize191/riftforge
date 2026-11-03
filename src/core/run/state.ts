@@ -3,6 +3,8 @@ import { BALANCE } from '../../data/balance';
 import { MAP_WIDTH, MAP_HEIGHT } from './grid';
 import { generateLevel, type LevelMap } from './generate';
 import type { CombatLoot } from '../combat/combat';
+import { createRng } from '../rng';
+import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -29,6 +31,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_RUN': {
       if (state.mode !== 'FORGE' && state.mode !== 'RETOUR') return state;
+      // 3-4 orbes aléatoires offertes en entrant dans la Faille (§SPEC-5.2), tirage seedé.
+      const rng = createRng((action.seed ^ 0x9e3779b9) >>> 0);
+      const startOrbs = Array.from({ length: 3 + rng.int(2) }, (_, i) => ({
+        id: `start-${i}`,
+        kind: 'primordial' as const,
+        element: rng.pick(PRIMORDIAL_ELEMENTS),
+        tier: 1,
+      }));
       return {
         ...state,
         mode: 'RUN',
@@ -43,7 +53,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           playerMaxHp: BALANCE.START_PLAYER_HP,
           playerAttack: BALANCE.PLAYER_ATTACK,
           lootCredits: 0,
-          orbs: [],
+          orbs: startOrbs,
           modules: [],
         },
       };

@@ -1,6 +1,7 @@
 import { createRng, type Rng } from '../rng';
 import { MONSTER_BY_ID } from '../../data/monsters';
 import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
+import { RECIPES, type RecipeDef } from '../../data/recipes';
 import type { ElementId } from '../types';
 
 export interface Combatant {
@@ -10,6 +11,8 @@ export interface Combatant {
   maxHp: number;
   attack: number;
   isPlayer: boolean;
+  shield: number;
+  stunned: boolean;
 }
 
 export interface CombatItem {
@@ -31,6 +34,7 @@ export interface CombatState {
   player: Combatant;
   enemies: Combatant[];
   items: CombatItem[];
+  orbs: ElementId[];
   loot: CombatLoot | null;
   log: string[];
 }
@@ -38,7 +42,13 @@ export interface CombatState {
 export type CombatAction =
   | { type: 'ATTACK'; target: number }
   | { type: 'USE_ITEM'; itemId: string; target?: number }
+  | { type: 'CAST_MODULE'; moduleId: string; target?: number }
   | { type: 'FLEE' };
+
+export function availableSoloModules(orbs: ElementId[]): RecipeDef[] {
+  const held = new Set(orbs);
+  return RECIPES.filter((r) => r.inputs.length === 1 && held.has(r.inputs[0]));
+}
 
 const FLEE_CHANCE = 0.6; // TODO-BALANCE (sera déplacé en data à l'équilibrage)
 
@@ -48,6 +58,7 @@ export function startCombat(
   playerMaxHp: number,
   playerAttack: number,
   enemyIds: string[],
+  orbs: ElementId[] = [],
 ): CombatState {
   const enemies: Combatant[] = enemyIds.map((id, i) => {
     const def = MONSTER_BY_ID[id];
@@ -58,6 +69,8 @@ export function startCombat(
       maxHp: def?.hp ?? 5,
       attack: def?.attack ?? 1,
       isPlayer: false,
+      shield: 0,
+      stunned: false,
     };
   });
   return {
@@ -71,9 +84,12 @@ export function startCombat(
       maxHp: playerMaxHp,
       attack: playerAttack,
       isPlayer: true,
+      shield: 0,
+      stunned: false,
     },
     enemies,
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
+    orbs,
     loot: null,
     log: ['Un combat éclate !'],
   };
@@ -84,9 +100,14 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
   let player = state.player;
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
-    const dmg = e.attack;
-    player = { ...player, hp: Math.max(0, player.hp - dmg) };
-    log.push(`${e.name} attaque : -${dmg} PV.`);
+    if (e.stunned) {
+      log.push(`${e.name} est projeté·e et perd son tour.`);
+      continue;
+    }
+    const absorbed = Math.min(player.shield, e.attack);
+    const dmg = e.attack - absorbed;
+    player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
+    log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}.`);
   }
   if (player.hp <= 0) {
     return { ...state, player, log, phase: 'lost' };
@@ -120,7 +141,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       const target = state.enemies[action.target];
       if (!target || target.hp <= 0) return state;
       const dmg = Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)); // TODO-BALANCE variance
-      const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: Math.max(0, e.hp - dmg) } : e));
+      const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: Math.max(0, e.hp - dmg), stunned: false } : e));
       log.push(`Vous attaquez ${target.name} : -${dmg} PV.`);
       let next: CombatState = { ...state, enemies, log };
       next = checkVictory(next, rng);
@@ -146,6 +167,44 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;
       return enemyTurn(next, rng);
+    }
+    case 'CAST_MODULE': {
+      const recipe = RECIPES.find((r) => r.id === action.moduleId);
+      if (!recipe || recipe.inputs.length !== 1) return state;
+      if (!state.orbs.includes(recipe.inputs[0])) return state;
+      const target = action.target ?? 0;
+      const enemy = state.enemies[target];
+      if (recipe.effect.kind === 'damage') {
+        if (!enemy || enemy.hp <= 0) return state;
+        const dmg = recipe.effect.power;
+        const enemies = state.enemies.map((e, i) =>
+          i === target ? { ...e, hp: Math.max(0, e.hp - dmg) } : e,
+        );
+        log.push(`${recipe.name} sur ${enemy.name} : -${dmg} PV. (lancement gratuit)`);
+        let next: CombatState = { ...state, enemies, log };
+        next = checkVictory(next, rng);
+        if (next.phase === 'won') return next;
+        return enemyTurn(next, rng);
+      }
+      if (recipe.effect.kind === 'shield') {
+        const player = { ...state.player, shield: state.player.shield + recipe.effect.power };
+        log.push(`${recipe.name} : +${recipe.effect.power} bouclier. (lancement gratuit)`);
+        return enemyTurn({ ...state, player, log }, rng);
+      }
+      if (recipe.effect.kind === 'push') {
+        if (!enemy || enemy.hp <= 0) return state;
+        const enemies = state.enemies.map((e, i) => (i === target ? { ...e, stunned: true } : e));
+        log.push(`${recipe.name} projette ${enemy.name} ! (lancement gratuit)`);
+        let next: CombatState = { ...state, enemies, log };
+        next = checkVictory(next, rng);
+        if (next.phase === 'won') return next;
+        const after = enemyTurn(next, rng);
+        return {
+          ...after,
+          enemies: after.enemies.map((e) => ({ ...e, stunned: false })),
+        };
+      }
+      return state;
     }
     case 'FLEE': {
       if (rng.next() < FLEE_CHANCE) {

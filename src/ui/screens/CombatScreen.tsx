@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { CombatState, CombatAction } from '../../core/combat/combat';
+import { availableSoloModules, type CombatState, type CombatAction } from '../../core/combat/combat';
+import { ELEMENTS } from '../../data/elements';
 
 export default function CombatScreen({
   combat,
@@ -14,6 +15,7 @@ export default function CombatScreen({
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
   const [target, setTarget] = useState(0);
+  const soloModules = availableSoloModules(combat.orbs);
 
   const phase = combat.phase;
   if (phase === 'won' || phase === 'lost' || phase === 'fled') {
@@ -92,13 +94,31 @@ export default function CombatScreen({
         </div>
       )}
 
+      {menu === 'attack' && soloModules.length > 0 && (
+        <div className="flex w-full max-w-xl flex-col gap-2">
+          {soloModules.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => {
+                onAction({ type: 'CAST_MODULE', moduleId: m.id, target });
+                setMenu('root');
+              }}
+              className="rounded border px-4 py-2 text-left"
+              style={{ minHeight: '44px', borderColor: ELEMENTS[m.inputs[0]].color }}
+            >
+              {m.name} ({ELEMENTS[m.inputs[0]].name}) — gratuit
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex w-full max-w-xl flex-wrap gap-2">
         <button
           onClick={() => setMenu(menu === 'attack' ? 'root' : 'attack')}
           className="rounded bg-red-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          Attaque
+          Attaque & Modules
         </button>
         <button
           onClick={() => setMenu(menu === 'items' ? 'root' : 'items')}

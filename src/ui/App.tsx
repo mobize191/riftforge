@@ -72,6 +72,7 @@ export default function App() {
           prev.run.playerMaxHp,
           prev.run.playerAttack,
           enemies,
+          prev.run.orbs.map((o) => o.element).filter((e): e is NonNullable<typeof e> => e !== null),
         ),
       );
       return reduce(prev, { type: 'ENTER_COMBAT', enemies });
