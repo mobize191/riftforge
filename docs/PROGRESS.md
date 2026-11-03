@@ -26,8 +26,8 @@ Dernier commit publié : à compléter à chaque ticket.
 | R2-04 | done | labo minimal : recettes tier 1, slots 3+, fusions moins chères |
 | R2-05 | done | craft d'équipement à la Forge Arcane |
 | R2-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : écran Forge sans friction à 390/2560 px |
-| R2-07 | pending | |
-| R2-08 | pending | |
+| R2-07 | done | production pendant la run, créditée au retour - entretien |
+| R2-08 | done | simu 24h : minerai=100/100, essence=0/100, lingots=20/50, crédits=0 — caps tenus |
 | R3-01..R3-07 | pending | |
 | R4-01..R4-08 | pending | |
 | R5-01..R5-07 | pending | |
@@ -35,6 +35,6 @@ Dernier commit publié : à compléter à chaque ticket.
 
 ## Simulations
 - R1-07 : 1000 runs, taux de victoire sol 3 (kit départ) = **38.6%**, sol moyen clearé = 1.23
-- R2-08 : —
+- R2-08 : 24 h simulées (86400 ticks) -> minerai 100/100 (cap), essence 0/100, lingots 20/50, crédits 0 : aucun enrichissement infini
 - R4-08 : —
 - R5-07 : —
