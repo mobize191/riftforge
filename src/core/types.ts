@@ -54,10 +54,16 @@ export interface MonsterDef {
 
 export type GameMode = 'FORGE' | 'RUN' | 'COMBAT' | 'RETOUR';
 
+export interface EquipmentInstance {
+  id: string;
+  defId: string;
+}
+
 export interface ForgeState {
   credits: number;
   essence: number;
   mineraiBrut: number;
+  equipment: EquipmentInstance[];
 }
 
 export interface Position {

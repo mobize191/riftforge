@@ -9,10 +9,11 @@ import { createLocalStoragePort } from './storage';
 import TitleScreen from './screens/TitleScreen';
 import GameCanvas from './GameCanvas';
 import CombatScreen from './screens/CombatScreen';
+import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 
-type View = 'title' | 'game';
+type View = 'title' | 'game' | 'forge';
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
@@ -107,11 +108,34 @@ export default function App() {
       saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
       return next;
     });
-    setView('title');
+    setView('forge');
+  }, []);
+
+  const onBuy = useCallback((defId: string) => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const next = reduce(prev, { type: 'BUY_ITEM', defId });
+      saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
+      return next;
+    });
+  }, []);
+
+  const onDescend = useCallback(() => {
+    const seed = Date.now() % 2147483647;
+    setState((prev) => {
+      const next = reduce(prev ?? initialState(), { type: 'START_RUN', seed });
+      saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
+      return next;
+    });
+    setView('game');
   }, []);
 
   if (view === 'game' && state?.mode === 'COMBAT' && combat) {
     return <CombatScreen combat={combat} onAction={onCombatAction} onEnd={onCombatEnd} />;
+  }
+
+  if (view === 'forge' && state?.mode === 'FORGE') {
+    return <ForgeScreen state={state} onBuy={onBuy} onDescend={onDescend} />;
   }
 
   if (view === 'game' && state?.mode === 'RETOUR') {

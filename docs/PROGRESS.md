@@ -13,7 +13,13 @@ Dernier commit publié : à compléter à chaque ticket.
 | R0-07 | EN ATTENTE DE VALIDATION HUMAINE | playtest : déplacement clavier + rendu net 390/2560 px |
 | R0-08 | EN ATTENTE DE VALIDATION HUMAINE | playtest : recharger la page -> position restaurée |
 | R0-09 | done | workflow Pages, job deploy skipped (repo privé) — workflow vert vérifié sur GitHub |
-| R1-01..R1-07 | pending | |
+| R1-01 | done | génération niveau seedée |
+| R1-02 | EN ATTENTE DE VALIDATION HUMAINE | playtest : contact -> combat |
+| R1-03 | done | combat à menus complet, butin conservé à la mort |
+| R1-04 | done | orbes de départ + 4 modules solo gratuits |
+| R1-05 | done | récolte, coffres, sortie -> sol suivant, niveaux de run |
+| R1-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : boucle run -> achat -> run |
+| R1-07 | pending | |
 | R2-01..R2-08 | pending | |
 | R3-01..R3-07 | pending | |
 | R4-01..R4-08 | pending | |

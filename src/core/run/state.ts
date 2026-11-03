@@ -5,6 +5,7 @@ import { generateLevel, type LevelMap } from './generate';
 import type { CombatLoot } from '../combat/combat';
 import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
+import { buyEquipment, equipmentBonuses } from '../forge/forge';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -17,12 +18,13 @@ export type GameAction =
   | { type: 'RETURN_FORGE' }
   | { type: 'MOVE_PLAYER'; to: Position }
   | { type: 'INTERACT' }
+  | { type: 'BUY_ITEM'; defId: string }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
   return {
     mode: 'FORGE',
-    forge: { credits: 0, essence: 0, mineraiBrut: 0 },
+    forge: { credits: 0, essence: 0, mineraiBrut: 0, equipment: [] },
     run: null,
   };
 }
@@ -39,6 +41,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
         element: rng.pick(PRIMORDIAL_ELEMENTS),
         tier: 1,
       }));
+      // L'équipement forgé/acheté à la Forge se porte à la run suivante (§SPEC-2).
+      const bonus = equipmentBonuses(state);
+      const maxHp = BALANCE.START_PLAYER_HP + bonus.hp;
+      const attack = BALANCE.PLAYER_ATTACK + bonus.attack;
       return {
         ...state,
         mode: 'RUN',
@@ -49,9 +55,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
           encounter: null,
           playerPos: { x: 1, y: 1 },
           playerLevel: BALANCE.START_PLAYER_LEVEL,
-          playerHp: BALANCE.START_PLAYER_HP,
-          playerMaxHp: BALANCE.START_PLAYER_HP,
-          playerAttack: BALANCE.PLAYER_ATTACK,
+          playerHp: maxHp,
+          playerMaxHp: maxHp,
+          playerAttack: attack,
           xp: 0,
           lootCredits: 0,
           orbs: startOrbs,
@@ -178,6 +184,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
         };
       }
       return state;
+    }
+    case 'BUY_ITEM': {
+      return buyEquipment(state, action.defId);
     }
     default:
       return state;
