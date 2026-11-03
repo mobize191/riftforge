@@ -19,7 +19,7 @@ Dernier commit publié : à compléter à chaque ticket.
 | R1-04 | done | orbes de départ + 4 modules solo gratuits |
 | R1-05 | done | récolte, coffres, sortie -> sol suivant, niveaux de run |
 | R1-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : boucle run -> achat -> run |
-| R1-07 | pending | |
+| R1-07 | done | simu 1000 runs : taux victoire sol 3 = 38.6% (possible, pas garanti) |
 | R2-01..R2-08 | pending | |
 | R3-01..R3-07 | pending | |
 | R4-01..R4-08 | pending | |
@@ -27,7 +27,7 @@ Dernier commit publié : à compléter à chaque ticket.
 | P6-A..P6-D | pending | |
 
 ## Simulations
-- R1-07 : —
+- R1-07 : 1000 runs, taux de victoire sol 3 (kit départ) = **38.6%**, sol moyen clearé = 1.23
 - R2-08 : —
 - R4-08 : —
 - R5-07 : —
