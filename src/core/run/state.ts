@@ -28,6 +28,7 @@ export type GameAction =
   | { type: 'CRAFT_LAB_RECIPE'; recipeId: string }
   | { type: 'UPGRADE_LAB' }
   | { type: 'ADVANCE_TICKS'; ticks: number }
+  | { type: 'TICK_RUN'; ticks: number }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -80,6 +81,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lootCredits: 0,
           lootEssence: 0,
           lootMinerai: 0,
+          elapsedTicks: 0,
           orbs: startOrbs,
           modules: [],
         },
@@ -145,16 +147,22 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'RETURN_FORGE': {
       if (state.mode !== 'RETOUR') return state;
-      // Mort = fin de run, 100 % du butin conservé (§SPEC-3).
+      // Mort = fin de run, 100 % du butin conservé (§SPEC-3). La production accumulée pendant
+      // la run est créditée au retour, moins l'entretien (§SPEC-6.4).
       const run = state.run;
+      const withProduction = run
+        ? advanceProduction(
+            { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai } },
+            run.elapsedTicks,
+          )
+        : state;
+      const maintenance = Math.floor((run?.elapsedTicks ?? 0) / 100) * BALANCE.MAINTENANCE_PER_100_TICKS;
       return {
-        ...state,
+        ...withProduction,
         mode: 'FORGE',
         forge: {
-          ...state.forge,
-          credits: state.forge.credits + (run?.lootCredits ?? 0),
-          essence: state.forge.essence + (run?.lootEssence ?? 0),
-          mineraiBrut: state.forge.mineraiBrut + (run?.lootMinerai ?? 0),
+          ...withProduction.forge,
+          credits: Math.max(0, withProduction.forge.credits - maintenance),
         },
         run: null,
       };
@@ -230,6 +238,15 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'ADVANCE_TICKS': {
       // L'UI fournit les ticks écoulés (dérivés de l'horloge réelle hors du core).
       return advanceProduction(state, action.ticks);
+    }
+    case 'TICK_RUN': {
+      // Production en temps réel bornée pendant la run (§SPEC-6.4) : les ticks s'accumulent,
+      // la production n'est créditée qu'au retour.
+      if (state.mode !== 'RUN' || !state.run) return state;
+      return {
+        ...state,
+        run: { ...state.run, elapsedTicks: state.run.elapsedTicks + Math.max(0, action.ticks) },
+      };
     }
     default:
       return state;

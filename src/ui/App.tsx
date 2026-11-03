@@ -138,9 +138,14 @@ export default function App() {
 
   // Production temps réel : l'UI dérive les ticks de l'horloge réelle et les injecte dans le core.
   useEffect(() => {
-    if (view !== 'forge') return;
+    if (view !== 'forge' && view !== 'game') return;
     const interval = setInterval(() => {
-      setState((prev) => (prev ? reduce(prev, { type: 'ADVANCE_TICKS', ticks: 1 }) : prev));
+      setState((prev) => {
+        if (!prev) return prev;
+        return prev.mode === 'RUN'
+          ? reduce(prev, { type: 'TICK_RUN', ticks: 1 })
+          : reduce(prev, { type: 'ADVANCE_TICKS', ticks: 1 });
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [view]);

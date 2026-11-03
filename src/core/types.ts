@@ -89,6 +89,7 @@ export interface RunState {
   lootCredits: number;
   lootEssence: number;
   lootMinerai: number;
+  elapsedTicks: number;
   orbs: Orb[];
   modules: Module[];
 }

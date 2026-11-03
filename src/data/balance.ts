@@ -12,4 +12,6 @@ export const BALANCE = {
   ATK_PER_LEVEL: 1, // TODO-BALANCE
   CHEST_CREDITS_MIN: 4, // TODO-BALANCE
   CHEST_CREDITS_SPREAD: 8, // TODO-BALANCE
+  // Entretien léger de la Forge, prélevé au retour de run (§SPEC-6.4). TODO-BALANCE.
+  MAINTENANCE_PER_100_TICKS: 1, // TODO-BALANCE (crédits)
 } as const;
