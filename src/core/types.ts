@@ -63,7 +63,10 @@ export interface ForgeState {
   credits: number;
   essence: number;
   mineraiBrut: number;
+  lingots: number;
   equipment: EquipmentInstance[];
+  buildings: Record<string, number>;
+  pendingTicks: Record<string, number>;
 }
 
 export interface Position {

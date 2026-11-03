@@ -4,7 +4,7 @@ import { MERCHANT_ITEMS } from '../src/data/equipment';
 
 function stateWithCredits(credits: number) {
   let s = initialState();
-  s = { ...s, forge: { ...s.forge, credits } };
+  s = { ...s, forge: { ...s.forge, credits, lingots: 0, buildings: {}, pendingTicks: {} } };
   return s;
 }
 

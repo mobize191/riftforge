@@ -5,6 +5,7 @@ export interface Purse {
   credits?: number;
   essence?: number;
   mineraiBrut?: number;
+  lingots?: number;
 }
 
 // Dépense atomique : jamais de solde négatif, tout ou rien.

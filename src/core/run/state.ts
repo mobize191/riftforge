@@ -6,6 +6,7 @@ import type { CombatLoot } from '../combat/combat';
 import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
 import { buyEquipment, equipmentBonuses } from '../forge/forge';
+import { STARTING_BUILDINGS } from '../../data/buildings';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -24,7 +25,15 @@ export type GameAction =
 export function initialState(): GameState {
   return {
     mode: 'FORGE',
-    forge: { credits: 0, essence: 0, mineraiBrut: 0, equipment: [] },
+    forge: {
+      credits: 0,
+      essence: 0,
+      mineraiBrut: 0,
+      lingots: 0,
+      equipment: [],
+      buildings: { ...STARTING_BUILDINGS },
+      pendingTicks: {},
+    },
     run: null,
   };
 }
