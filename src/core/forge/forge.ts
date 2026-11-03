@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { EQUIPMENT_BY_ID, type EquipmentDef } from '../../data/equipment';
+import { CRAFTABLE_EQUIPMENT, EQUIPMENT_BY_ID, type EquipmentDef } from '../../data/equipment';
 import { UPGRADE_COSTS } from '../../data/buildings';
 
 export interface Purse {
@@ -15,7 +15,9 @@ export function spendResources(state: GameState, cost: Purse): GameState {
   const credits = cost.credits ?? 0;
   const essence = cost.essence ?? 0;
   const mineraiBrut = cost.mineraiBrut ?? 0;
-  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut) return state;
+  const lingots = cost.lingots ?? 0;
+  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut || f.lingots < lingots)
+    return state;
   return {
     ...state,
     forge: {
@@ -23,6 +25,7 @@ export function spendResources(state: GameState, cost: Purse): GameState {
       credits: f.credits - credits,
       essence: f.essence - essence,
       mineraiBrut: f.mineraiBrut - mineraiBrut,
+      lingots: f.lingots - lingots,
     },
   };
 }
@@ -63,11 +66,31 @@ export function upgradeBuilding(state: GameState, buildingId: string): GameState
   };
 }
 
+// Craft d'équipement à la Forge Arcane : débite les ressources, l'équipement persiste (§R2-05).
+export function craftEquipment(state: GameState, defId: string): GameState {
+  if (state.mode !== 'FORGE') return state;
+  const def = CRAFTABLE_EQUIPMENT.find((e) => e.id === defId);
+  if (!def) return state;
+  const next = spendResources(state, def.craftCost);
+  if (next === state) return next;
+  return {
+    ...next,
+    forge: {
+      ...next.forge,
+      equipment: [
+        ...next.forge.equipment,
+        { id: `craft-${next.forge.equipment.length}-${defId}`, defId },
+      ],
+    },
+  };
+}
+
 export function equipmentBonuses(state: GameState): { attack: number; hp: number } {
+  const all = [...Object.values(EQUIPMENT_BY_ID), ...CRAFTABLE_EQUIPMENT];
   let attack = 0;
   let hp = 0;
   for (const item of state.forge.equipment) {
-    const def = EQUIPMENT_BY_ID[item.defId];
+    const def = all.find((d) => d.id === item.defId);
     if (def) {
       attack += def.attackBonus;
       hp += def.hpBonus;

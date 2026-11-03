@@ -5,7 +5,7 @@ import { generateLevel, type LevelMap } from './generate';
 import type { CombatLoot } from '../combat/combat';
 import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
-import { buyEquipment, equipmentBonuses, upgradeBuilding } from '../forge/forge';
+import { buyEquipment, craftEquipment, equipmentBonuses, upgradeBuilding } from '../forge/forge';
 import { STARTING_BUILDINGS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { craftLabRecipe, upgradeLab } from '../forge/lab';
@@ -22,6 +22,7 @@ export type GameAction =
   | { type: 'MOVE_PLAYER'; to: Position }
   | { type: 'INTERACT' }
   | { type: 'BUY_ITEM'; defId: string }
+  | { type: 'CRAFT_ITEM'; defId: string }
   | { type: 'UPGRADE_BUILDING'; buildingId: string }
   | { type: 'CRAFT_LAB_RECIPE'; recipeId: string }
   | { type: 'UPGRADE_LAB' }
@@ -211,6 +212,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'BUY_ITEM': {
       return buyEquipment(state, action.defId);
+    }
+    case 'CRAFT_ITEM': {
+      return craftEquipment(state, action.defId);
     }
     case 'UPGRADE_BUILDING': {
       return upgradeBuilding(state, action.buildingId);
