@@ -75,6 +75,7 @@ export interface RunState {
   playerHp: number;
   playerMaxHp: number;
   playerAttack: number;
+  xp: number;
   lootCredits: number;
   orbs: Orb[];
   modules: Module[];

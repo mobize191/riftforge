@@ -25,6 +25,7 @@ export class MapScene extends Phaser.Scene {
   private familyIds: string[];
   private onMove?: (pos: Position) => void;
   private onEncounter?: (enemies: string[]) => void;
+  private onInteract?: () => void;
 
   constructor(
     level: LevelMap,
@@ -34,6 +35,7 @@ export class MapScene extends Phaser.Scene {
     familyIds: string[],
     onMove?: (pos: Position) => void,
     onEncounter?: (enemies: string[]) => void,
+    onInteract?: () => void,
   ) {
     super('map');
     this.level = level;
@@ -43,6 +45,7 @@ export class MapScene extends Phaser.Scene {
     this.familyIds = familyIds;
     this.onMove = onMove;
     this.onEncounter = onEncounter;
+    this.onInteract = onInteract;
   }
 
   create(): void {
@@ -135,10 +138,12 @@ export class MapScene extends Phaser.Scene {
       d: Phaser.Input.Keyboard.KeyCodes.D,
       w: Phaser.Input.Keyboard.KeyCodes.W,
       a: Phaser.Input.Keyboard.KeyCodes.A,
+      e: Phaser.Input.Keyboard.KeyCodes.E,
     }) as Record<string, Phaser.Input.Keyboard.Key>;
   }
 
   update(): void {
+    if (Phaser.Input.Keyboard.JustDown(this.keys.e)) this.onInteract?.();
     let dx = 0;
     let dy = 0;
     const K = Phaser.Input.Keyboard.JustDown;

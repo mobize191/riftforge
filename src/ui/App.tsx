@@ -96,6 +96,10 @@ export default function App() {
     [],
   );
 
+  const onInteract = useCallback(() => {
+    setState((prev) => (prev ? reduce(prev, { type: 'INTERACT' }) : prev));
+  }, []);
+
   const onQuit = useCallback(() => {
     setState((prev) => {
       if (!prev) return prev;
@@ -133,7 +137,10 @@ export default function App() {
     return (
       <main className="flex min-h-screen flex-col items-center gap-3 bg-[#0a0e1a] py-4 text-slate-100">
         <div className="flex w-full max-w-5xl items-center justify-between px-4">
-          <span className="font-semibold tracking-widest">RIFTFORGE — Sol {state.run.floor}</span>
+          <span className="font-semibold tracking-widest">
+            RIFTFORGE — Sol {state.run.floor} · Niv {state.run.playerLevel} · XP {state.run.xp} ·{' '}
+            {state.run.lootCredits} crédits
+          </span>
           <button
             onClick={onQuit}
             className="rounded border border-slate-400 px-3 py-2"
@@ -151,10 +158,11 @@ export default function App() {
           familyIds={familyIds}
           onMove={onMove}
           onEncounter={onEncounter}
+          onInteract={onInteract}
         />
         <p className="text-sm opacity-60">
-          Flèches / ZQSD / WASD pour se déplacer. Position : ({state.run.playerPos.x},{' '}
-          {state.run.playerPos.y})
+          Flèches / ZQSD / WASD pour se déplacer, E pour interagir (coffre / sortie). Position : (
+          {state.run.playerPos.x}, {state.run.playerPos.y})
         </p>
       </main>
     );

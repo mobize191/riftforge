@@ -14,6 +14,7 @@ export default function GameCanvas({
   familyIds,
   onMove,
   onEncounter,
+  onInteract,
 }: {
   level: LevelMap;
   initialPos: Position;
@@ -22,13 +23,16 @@ export default function GameCanvas({
   familyIds: string[];
   onMove: (pos: Position) => void;
   onEncounter: (enemies: string[]) => void;
+  onInteract: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const onMoveRef = useRef(onMove);
   const onEncounterRef = useRef(onEncounter);
+  const onInteractRef = useRef(onInteract);
   onMoveRef.current = onMove;
   onEncounterRef.current = onEncounter;
+  onInteractRef.current = onInteract;
 
   useEffect(() => {
     let disposed = false;
@@ -55,6 +59,7 @@ export default function GameCanvas({
               familyIds,
               (p) => onMoveRef.current(p),
               (e) => onEncounterRef.current(e),
+              () => onInteractRef.current(),
             ),
           ],
         });

@@ -25,6 +25,7 @@ export type CombatPhase = 'player' | 'won' | 'lost' | 'fled';
 export interface CombatLoot {
   credits: number;
   orbs: ElementId[];
+  kills: number;
 }
 
 export interface CombatState {
@@ -124,7 +125,7 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
     return {
       ...state,
       phase: 'won',
-      loot: { credits, orbs },
+      loot: { credits, orbs, kills: state.enemies.length },
       log: [...state.log, `Victoire ! Butin : ${credits} crédits, ${orbs.length} orbe(s).`],
     };
   }
