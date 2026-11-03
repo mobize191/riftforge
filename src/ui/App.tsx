@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState, Position } from '../core/types';
 import { initialState, reduce } from '../core/run/state';
 import { serialize, deserialize, SAVE_KEY } from '../core/save/save';
@@ -35,6 +35,16 @@ export default function App() {
     const onHide = () => saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(state));
     window.addEventListener('pagehide', onHide);
     return () => window.removeEventListener('pagehide', onHide);
+  }, [state]);
+
+  // Sauvegarde automatique à chaque changement de zone logique (sol), pas à chaque frame.
+  const lastFloorRef = useRef<number | null>(null);
+  useEffect(() => {
+    const floor = state?.run?.floor ?? null;
+    if (floor !== null && lastFloorRef.current !== null && lastFloorRef.current !== floor && state) {
+      saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(state));
+    }
+    if (floor !== null) lastFloorRef.current = floor;
   }, [state]);
 
   const onNewRun = useCallback(() => {

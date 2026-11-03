@@ -10,8 +10,8 @@ Dernier commit publié : à compléter à chaque ticket.
 | R0-04 | done | machine à états boucle |
 | R0-05 | done | sauvegarde versionnée + StoragePort |
 | R0-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : boutons Nouvelle descente / Continuer, lisibilité 390 px / 2560 px |
-| R0-07 | pending | |
-| R0-08 | pending | |
+| R0-07 | EN ATTENTE DE VALIDATION HUMAINE | playtest : déplacement clavier + rendu net 390/2560 px |
+| R0-08 | EN ATTENTE DE VALIDATION HUMAINE | playtest : recharger la page -> position restaurée |
 | R0-09 | done | workflow Pages, job deploy skipped (repo privé) — workflow vert vérifié sur GitHub |
 | R1-01..R1-07 | pending | |
 | R2-01..R2-08 | pending | |
