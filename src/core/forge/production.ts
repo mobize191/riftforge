@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
-import { BUILDINGS } from '../../data/buildings';
+import { BUILDINGS, type ResourceKey } from '../../data/buildings';
+import { canHold } from './caps';
 
 // Production par ticks purs : aucun Date.now dans le core, l'appelant (UI) fournit
 // le nombre de ticks écoulés. Déterministe.
@@ -22,6 +23,14 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         pending = 0; // machine à l'arrêt sans intrants : pas de backlog accumulé
         break;
       }
+      const output = def.output ?? {};
+      const fits = (Object.entries(output) as [ResourceKey, number][]).every(
+        ([res, amount]) => canHold(forge, res, amount),
+      );
+      if (!fits) {
+        pending = 0; // stockage plein : la production s'arrête, rien n'est perdu silencieusement
+        break;
+      }
       forge = {
         ...forge,
         credits: forge.credits - (input.credits ?? 0),
@@ -29,7 +38,6 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         mineraiBrut: forge.mineraiBrut - (input.mineraiBrut ?? 0),
         lingots: forge.lingots - (input.lingots ?? 0),
       };
-      const output = def.output ?? {};
       forge = {
         ...forge,
         credits: forge.credits + (output.credits ?? 0),

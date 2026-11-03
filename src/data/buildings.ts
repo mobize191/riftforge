@@ -30,4 +30,29 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 export const STARTING_BUILDINGS: Record<string, number> = {
   extracteur: 1, // TODO-BALANCE
   'forge-arcane': 1, // TODO-BALANCE
+  entrepot: 1, // TODO-BALANCE
+};
+
+// Caps de stockage par ressource (§SPEC-6.4). TODO-BALANCE.
+export type ResourceKey = 'credits' | 'essence' | 'mineraiBrut' | 'lingots';
+export const STORAGE_CAPS: Record<ResourceKey, number> = {
+  credits: 500, // TODO-BALANCE
+  essence: 50, // TODO-BALANCE
+  mineraiBrut: 50, // TODO-BALANCE
+  lingots: 25, // TODO-BALANCE
+};
+
+// L'Entrepôt augmente tous les caps : cap effectif = base * multiplicateur(level).
+// TODO-BALANCE: coût d'amélioration et gain par niveau.
+export const ENTREPOS = {
+  id: 'entrepot',
+  name: 'Entrepôts',
+  capMultiplierPerLevel: 2, // TODO-BALANCE (niveau 1 -> x2)
+  upgradeCost: { credits: 30 }, // TODO-BALANCE
+} as const;
+
+export const UPGRADE_COSTS: Record<string, Record<string, number>> = {
+  entrepot: { credits: 30 }, // TODO-BALANCE
+  extracteur: { credits: 20 }, // TODO-BALANCE
+  'forge-arcane': { credits: 20 }, // TODO-BALANCE
 };
