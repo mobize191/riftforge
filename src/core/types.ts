@@ -65,6 +65,7 @@ export interface ForgeState {
   mineraiBrut: number;
   lingots: number;
   equipment: EquipmentInstance[];
+  unlockedRecipes: string[];
   buildings: Record<string, number>;
   pendingTicks: Record<string, number>;
 }

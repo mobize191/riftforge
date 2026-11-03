@@ -4,7 +4,7 @@ import { spendResources } from '../src/core/forge/forge';
 
 function withPurse(credits: number, essence: number, mineraiBrut: number) {
   const s = initialState();
-  return { ...s, forge: { ...s.forge, credits, essence, mineraiBrut, lingots: 0, equipment: [], buildings: {}, pendingTicks: {} } };
+  return { ...s, forge: { ...s.forge, credits, essence, mineraiBrut, lingots: 0, equipment: [], unlockedRecipes: [], buildings: {}, pendingTicks: {} } };
 }
 
 describe('R2-01 persistent resource economy', () => {

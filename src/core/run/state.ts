@@ -7,6 +7,8 @@ import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
 import { buyEquipment, equipmentBonuses, upgradeBuilding } from '../forge/forge';
 import { STARTING_BUILDINGS } from '../../data/buildings';
+import { LAB } from '../../data/lab';
+import { craftLabRecipe, upgradeLab } from '../forge/lab';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -21,6 +23,8 @@ export type GameAction =
   | { type: 'INTERACT' }
   | { type: 'BUY_ITEM'; defId: string }
   | { type: 'UPGRADE_BUILDING'; buildingId: string }
+  | { type: 'CRAFT_LAB_RECIPE'; recipeId: string }
+  | { type: 'UPGRADE_LAB' }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -32,7 +36,8 @@ export function initialState(): GameState {
       mineraiBrut: 0,
       lingots: 0,
       equipment: [],
-      buildings: { ...STARTING_BUILDINGS },
+      unlockedRecipes: [],
+      buildings: { ...STARTING_BUILDINGS, [LAB.id]: 1 },
       pendingTicks: {},
     },
     run: null,
@@ -209,6 +214,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'UPGRADE_BUILDING': {
       return upgradeBuilding(state, action.buildingId);
+    }
+    case 'CRAFT_LAB_RECIPE': {
+      return craftLabRecipe(state, action.recipeId);
+    }
+    case 'UPGRADE_LAB': {
+      return upgradeLab(state);
     }
     default:
       return state;
