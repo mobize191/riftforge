@@ -31,7 +31,7 @@ describe('R2-04 labo de canalisation minimal', () => {
   });
 
   it('fusions moins chères au labo (multiplicateur en data)', () => {
-    let s = forgeWith(0, 0);
+    let s = forgeWith(5, 5, 100);
     const m0 = fusionCostMultiplier(s);
     s = reduce(s, { type: 'UPGRADE_LAB' });
     expect(fusionCostMultiplier(s)).toBeLessThan(m0);
