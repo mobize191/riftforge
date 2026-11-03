@@ -120,6 +120,31 @@ export default function App() {
     });
   }, []);
 
+  const onCraft = useCallback((defId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'CRAFT_ITEM', defId }) : prev));
+  }, []);
+
+  const onUpgrade = useCallback((buildingId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'UPGRADE_BUILDING', buildingId }) : prev));
+  }, []);
+
+  const onUpgradeLab = useCallback(() => {
+    setState((prev) => (prev ? reduce(prev, { type: 'UPGRADE_LAB' }) : prev));
+  }, []);
+
+  const onCraftRecipe = useCallback((recipeId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'CRAFT_LAB_RECIPE', recipeId }) : prev));
+  }, []);
+
+  // Production temps réel : l'UI dérive les ticks de l'horloge réelle et les injecte dans le core.
+  useEffect(() => {
+    if (view !== 'forge') return;
+    const interval = setInterval(() => {
+      setState((prev) => (prev ? reduce(prev, { type: 'ADVANCE_TICKS', ticks: 1 }) : prev));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [view]);
+
   const onDescend = useCallback(() => {
     const seed = Date.now() % 2147483647;
     setState((prev) => {
@@ -135,7 +160,17 @@ export default function App() {
   }
 
   if (view === 'forge' && state?.mode === 'FORGE') {
-    return <ForgeScreen state={state} onBuy={onBuy} onDescend={onDescend} />;
+    return (
+      <ForgeScreen
+        state={state}
+        onBuy={onBuy}
+        onCraft={onCraft}
+        onUpgrade={onUpgrade}
+        onUpgradeLab={onUpgradeLab}
+        onCraftRecipe={onCraftRecipe}
+        onDescend={onDescend}
+      />
+    );
   }
 
   if (view === 'game' && state?.mode === 'RETOUR') {

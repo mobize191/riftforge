@@ -9,6 +9,7 @@ import { buyEquipment, craftEquipment, equipmentBonuses, upgradeBuilding } from 
 import { STARTING_BUILDINGS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { craftLabRecipe, upgradeLab } from '../forge/lab';
+import { advanceProduction } from '../forge/production';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -26,6 +27,7 @@ export type GameAction =
   | { type: 'UPGRADE_BUILDING'; buildingId: string }
   | { type: 'CRAFT_LAB_RECIPE'; recipeId: string }
   | { type: 'UPGRADE_LAB' }
+  | { type: 'ADVANCE_TICKS'; ticks: number }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -224,6 +226,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'UPGRADE_LAB': {
       return upgradeLab(state);
+    }
+    case 'ADVANCE_TICKS': {
+      // L'UI fournit les ticks écoulés (dérivés de l'horloge réelle hors du core).
+      return advanceProduction(state, action.ticks);
     }
     default:
       return state;

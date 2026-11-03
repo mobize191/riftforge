@@ -20,7 +20,14 @@ Dernier commit publié : à compléter à chaque ticket.
 | R1-05 | done | récolte, coffres, sortie -> sol suivant, niveaux de run |
 | R1-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : boucle run -> achat -> run |
 | R1-07 | done | simu 1000 runs : taux victoire sol 3 = 38.6% (possible, pas garanti) |
-| R2-01..R2-08 | pending | |
+| R2-01 | done | portefeuille persistant crédits/essence/minerai |
+| R2-02 | done | production par ticks purs Extracteur -> Forge Arcane |
+| R2-03 | done | caps de stockage + entrepôt améliorable |
+| R2-04 | done | labo minimal : recettes tier 1, slots 3+, fusions moins chères |
+| R2-05 | done | craft d'équipement à la Forge Arcane |
+| R2-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : écran Forge sans friction à 390/2560 px |
+| R2-07 | pending | |
+| R2-08 | pending | |
 | R3-01..R3-07 | pending | |
 | R4-01..R4-08 | pending | |
 | R5-01..R5-07 | pending | |
