@@ -67,6 +67,7 @@ export interface ForgeState {
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];
+  discoveredRecipes: string[];
   companionNames: Record<string, string>;
   team: string[];
   workers: Record<string, string>;
@@ -100,6 +101,7 @@ export interface RunState {
   companionSkills: Record<string, number>;
   companionKo: boolean;
   pendingMilestone: boolean;
+  discoveredRecipes: string[];
 }
 
 export interface GameState {

@@ -12,6 +12,7 @@ import { craftLabRecipe, upgradeLab } from '../forge/lab';
 import { advanceProduction } from '../forge/production';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
+import { createModule } from '../combat/createModule';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 
 export { MAP_WIDTH, MAP_HEIGHT };
@@ -34,6 +35,7 @@ export type GameAction =
   | { type: 'TICK_RUN'; ticks: number }
   | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
   | { type: 'UPGRADE_SKILL'; skillId: string }
+  | { type: 'CREATE_MODULE'; recipeId: string }
   | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
   | { type: 'SET_TEAM'; monsterIds: string[] }
   | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null }
@@ -50,6 +52,7 @@ export function initialState(): GameState {
       equipment: [],
       unlockedRecipes: [],
       roster: [],
+      discoveredRecipes: [],
       companionNames: {},
       team: [],
       workers: {},
@@ -108,6 +111,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           companionSkills,
           companionKo: false,
           pendingMilestone: false,
+          discoveredRecipes: [],
         },
       };
     }
@@ -155,6 +159,20 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (action.monsterId === null) delete workers[action.buildingId];
       else workers[action.buildingId] = action.monsterId;
       return { ...state, forge: { ...state.forge, workers } };
+    }
+    case 'CREATE_MODULE': {
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const res = createModule(state.run.orbs, action.recipeId);
+      if (!res.ok) return state;
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          orbs: res.orbs,
+          modules: [...state.run.modules, res.module],
+          discoveredRecipes: [...new Set([...state.run.discoveredRecipes, action.recipeId])],
+        },
+      };
     }
     case 'UPGRADE_SKILL': {
       if (state.mode !== 'RUN' || !state.run) return state;
@@ -247,6 +265,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const run = state.run;
       // Les compagnons capturés rejoignent l'écurie (persistant) ; le compagnon K.O. se réveille.
       const roster = [...new Set([...state.forge.roster, ...(run?.companions ?? [])])];
+      // Codex permanent : toute recette découverte une fois est connue pour toujours (§SPEC-5.2).
+      const discovered = [...new Set([...state.forge.discoveredRecipes, ...(run?.discoveredRecipes ?? [])])];
       const withProduction = run
         ? advanceProduction(
             { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai } },
@@ -261,6 +281,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           ...withProduction.forge,
           credits: Math.max(0, withProduction.forge.credits - maintenance),
           roster,
+          discoveredRecipes: discovered,
         },
         run: null,
       };
