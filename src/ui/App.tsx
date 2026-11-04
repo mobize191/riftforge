@@ -18,6 +18,7 @@ import { craftableRecipes } from '../core/combat/createModule';
 import { ELEMENTS } from '../data/elements';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 import { COMPANION_BY_MONSTER } from '../data/companions';
+import { playSound } from './audio';
 
 type View = 'title' | 'game' | 'forge';
 
@@ -76,6 +77,7 @@ export default function App() {
   const onContinue = useCallback(() => setView('game'), []);
 
   const onMove = useCallback((pos: Position) => {
+    playSound('step'); // R9-02
     setState((prev) => (prev ? reduce(prev, { type: 'MOVE_PLAYER', to: pos }) : prev));
   }, []);
 
@@ -103,6 +105,7 @@ export default function App() {
   }, [state, combat]);
 
   const onEncounter = useCallback((enemies: string[]) => {
+    playSound(enemies.some((e) => e.startsWith('boss:')) ? 'boss' : 'attack'); // R9-02
     setState((prev) => {
       if (!prev || !prev.run) return prev;
       setCombat(
@@ -126,12 +129,21 @@ export default function App() {
   }, []);
 
   const onCombatAction = useCallback((a: CombatAction) => {
+    // R9-02 : sons de combat selon l'action (attaque, module par élément, soin, etc.)
+    if (a.type === 'ATTACK') playSound('attack');
+    else if (a.type === 'CAST_MODULE') {
+      const el = a.moduleId.startsWith('trait') ? 'hit-feu' : a.moduleId.startsWith('jet') ? 'hit-eau' : a.moduleId.includes('gravats') || a.moduleId.includes('plaque') ? 'shield' : a.moduleId.includes('seve') || a.moduleId.includes('condensation') ? 'heal' : 'hit-terre';
+      playSound(el);
+    } else if (a.type === 'USE_ITEM') playSound(a.itemId.includes('gelule') ? 'heal' : 'attack');
+    else if (a.type === 'USE_COMPANION_SKILL') playSound('heal');
+    else playSound('ui-click');
     setCombat((prev) => (prev ? combatReduce(prev, a) : prev));
   }, []);
 
   const combatHpRef = useRef(0);
   const onCombatEnd = useCallback(
     (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko = false) => {
+      playSound(result === 'won' ? 'victory' : result === 'lost' ? 'defeat' : 'ui-click'); // R9-02
       if (combat) combatHpRef.current = combat.player.hp;
       setCombat(null);
       setState((prev) => {
@@ -164,6 +176,7 @@ export default function App() {
   }, []);
 
   const onBuy = useCallback((defId: string) => {
+    playSound('ui-buy'); // R9-02
     setState((prev) => {
       if (!prev) return prev;
       const next = reduce(prev, { type: 'BUY_ITEM', defId });
@@ -173,6 +186,7 @@ export default function App() {
   }, []);
 
   const onCraft = useCallback((defId: string) => {
+    playSound('forge'); // R9-02
     setState((prev) => (prev ? reduce(prev, { type: 'CRAFT_ITEM', defId }) : prev));
   }, []);
 

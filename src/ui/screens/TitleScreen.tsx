@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { GameState } from '../../core/types';
+import { soundEngine, playSound } from '../audio';
 
 export default function TitleScreen({
   state,
@@ -13,6 +15,8 @@ export default function TitleScreen({
   onNewRun: () => void;
   onContinue: () => void;
 }) {
+  // R9-02 : bouton couper le son (persisté), testé sans AudioContext.
+  const [muted, setMuted] = useState(soundEngine.muted);
   return (
     <main
       className="flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center"
@@ -47,6 +51,17 @@ export default function TitleScreen({
             Continuer
           </button>
         )}
+        <button
+          onClick={() => {
+            playSound('ui-click');
+            setMuted(soundEngine.toggleMute());
+          }}
+          className="rounded-lg border border-slate-500 bg-slate-800/80"
+          style={{ minHeight: '44px', fontSize: '0.95rem', padding: '0.5rem 1rem' }}
+          aria-pressed={muted}
+        >
+          Son : {muted ? 'coupé' : 'activé'}
+        </button>
       </div>
       {state && (
         <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>
