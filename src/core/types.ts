@@ -68,6 +68,7 @@ export interface ForgeState {
   unlockedRecipes: string[];
   roster: string[];
   discoveredRecipes: string[];
+  orbStock: Orb[];
   companionNames: Record<string, string>;
   team: string[];
   workers: Record<string, string>;

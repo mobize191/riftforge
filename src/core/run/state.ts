@@ -55,6 +55,7 @@ export function initialState(): GameState {
       unlockedRecipes: [],
       roster: [],
       discoveredRecipes: [],
+      orbStock: [],
       companionNames: {},
       team: [],
       workers: {},
@@ -93,6 +94,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
         ...state,
         mode: 'RUN',
         run: {
+          // Les orbes composites de la Forge se portent en run ; le reste repart de zéro (§SPEC-2).
+          orbs: [...startOrbs, ...state.forge.orbStock],
           seed: action.seed,
           floor: BALANCE.START_FLOOR,
           level: generateLevel(action.seed, BALANCE.START_FLOOR),
@@ -107,7 +110,6 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lootEssence: 0,
           lootMinerai: 0,
           elapsedTicks: 0,
-          orbs: startOrbs,
           modules: [],
           companions: [],
           companionSkills,
@@ -276,6 +278,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const roster = [...new Set([...state.forge.roster, ...(run?.companions ?? [])])];
       // Codex permanent : toute recette découverte une fois est connue pour toujours (§SPEC-5.2).
       const discovered = [...new Set([...state.forge.discoveredRecipes, ...(run?.discoveredRecipes ?? [])])];
+      // À la mort : orbes primordiales non consommées perdues, composites conservées (§SPEC-3).
+      const keptComposites = (run?.orbs ?? []).filter((o) => o.kind === 'composite');
       const withProduction = run
         ? advanceProduction(
             { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai } },
@@ -291,6 +295,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           credits: Math.max(0, withProduction.forge.credits - maintenance),
           roster,
           discoveredRecipes: discovered,
+          orbStock: [...state.forge.orbStock, ...keptComposites],
         },
         run: null,
       };
