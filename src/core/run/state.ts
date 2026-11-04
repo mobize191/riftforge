@@ -22,7 +22,7 @@ import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE } from '../../data/riftModifier
 
 // R7-02 : la jauge d'instabilité monte à chaque action (combat, récolte) quand le
 // modificateur « instabilite » est actif ; monotone seedée (déterministe), seuils en data.
-function addInstability(run: import('../types').RunState, amount: number): import('../types').RunState {
+function addInstability<T extends import('../types').RunState>(run: T, amount: number): T {
   if (!run.activeModifiers.includes('instabilite') || amount <= 0) return run;
   const before = run.instability;
   const instability = before + amount;
