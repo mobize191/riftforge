@@ -63,3 +63,32 @@ export const WORKER_BONUS: Record<string, number> = {
   extracteur: 1, // TODO-BALANCE — +1 minerai par cycle
   'forge-arcane': 0, // TODO-BALANCE
 };
+
+// --- P6-B : les ~10 bâtiments V1 (§SPEC-6.4) — données uniquement, coûts placeholder TODO-BALANCE ---
+
+export interface BuildingSkeleton {
+  id: string;
+  name: string;
+  tier: number;
+  cost: Record<string, number>; // TODO-BALANCE
+  neighborBonus?: string; // bonus de voisinage décrit en data (Loop Hero)
+}
+
+export const BUILDINGS_V1: BuildingSkeleton[] = [
+  { id: 'extracteur', name: 'Extracteur', tier: 1, cost: { credits: 0 } }, // TODO-BALANCE
+  { id: 'purificateur', name: 'Purificateur', tier: 2, cost: { credits: 40, mineraiBrut: 10 } }, // TODO-BALANCE
+  { id: 'nanolathe', name: 'Nanolathe', tier: 3, cost: { credits: 120, lingots: 5 } }, // TODO-BALANCE
+  { id: 'forge-arcane', name: 'Forge Arcane', tier: 1, cost: { credits: 0 } }, // TODO-BALANCE
+  { id: 'labo', name: 'Labo de canalisation', tier: 1, cost: { credits: 0 } }, // TODO-BALANCE
+  { id: 'ecurie', name: 'Écurie', tier: 1, cost: { credits: 20, mineraiBrut: 5 } }, // TODO-BALANCE
+  { id: 'entrepot', name: 'Entrepôts', tier: 1, cost: { credits: 0 } }, // TODO-BALANCE
+  { id: 'sanctuaire', name: 'Sanctuaire', tier: 2, cost: { credits: 60, essence: 10 } }, // TODO-BALANCE
+  { id: 'atelier-androides', name: 'Atelier des androïdes', tier: 2, cost: { credits: 80, lingots: 3 } }, // TODO-BALANCE
+  { id: 'maison-heros', name: 'Maison du héros', tier: 3, cost: { credits: 150, lingots: 8, spores: 5 } }, // TODO-BALANCE
+];
+
+// Bonus de voisinage décrits en data (ex. four à côté de la mine). TODO-BALANCE.
+export const NEIGHBOR_BONUSES: Record<string, string> = {
+  'forge-arcane+extracteur': 'La Forge Arcane à côté de l’Extracteur produit plus vite.', // TODO-BALANCE
+  'labo+forge-arcane': 'Le Labo à côté de la Forge réduit encore les coûts de fusion.', // TODO-BALANCE
+};
