@@ -28,7 +28,13 @@ Légende : ✅ corrigé (commit) · 🔄 en attente de validation humaine · ❌
 | B22 | matin 4 | Défis infinis | ✅ | `challengeId` persistait après le combat -> tous les combats suivants chronométrés ; remis à null à EXIT_COMBAT + autel à usage unique (sprite sync), ce commit |
 | B23 | matin 4 | Quitter la Faille en pleine run = clic mort | ✅ | abandon propre (DIE -> RETURN_FORGE), `b6b6b24` |
 
+| B24 | fuzz bot | `EXEC_GRIMOIRE` pouvait recréer un module déjà possédé (doublon + orbes perdues) | ✅ | dedupe dans EXEC_GRIMOIRE, trouvé par `tests/fuzz-bot.test.ts` |
+
 ## Bots de test (vérification automatique de chaque cas)
+- `tests/fuzz-bot.test.ts` (NOUVEAU) : **bot aléatoire seedé** — 200 sessions d'actions aléatoires
+  sur tout le jeu (Forge/run/combat), invariants à chaque pas : aucun crash, save round-trip OK,
+  soldes jamais négatifs, pas de module en double, combat jamais bloqué en phase 'player' sans
+  ennemi vivant. Résultat : 356 combats, 299 terminés (les autres = session finie en plein combat).
 - `tests/ui-bot.test.ts` : rejoue les flux exacts de l'UI (BFS, contact adjacent, tous les types de
   sorts, autel, compagnon, doublons, blocage combat) — invariants à chaque étape.
 - `tests/playtest-fixes*.test.ts` : régressions ciblées par bug.

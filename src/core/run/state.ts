@@ -245,6 +245,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       let orbs = state.run.orbs;
       const createdModules = [] as import('../types').Module[];
       for (const recipeId of slot.recipeIds) {
+        if (state.run.modules.some((m) => m.id === recipeId) || createdModules.some((m) => m.id === recipeId)) continue; // pas de doublon
         const res = createModule(orbs, recipeId);
         if (!res.ok) break; // orbes insuffisantes : on s'arrête là
         orbs = res.orbs;
