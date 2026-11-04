@@ -472,7 +472,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const maintenance = Math.floor((run?.elapsedTicks ?? 0) / 100) * BALANCE.MAINTENANCE_PER_100_TICKS;
       // Contrats du Marchand : vérifiés depuis le journal de la run, primes versées au retour.
       const withContracts = run
-        ? settleContracts(withProduction, { events: run.journal, lootSpores: run.lootSpores })
+        ? settleContracts(withProduction, { events: run.journal, lootSpores: run.lootSpores, lootBiome: run.lootBiome })
         : withProduction;
       // R6-03/R7-01 : victoire de run persistante -> débloque les modificateurs de Faille.
       const runCompleted = withContracts.forge.runCompleted || (run?.runCompleted ?? false);
