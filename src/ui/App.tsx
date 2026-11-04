@@ -115,7 +115,7 @@ export default function App() {
           prev.run.challengeId ?? undefined,
         ),
       );
-      return reduce(prev, { type: 'ENTER_COMBAT', enemies });
+      return reduce(prev, { type: 'ENTER_COMBAT', enemies, fromMap: true });
     });
   }, []);
 
@@ -389,7 +389,9 @@ export default function App() {
             {craftableRecipes(
               run.orbs,
               RECIPES.map((r) => r.id),
-            ).map((r) => (
+            )
+              .filter((r) => !run.modules.some((m) => m.id === r.id))
+              .map((r) => (
               <button
                 key={r.id}
                 onClick={() =>
@@ -402,7 +404,9 @@ export default function App() {
                 {state.forge.discoveredRecipes.includes(r.id) ? ' · déjà découverte' : ' · nouvelle découverte !'}
               </button>
             ))}
-            {craftableRecipes(run.orbs, RECIPES.map((r) => r.id)).length === 0 && (
+            {craftableRecipes(run.orbs, RECIPES.map((r) => r.id)).filter(
+              (r) => !run.modules.some((m) => m.id === r.id),
+            ).length === 0 && (
               <p className="text-sm opacity-60">Aucune recette réalisable avec les orbes actuelles.</p>
             )}
           </div>

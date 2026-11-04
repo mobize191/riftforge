@@ -255,7 +255,10 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
   if (player.hp <= 0) {
     return { ...state, player, companion, log, phase: 'lost' };
   }
-  const nextTurn = { ...state2, player, companion, log, phase: 'player' as const, turn: state.turn + 1 };
+  const nextTurn: CombatState = { ...state2, player, companion, log, phase: 'player', turn: state.turn + 1 };
+  // Un DoT peut achever le dernier ennemi pendant la phase ennemie -> victoire.
+  const afterVictory = checkVictory(nextTurn, rng);
+  if (afterVictory.phase === 'won') return afterVictory;
   if (nextTurn.challenge) {
     const turnsLeft = nextTurn.challenge.turnsLeft - 1;
     if (turnsLeft <= 0 && nextTurn.enemies.some((e) => e.hp > 0)) {
@@ -267,7 +270,7 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
         log: [...log, `Échec du défi ${nextTurn.challenge.def.name} : plus de tours.`],
       };
     }
-    nextTurn.challenge = { ...nextTurn.challenge, turnsLeft };
+    return { ...nextTurn, challenge: { ...nextTurn.challenge, turnsLeft } };
   }
   return nextTurn;
 }

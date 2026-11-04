@@ -24,7 +24,7 @@ export { MAP_WIDTH, MAP_HEIGHT };
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
-  | { type: 'ENTER_COMBAT'; enemies: string[]; challengeId?: string }
+  | { type: 'ENTER_COMBAT'; enemies: string[]; challengeId?: string; fromMap?: boolean }
   | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean; playerHp?: number }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
@@ -139,13 +139,17 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'ENTER_COMBAT': {
       if (state.mode !== 'RUN' || !state.run || !state.run.level) return state;
-      // Le monstre affronté quitte la carte (même case ou case adjacente) : plus de re-affrontement infini.
+      // Le monstre affronté quitte la carte (même case ou case adjacente) : plus de re-affrontement
+      // infini. Uniquement pour un contact carte (pas pour autel/boss).
       const p = state.run.playerPos;
       const isTrigger = (m: { pos: { x: number; y: number } }) =>
         Math.abs(m.pos.x - p.x) + Math.abs(m.pos.y - p.y) <= 1;
       const level = {
         ...state.run.level,
-        monsters: state.run.level.monsters.filter((m) => !isTrigger(m)),
+        monsters:
+          action.fromMap === false
+            ? state.run.level.monsters
+            : state.run.level.monsters.filter((m) => !isTrigger(m)),
       };
       return {
         ...state,
@@ -256,6 +260,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'CREATE_MODULE': {
       if (state.mode !== 'RUN' || !state.run) return state;
+      if (state.run.modules.some((m) => m.id === action.recipeId)) return state; // pas de doublon
       const res = createModule(state.run.orbs, action.recipeId);
       if (!res.ok) return state;
       return {
@@ -443,7 +448,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // Sortie du niveau -> niveau suivant, ou combat de boss au dernier sol (§SPEC-4.1).
       if (pos.x === level.exit.x && pos.y === level.exit.y) {
         if (floor >= BIOME_1_STRUCTURE.floors) {
-          return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${BIOME_1_STRUCTURE.bossId}`] });
+          return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${BIOME_1_STRUCTURE.bossId}`], fromMap: false });
         }
         return reduce(state, { type: 'NEXT_FLOOR' });
       }
@@ -453,7 +458,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         const level2 = { ...level, altars: level.altars.filter((_, i) => i !== altarIdx) };
         const s2 = { ...state, run: { ...state.run, level: level2, lastEvent: 'L’autel de garde s’active…' } };
         const enemies = ['mousse', 'sporeling']; // TODO-BALANCE — garde de l'autel
-        return reduce(s2, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde' });
+        return reduce(s2, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde', fromMap: false });
       }
       const chestIdx = level.chests.findIndex((c) => c.x === pos.x && c.y === pos.y);
       if (chestIdx >= 0) {
