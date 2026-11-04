@@ -157,6 +157,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           companionSkills,
           companionKo: false,
           pendingMilestone: false,
+          runCompleted: false,
           discoveredRecipes: [],
           journal: ['start', `biome-${biomeId}`, ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
           lastEvent: `Vous entrez dans la Faille — ${BIOME_BY_ID[biomeId]?.name ?? biomeId}.`,
@@ -391,7 +392,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // Victoire contre le boss -> fin du biome -> retour à la Forge.
       const wasBoss = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
       if (action.victory && wasBoss) {
-        run = { ...run, journal: [...run.journal, 'boss-killed'] };
+        // R6-03 : vaincre le boss du biome 4 (dernier biome) = victoire de run.
+        const bossId = (state.run.encounter ?? []).find((id) => id.startsWith('boss:'))!.slice(5);
+        const isFinalBoss = bossId === biomeStructureOf(BIOME_ORDER.length - 1).def.bossId;
+        run = {
+          ...run,
+          runCompleted: isFinalBoss ? true : run.runCompleted,
+          journal: [...run.journal, 'boss-killed', ...(isFinalBoss ? ['boss-final'] : [])],
+        };
         return { ...state, mode: 'RETOUR', run };
       }
       return { ...state, mode: 'RUN', run };
@@ -437,6 +445,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const withContracts = run
         ? settleContracts(withProduction, { events: run.journal, lootSpores: run.lootSpores })
         : withProduction;
+      // R6-03/R7-01 : victoire de run persistante -> débloque les modificateurs de Faille.
+      const runCompleted = withContracts.forge.runCompleted || (run?.runCompleted ?? false);
       return {
         ...withContracts,
         mode: 'FORGE',
@@ -446,6 +456,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           roster,
           discoveredRecipes: discovered,
           orbStock: [...state.forge.orbStock, ...keptComposites],
+          runCompleted,
+          allBiomesCleared: withContracts.forge.allBiomesCleared || runCompleted,
         },
         run: null,
       };

@@ -120,6 +120,7 @@ export interface RunState {
   companionSkills: Record<string, number>;
   companionKo: boolean;
   pendingMilestone: boolean;
+  runCompleted: boolean; // R6-03 — victoire de run (boss du biome 4 vaincu)
   discoveredRecipes: string[];
   journal: string[];
   lastEvent: string | null;

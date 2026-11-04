@@ -39,6 +39,9 @@ export function attractMonsters(
 
 // Patrouille simple : va-et-vient sur un axe, en inversant la direction au mur.
 // Déterministe (direction stockée sur le monstre), ne se bloque jamais.
+// R6-03 twist biome 4 : zones de vitesse appliquées aux monstres comme au joueur —
+// zone accélérée (speed 2) = 2 cases par patrouille, zone ralentie (speed 0) = un tour
+// sur deux sauté (parité stockée sur le monstre).
 export function patrolStep(
   map: LevelMap,
   index: number,
@@ -46,17 +49,32 @@ export function patrolStep(
 ): void {
   const m = map.monsters[index];
   if (!m) return;
+  const zone = map.speedZones.find((z) => z.pos.x === m.pos.x && z.pos.y === m.pos.y);
+  if (zone?.speed === 0) {
+    m.skipNext = !m.skipNext;
+    if (m.skipNext) return; // saute un tour sur deux en zone ralentie
+  }
   const axis = m.patrolAxis ?? (index % 2 === 0 ? 'x' : 'y');
   m.patrolAxis = axis;
   const dir = m.patrolDir ?? (index % 2 === 0 ? 1 : -1);
   m.patrolDir = dir;
-  let nx = axis === 'x' ? m.pos.x + dir : m.pos.x;
-  let ny = axis === 'y' ? m.pos.y + dir : m.pos.y;
-  if (walls(nx, ny) || nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) {
+  const step = (x: number, y: number, d: number): { x: number; y: number } => {
+    const nx = axis === 'x' ? x + d : x;
+    const ny = axis === 'y' ? y + d : y;
+    if (walls(nx, ny) || nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) return { x, y };
+    return { x: nx, y: ny };
+  };
+  let next = step(m.pos.x, m.pos.y, dir);
+  if (next.x === m.pos.x && next.y === m.pos.y) {
     m.patrolDir = -dir; // rebond
-    nx = axis === 'x' ? m.pos.x - dir : m.pos.x;
-    ny = axis === 'y' ? m.pos.y - dir : m.pos.y;
-    if (walls(nx, ny) || nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) return;
+    next = step(m.pos.x, m.pos.y, -dir);
+    if (next.x === m.pos.x && next.y === m.pos.y) return;
   }
-  m.pos = { x: nx, y: ny };
+  // zone accélérée : la patrouille avance d'une case de plus dans la même direction
+  if (zone?.speed === 2) {
+    const d = m.patrolDir;
+    const extra = step(next.x, next.y, d);
+    if (extra.x !== next.x || extra.y !== next.y) next = extra;
+  }
+  m.pos = next;
 }

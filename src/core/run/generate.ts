@@ -7,6 +7,7 @@ export interface PlacedMonster {
   pos: Position;
   patrolAxis?: 'x' | 'y';
   patrolDir?: number;
+  skipNext?: boolean; // R6-03 — zones ralenties : parité de saut de tour
 }
 
 export interface PlacedOrb {
