@@ -1,5 +1,11 @@
 # RIFTFORGE — QUESTIONS (à répondre par l'humain le matin)
 
+## Itération 0 (retour playtest téléphone)
+- Q0-2 [fix R0-07] : flashs noirs à intervalle régulier -> cause = recréation du jeu Phaser à chaque
+  déplacement (deps du useEffect). Corrigé : création unique par sol. À re-vérifier sur téléphone.
+- Q0-3 [fix R0-07] : contrôles tactiles ajoutés (pavé ▲▼◀▶ + E, hit-zones 56 px). Le clavier reste
+  disponible. Confort du pavé à valider en jouant.
+
 ## Itération 0
 - Q0-1 : L'adaptateur localStorage vit hors de `src/core/` (dans `src/ui/storage.ts`) pour respecter
   la règle « zéro DOM dans le core » — OK comme emplacement définitif ?

@@ -7,7 +7,8 @@ import type { LevelMap } from '../core/run/generate';
 import { LOGICAL_WIDTH, LOGICAL_HEIGHT } from './scenes/mapConfig';
 
 export default function GameCanvas({
-  level,
+  gameKey,
+  levelRef,
   initialPos,
   seed,
   floor,
@@ -16,7 +17,8 @@ export default function GameCanvas({
   onEncounter,
   onInteract,
 }: {
-  level: LevelMap;
+  gameKey: string;
+  levelRef: React.MutableRefObject<LevelMap>;
   initialPos: Position;
   seed: number;
   floor: number;
@@ -30,10 +32,14 @@ export default function GameCanvas({
   const onMoveRef = useRef(onMove);
   const onEncounterRef = useRef(onEncounter);
   const onInteractRef = useRef(onInteract);
+  const familyIdsRef = useRef(familyIds);
   onMoveRef.current = onMove;
   onEncounterRef.current = onEncounter;
   onInteractRef.current = onInteract;
+  familyIdsRef.current = familyIds;
 
+  // Le jeu Phaser n'est créé/détruit QUE quand on change de sol (gameKey) :
+  // jamais à chaque déplacement, sinon flash noir à chaque pas.
   useEffect(() => {
     let disposed = false;
     void import('phaser').then((PhaserNS) => {
@@ -52,11 +58,11 @@ export default function GameCanvas({
           render: { pixelArt: true, antialias: false },
           scene: [
             new MapScene(
-              level,
+              levelRef,
               initialPos,
               seed,
               floor,
-              familyIds,
+              familyIdsRef.current,
               (p) => onMoveRef.current(p),
               (e) => onEncounterRef.current(e),
               () => onInteractRef.current(),
@@ -71,7 +77,8 @@ export default function GameCanvas({
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
-  }, [level, initialPos, seed, floor, familyIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameKey]);
 
   return (
     <div

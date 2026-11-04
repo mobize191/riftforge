@@ -374,6 +374,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const { x, y } = action.to;
       if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) return state;
       const level = state.run.level;
+      if (isWall(level, x, y)) return state; // un mur bloque, même au tactile
       let run = { ...state.run, playerPos: { x, y } };
       // Ramassage automatique des orbes au sol en marchant dessus.
       const orbIdx = level.orbs.findIndex((o) => o.pos.x === x && o.pos.y === y);

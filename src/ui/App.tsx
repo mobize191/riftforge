@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState, Position } from '../core/types';
+import type { LevelMap } from '../core/run/generate';
 import { initialState, reduce } from '../core/run/state';
 import { serialize, deserialize, SAVE_KEY } from '../core/save/save';
 import { loadFromPort, saveToPort } from '../core/save/storage';
@@ -20,6 +21,11 @@ export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [view, setView] = useState<View>('title');
   const [combat, setCombat] = useState<CombatState | null>(null);
+  const levelRef = useRef<LevelMap | null>(null);
+  const familyIds = useMemo(
+    () => MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id),
+    [],
+  );
 
   const persist = useCallback((next: GameState) => {
     setState(next);
@@ -229,7 +235,27 @@ export default function App() {
   }
 
   if (view === 'game' && state?.mode === 'RUN' && state.run && state.run.level) {
-    const familyIds = MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id);
+    levelRef.current = state.run.level;
+    const run = state.run;
+    const touchMove = (dx: number, dy: number) => {
+      setState((prev) => {
+        if (!prev?.run) return prev;
+        return reduce(prev, {
+          type: 'MOVE_PLAYER',
+          to: { x: prev.run.playerPos.x + dx, y: prev.run.playerPos.y + dy },
+        });
+      });
+    };
+    const padBtn: React.CSSProperties = {
+      minWidth: '56px',
+      minHeight: '56px',
+      fontSize: '1.3rem',
+      borderRadius: '10px',
+      border: '1px solid rgba(148,163,184,0.6)',
+      background: 'rgba(30,41,59,0.75)',
+      color: '#e2e8f0',
+      touchAction: 'manipulation',
+    };
     return (
       <main className="flex min-h-screen flex-col items-center gap-3 bg-[#0a0e1a] py-4 text-slate-100">
         <div className="flex w-full max-w-5xl items-center justify-between px-4">
@@ -246,16 +272,27 @@ export default function App() {
           </button>
         </div>
         <GameCanvas
-          key={`${state.run.seed}-${state.run.floor}`}
-          level={state.run.level}
-          initialPos={state.run.playerPos}
-          seed={state.run.seed}
-          floor={state.run.floor}
+          key={`${run.seed}-${run.floor}`}
+          gameKey={`${run.seed}-${run.floor}`}
+          levelRef={levelRef as React.MutableRefObject<LevelMap>}
+          initialPos={run.playerPos}
+          seed={run.seed}
+          floor={run.floor}
           familyIds={familyIds}
           onMove={onMove}
           onEncounter={onEncounter}
           onInteract={onInteract}
         />
+        {/* Pavé tactile (téléphone) — hit-zones 56 px */}
+        <div className="flex flex-col items-center gap-2 pb-6 select-none">
+          <button aria-label="Haut" style={padBtn} onClick={() => touchMove(0, -1)}>▲</button>
+          <div className="flex gap-2">
+            <button aria-label="Gauche" style={padBtn} onClick={() => touchMove(-1, 0)}>◀</button>
+            <button aria-label="Interagir" style={{ ...padBtn, borderColor: 'rgba(52,211,153,0.8)' }} onClick={onInteract}>E</button>
+            <button aria-label="Droite" style={padBtn} onClick={() => touchMove(1, 0)}>▶</button>
+          </div>
+          <button aria-label="Bas" style={padBtn} onClick={() => touchMove(0, 1)}>▼</button>
+        </div>
         <div className="flex flex-wrap justify-center gap-2">
           {state.forge.grimoire.map((slot, i) => (
             <button

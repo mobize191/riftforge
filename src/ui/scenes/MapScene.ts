@@ -17,7 +17,10 @@ export class MapScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private pos: Position;
-  private level: LevelMap;
+  private levelRef: { current: LevelMap };
+  private get level(): LevelMap {
+    return this.levelRef.current;
+  }
   private monsterSprites: Phaser.GameObjects.Rectangle[] = [];
   private orbSprites: Phaser.GameObjects.Arc[] = [];
   private seed: number;
@@ -28,7 +31,7 @@ export class MapScene extends Phaser.Scene {
   private onInteract?: () => void;
 
   constructor(
-    level: LevelMap,
+    levelRef: { current: LevelMap },
     initialPos: Position,
     seed: number,
     floor: number,
@@ -38,7 +41,7 @@ export class MapScene extends Phaser.Scene {
     onInteract?: () => void,
   ) {
     super('map');
-    this.level = level;
+    this.levelRef = levelRef;
     this.pos = { ...initialPos };
     this.seed = seed;
     this.floor = floor;
