@@ -9,3 +9,9 @@
   Le grimoire pré-enregistré (3 compositions) suffit-il comme soupape ? À mesurer en jouant.
 - Q4-2 : les recettes "à base de composites" (Vapeur+Terre, Magma+Eau, Combustion+Terre) sont
   dépliées en 3 primordiales (palier 3) faute de vraies orbes composites nommées — OK pour la V1 ?
+
+## Itération 5
+- Q5-1 [playtest R5-06] : une run complète du biome 1 (4 sols + boss) dure combien de temps en
+  jouant vraiment, et quelles frictions apparaissent ? (cible : ~10-15 min)
+- Q5-2 : le bot de simulation meurt vite (2 combats sur le seed 4242) — l'équilibrage TODO-BALANCE
+  est à arbitrer à la main d'après R5-07.

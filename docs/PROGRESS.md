@@ -43,7 +43,13 @@ Dernier commit publié : à compléter à chaque ticket.
 | R4-06 | done | affinités x1.5/x0.5 appliquées en combat |
 | R4-07 | EN ATTENTE DE VALIDATION HUMAINE | playtest : la fusion en combat ralentit-elle le rythme ? (voir Q4-1) |
 | R4-08 | done | simu 1000 runs kit départ : taux victoire sol 3 = 0.10% (rare mais > 0) |
-| R5-01..R5-07 | pending | |
+| R5-01 | done | boss Racine-Mère, pattern télégraphié 3 phases, 200/200 avec kit de départ |
+| R5-02 | done | 4 sols + boss, racines, difficulté en data |
+| R5-03 | done | spores : récolte + attraction des monstres + transfert Forge |
+| R5-04 | done | 3 contrats à conditions depuis le journal de run |
+| R5-05 | done | autel de garde : défi 15 tours, échec sans mort |
+| R5-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : une run complète de bout en bout (~10-15 min), noter durée et frictions |
+| R5-07 | pending | |
 | P6-A..P6-D | pending | |
 
 ## Simulations
