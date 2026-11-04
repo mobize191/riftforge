@@ -37,15 +37,14 @@ describe('retours playtest', () => {
 
   it('combat : si la cible est morte, l’attaque frappe automatiquement la suivante', () => {
     let c = startCombat(1, 20, 20, 4, ['mousse', 'sporeling']);
-    c = combatReduce(c, { type: 'ATTACK', target: 0 });
-    c = combatReduce(c, { type: 'ATTACK', target: 0 });
-    c = combatReduce(c, { type: 'ATTACK', target: 0 }); // mousse doit mourir ici
-    const mousseDead = c.enemies[0].hp <= 0;
-    if (mousseDead) {
-      const sporelingHp = c.enemies[1].hp;
-      c = combatReduce(c, { type: 'ATTACK', target: 0 }); // cible morte -> auto-retarget
-      expect(c.enemies[1].hp).toBeLessThan(sporelingHp);
+    let guard = 0;
+    while (c.phase === 'player' && c.enemies[0].hp > 0 && guard++ < 10) {
+      c = combatReduce(c, { type: 'ATTACK', target: 0 }); // on finit la mousse
     }
+    expect(c.enemies[0].hp).toBeLessThanOrEqual(0); // mousse morte
+    const sporelingHp = c.enemies[1].hp;
+    c = combatReduce(c, { type: 'ATTACK', target: 0 }); // cible morte -> auto-retarget
+    expect(c.enemies[1].hp).toBeLessThan(sporelingHp);
   });
 
   it('combat : CRAFT_MODULE consomme les orbes et ajoute le module', () => {

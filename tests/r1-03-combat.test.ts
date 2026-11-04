@@ -40,8 +40,8 @@ describe('R1-03 full menu combat', () => {
   it('items heal / damage and consume a use', () => {
     let c = startCombat(5, 5, 20, 4, ['cuirasse']);
     c = combatReduce(c, { type: 'USE_ITEM', itemId: 'gelule-soin' });
-    // soin +6 -> 11, puis riposte du cuirassé (ATK 2) -> 9
-    expect(c.player.hp).toBe(9);
+    // soin +6 -> 11, puis riposte du cuirassé (ATQ en data, 3) -> 8
+    expect(c.player.hp).toBe(8);
     expect(c.items.find((i) => i.def.id === 'gelule-soin')!.usesLeft).toBe(0);
   });
 
