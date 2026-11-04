@@ -4,6 +4,18 @@
 - Q0-1 : L'adaptateur localStorage vit hors de `src/core/` (dans `src/ui/storage.ts`) pour respecter
   la règle « zéro DOM dans le core » — OK comme emplacement définitif ?
 
+## Itération 1
+- Q1-1 : le marchand ne vend que 3 équipements achetables (R1-06) — liste à étoffer en V1.x ?
+
+## Itération 2
+- Q2-1 : 1 tick de production = 1 s côté UI — cadence ressentie à vérifier en playtest (R2-06).
+- Q2-2 : la Forge Arcane produit des « lingots » (intermédiaire) — nom/usage à confirmer en it. 6.
+
+## Itération 3
+- Q3-1 : le compagnon agit automatiquement à son initiative (meilleure compétence de soin) plutôt
+  que via un menu dédié — OK pour la V1, ou menu « Compagnons » à rendre actif ?
+- Q3-2 : 30 % des attaques ennemies visent le compagnon (TODO-BALANCE) — à calibrer.
+
 ## Itération 4
 - Q4-1 [playtest R4-07] : la fusion en combat (coûte 1 tour) ralentit-elle le rythme ressenti ?
   Le grimoire pré-enregistré (3 compositions) suffit-il comme soupape ? À mesurer en jouant.
@@ -15,3 +27,7 @@
   jouant vraiment, et quelles frictions apparaissent ? (cible : ~10-15 min)
 - Q5-2 : le bot de simulation meurt vite (2 combats sur le seed 4242) — l'équilibrage TODO-BALANCE
   est à arbitrer à la main d'après R5-07.
+
+## Préparation 6-9 (P6)
+- Q6-1 : quels assets Kenney CC0 / générés en code pour les portraits de monstres et boss (étude §SPEC-11) ?
+- Q6-2 : la Liaiseuse (PNJ lien, it. 8) — introduce en V1.x avec quels dialogues minimum ?
