@@ -46,7 +46,7 @@ export type GameAction =
   | { type: 'EXEC_GRIMOIRE'; slot: number }
   | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
   | { type: 'SET_TEAM'; monsterIds: string[] }
-  | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null }
+  | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null } // null = retire TOUS les workers du bâtiment
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -139,12 +139,13 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'ENTER_COMBAT': {
       if (state.mode !== 'RUN' || !state.run || !state.run.level) return state;
-      // Le monstre affronté quitte la carte : on ne le re-affronte pas à l'infini.
+      // Le monstre affronté quitte la carte (même case ou case adjacente) : plus de re-affrontement infini.
+      const p = state.run.playerPos;
+      const isTrigger = (m: { pos: { x: number; y: number } }) =>
+        Math.abs(m.pos.x - p.x) + Math.abs(m.pos.y - p.y) <= 1;
       const level = {
         ...state.run.level,
-        monsters: state.run.level.monsters.filter(
-          (m) => !(m.pos.x === state.run!.playerPos.x && m.pos.y === state.run!.playerPos.y),
-        ),
+        monsters: state.run.level.monsters.filter((m) => !isTrigger(m)),
       };
       return {
         ...state,
@@ -199,10 +200,19 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'ASSIGN_WORKER': {
       if (state.mode !== 'FORGE') return state;
-      if (action.monsterId !== null && !state.forge.roster.includes(action.monsterId)) return state;
-      const workers = { ...state.forge.workers };
-      if (action.monsterId === null) delete workers[action.buildingId];
-      else workers[action.buildingId] = action.monsterId;
+      const current = state.forge.workers[action.buildingId] ?? [];
+      if (action.monsterId === null) {
+        const workers = { ...state.forge.workers };
+        delete workers[action.buildingId];
+        return { ...state, forge: { ...state.forge, workers } };
+      }
+      if (!state.forge.roster.includes(action.monsterId)) return state;
+      if (current.includes(action.monsterId)) return state; // pas de doublon
+      // un compagnon ne peut être worker que sur un seul bâtiment à la fois
+      const workers = Object.fromEntries(
+        Object.entries(state.forge.workers).map(([b, list]) => [b, list.filter((w) => w !== action.monsterId)]),
+      );
+      workers[action.buildingId] = [...(workers[action.buildingId] ?? []), action.monsterId];
       return { ...state, forge: { ...state.forge, workers } };
     }
     case 'SAVE_GRIMOIRE': {
@@ -437,10 +447,13 @@ export function reduce(state: GameState, action: GameAction): GameState {
         }
         return reduce(state, { type: 'NEXT_FLOOR' });
       }
-      // Autel de défi à tours limités : combat spécial avec compteur (§SPEC-4.3).
-      if (level.altars.some((a) => a.x === pos.x && a.y === pos.y)) {
+      // Autel de défi à tours limités : usage unique, l'autel disparaît du niveau (§SPEC-4.3).
+      const altarIdx = level.altars.findIndex((a) => a.x === pos.x && a.y === pos.y);
+      if (altarIdx >= 0) {
+        const level2 = { ...level, altars: level.altars.filter((_, i) => i !== altarIdx) };
+        const s2 = { ...state, run: { ...state.run, level: level2, lastEvent: 'L’autel de garde s’active…' } };
         const enemies = ['mousse', 'sporeling']; // TODO-BALANCE — garde de l'autel
-        return reduce(state, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde' });
+        return reduce(s2, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde' });
       }
       const chestIdx = level.chests.findIndex((c) => c.x === pos.x && c.y === pos.y);
       if (chestIdx >= 0) {

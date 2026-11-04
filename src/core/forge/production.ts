@@ -41,7 +41,8 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         spores: forge.spores - (input.spores ?? 0),
       };
       // Worker assigné au bâtiment : petit bonus de production (données TODO-BALANCE).
-      const workerBonus = state.forge.workers[buildingId] ? (WORKER_BONUS[buildingId] ?? 0) : 0;
+      const workerCount = state.forge.workers[buildingId]?.length ?? 0;
+      const workerBonus = workerCount * (WORKER_BONUS[buildingId] ?? 0);
       forge = {
         ...forge,
         credits: forge.credits + (output.credits ?? 0),

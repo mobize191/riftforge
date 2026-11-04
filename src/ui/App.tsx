@@ -147,7 +147,10 @@ export default function App() {
   const onQuit = useCallback(() => {
     setState((prev) => {
       if (!prev) return prev;
-      const next = reduce(prev, { type: 'RETURN_FORGE' });
+      // Depuis une run en cours : abandon = fin de run (butin conservé, §SPEC-3), puis retour Forge.
+      let next = prev;
+      if (prev.mode === 'RUN' || prev.mode === 'COMBAT') next = reduce(next, { type: 'DIE' });
+      next = reduce(next, { type: 'RETURN_FORGE' });
       saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
       return next;
     });
@@ -188,7 +191,21 @@ export default function App() {
   }, []);
 
   const onAssignWorker = useCallback((buildingId: string, monsterId: string | null) => {
-    setState((prev) => (prev ? reduce(prev, { type: 'ASSIGN_WORKER', buildingId, monsterId }) : prev));
+    setState((prev) => {
+      if (!prev) return prev;
+      if (monsterId === null) {
+        // retirer ce compagnon précis : on lit l'état courant
+        const current = prev.forge.workers[buildingId] ?? [];
+        const last = current[current.length - 1];
+        if (!last) return prev;
+        const workers = Object.fromEntries(
+          Object.entries(prev.forge.workers).map(([b, list]) => [b, list.filter((w) => w !== last)]),
+        );
+        if (!workers[buildingId]?.length) delete workers[buildingId];
+        return { ...prev, forge: { ...prev.forge, workers } };
+      }
+      return reduce(prev, { type: 'ASSIGN_WORKER', buildingId, monsterId });
+    });
   }, []);
 
   const onSaveGrimoire = useCallback((slot: number, name: string, recipeIds: string[]) => {

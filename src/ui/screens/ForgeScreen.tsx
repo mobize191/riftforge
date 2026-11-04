@@ -180,9 +180,14 @@ export default function ForgeScreen({
                 <button
                   className={`${btn} border-sky-300/70`}
                   style={btnStyle}
-                  onClick={() => onAssignWorker('extracteur', f.workers['extracteur'] === id ? null : id)}
+                  onClick={() =>
+                    onAssignWorker(
+                      'extracteur',
+                      (f.workers['extracteur'] ?? []).includes(id) ? null : id,
+                    )
+                  }
                 >
-                  {f.workers['extracteur'] === id ? '✓ Worker extracteur' : 'Worker extracteur'}
+                  {(f.workers['extracteur'] ?? []).includes(id) ? '✓ Worker extracteur' : '+ Worker extracteur'}
                 </button>
               </li>
             ))}

@@ -1,5 +1,13 @@
 # RIFTFORGE — QUESTIONS (à répondre par l'humain le matin)
 
+## Retours playtest (matin 4)
+- Q0-8 : le niveau de run est volontairement plafonné à ~5 (§SPEC R1-05) ; la vraie progression est
+  l'équipement/la Forge. OK, ou monter le plafond en V1.x ?
+- Q0-9 : 1 seul compagnon en équipe en V1 (§SPEC-7.2 « V1 : 1 »), workers multiples OK désormais.
+  Passer à 2 slots d'équipe en V1.x ?
+- Q0-10 : « tout maxé » = périmètre V1 atteint (1 biome). La suite prévue = itérations 6-9 (biomes 2-4,
+  modificateurs de Faille, lien) — listées dans docs/BACKLOG.md.
+
 ## Retours playtest (matin 3)
 - Q0-6 : le combat se déclenche maintenant aussi quand un monstre est sur une case ADJACENTE —
   est-ce que ça ne rend pas les rencontres trop fréquentes / inescapables ?

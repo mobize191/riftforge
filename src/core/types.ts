@@ -79,7 +79,7 @@ export interface ForgeState {
   claimedContracts: string[];
   companionNames: Record<string, string>;
   team: string[];
-  workers: Record<string, string>;
+  workers: Record<string, string[]>;
   buildings: Record<string, number>;
   pendingTicks: Record<string, number>;
 }
