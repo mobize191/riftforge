@@ -19,7 +19,7 @@ test('combat : bannière de tour + effets de modules affichés', { timeout: 6000
 
   // bannière « Au tour de : » visible (joueur OU compagnon)
   await expect(page.getByText(/Au tour de :/)).toBeVisible();
-  // menu Attaquer -> effets des modules en FR (dégâts/soin/bouclier...)
-  await page.getByRole('button', { name: /Attaquer/ }).click();
+  // menu Modules -> effets des modules en FR (dégâts/soin/bouclier...) — B27
+  await page.getByRole('button', { name: /^Modules/ }).click();
   await expect(page.getByText(/dégâts|soin|bouclier|poison|projection|ralentit|aveugle/i).first()).toBeVisible();
 });
