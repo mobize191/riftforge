@@ -141,6 +141,18 @@ export default function App() {
     setState((prev) => (prev ? reduce(prev, { type: 'CRAFT_LAB_RECIPE', recipeId }) : prev));
   }, []);
 
+  const onRename = useCallback((monsterId: string, name: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'RENAME_COMPANION', monsterId, name }) : prev));
+  }, []);
+
+  const onSetTeam = useCallback((monsterIds: string[]) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'SET_TEAM', monsterIds }) : prev));
+  }, []);
+
+  const onAssignWorker = useCallback((buildingId: string, monsterId: string | null) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'ASSIGN_WORKER', buildingId, monsterId }) : prev));
+  }, []);
+
   // Production temps réel : l'UI dérive les ticks de l'horloge réelle et les injecte dans le core.
   useEffect(() => {
     if (view !== 'forge' && view !== 'game') return;
@@ -179,6 +191,9 @@ export default function App() {
         onUpgradeLab={onUpgradeLab}
         onCraftRecipe={onCraftRecipe}
         onDescend={onDescend}
+        onRename={onRename}
+        onSetTeam={onSetTeam}
+        onAssignWorker={onAssignWorker}
       />
     );
   }

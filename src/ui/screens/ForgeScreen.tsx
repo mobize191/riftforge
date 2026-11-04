@@ -6,6 +6,7 @@ import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
 import { canalizationSlots } from '../../core/forge/lab';
+import { useState } from 'react';
 
 export default function ForgeScreen({
   state,
@@ -15,6 +16,9 @@ export default function ForgeScreen({
   onUpgradeLab,
   onCraftRecipe,
   onDescend,
+  onRename,
+  onSetTeam,
+  onAssignWorker,
 }: {
   state: GameState;
   onBuy: (defId: string) => void;
@@ -23,8 +27,12 @@ export default function ForgeScreen({
   onUpgradeLab: () => void;
   onCraftRecipe: (recipeId: string) => void;
   onDescend: () => void;
+  onRename: (monsterId: string, name: string) => void;
+  onSetTeam: (monsterIds: string[]) => void;
+  onAssignWorker: (buildingId: string, monsterId: string | null) => void;
 }) {
   const f = state.forge;
+  const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const btn = 'rounded border px-4 py-2 text-left disabled:opacity-40';
   const btnStyle = { minHeight: '44px' } as const;
   const tier1 = RECIPES.filter((r) => r.tier === 1);
@@ -142,6 +150,42 @@ export default function ForgeScreen({
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="w-full max-w-xl">
+        <h2 className="mb-2 font-semibold">Écurie ({f.roster.length})</h2>
+        {f.roster.length === 0 ? (
+          <p className="opacity-60">Aucun compagnon — capturez des monstres dans la Faille.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {f.roster.map((id) => (
+              <li key={id} className="flex flex-wrap items-center gap-2 rounded border border-slate-500 px-3 py-2" style={btnStyle}>
+                <input
+                  value={nameDrafts[id] ?? f.companionNames[id] ?? id}
+                  onChange={(e) => setNameDrafts((d) => ({ ...d, [id]: e.target.value }))}
+                  onBlur={() => onRename(id, nameDrafts[id] ?? f.companionNames[id] ?? id)}
+                  className="min-w-0 flex-1 rounded bg-black/40 px-2 py-1"
+                  style={{ minHeight: '44px' }}
+                  aria-label={`Nom du compagnon ${id}`}
+                />
+                <button
+                  className={`${btn} border-emerald-400/70`}
+                  style={btnStyle}
+                  onClick={() => onSetTeam(f.team.includes(id) ? [] : [id])}
+                >
+                  {f.team.includes(id) ? '✓ En équipe' : 'Mettre en équipe'}
+                </button>
+                <button
+                  className={`${btn} border-sky-300/70`}
+                  style={btnStyle}
+                  onClick={() => onAssignWorker('extracteur', f.workers['extracteur'] === id ? null : id)}
+                >
+                  {f.workers['extracteur'] === id ? '✓ Worker extracteur' : 'Worker extracteur'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="w-full max-w-xl">

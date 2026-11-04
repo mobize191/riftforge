@@ -67,7 +67,9 @@ export interface ForgeState {
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];
+  companionNames: Record<string, string>;
   team: string[];
+  workers: Record<string, string>;
   buildings: Record<string, number>;
   pendingTicks: Record<string, number>;
 }

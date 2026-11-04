@@ -56,3 +56,9 @@ export const UPGRADE_COSTS: Record<string, Record<string, number>> = {
   extracteur: { credits: 20 }, // TODO-BALANCE
   'forge-arcane': { credits: 20 }, // TODO-BALANCE
 };
+
+// Bonus de production d'un worker assigné à un bâtiment (§R3-06). TODO-BALANCE.
+export const WORKER_BONUS: Record<string, number> = {
+  extracteur: 1, // TODO-BALANCE — +1 minerai par cycle
+  'forge-arcane': 0, // TODO-BALANCE
+};

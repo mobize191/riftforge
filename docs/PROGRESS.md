@@ -28,7 +28,13 @@ Dernier commit publié : à compléter à chaque ticket.
 | R2-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : écran Forge sans friction à 390/2560 px |
 | R2-07 | done | production pendant la run, créditée au retour - entretien |
 | R2-08 | done | simu 24h : minerai=100/100, essence=0/100, lingots=20/50, crédits=0 — caps tenus |
-| R3-01..R3-07 | pending | |
+| R3-01 | done | capture (proba monotone seedée, butin) |
+| R3-02 | done | compagnon générique support soin, 5 compétences |
+| R3-03 | done | compétence initiale aléatoire + K.O. sans mort permanente |
+| R3-04 | done | jalon à 3 choix après le 2e niveau |
+| R3-05 | done | montée de niveau des compétences en orbes (3/5/10) |
+| R3-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : capture -> nommage -> équipe compréhensible sans doc |
+| R3-07 | pending | |
 | R4-01..R4-08 | pending | |
 | R5-01..R5-07 | pending | |
 | P6-A..P6-D | pending | |

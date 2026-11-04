@@ -34,6 +34,9 @@ export type GameAction =
   | { type: 'TICK_RUN'; ticks: number }
   | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
   | { type: 'UPGRADE_SKILL'; skillId: string }
+  | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
+  | { type: 'SET_TEAM'; monsterIds: string[] }
+  | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -47,7 +50,9 @@ export function initialState(): GameState {
       equipment: [],
       unlockedRecipes: [],
       roster: [],
+      companionNames: {},
       team: [],
+      workers: {},
       buildings: { ...STARTING_BUILDINGS, [LAB.id]: 1 },
       pendingTicks: {},
     },
@@ -127,6 +132,29 @@ export function reduce(state: GameState, action: GameAction): GameState {
           pendingMilestone,
         },
       };
+    }
+    case 'RENAME_COMPANION': {
+      if (state.mode !== 'FORGE') return state;
+      if (!state.forge.roster.includes(action.monsterId)) return state;
+      const name = action.name.trim().slice(0, 24);
+      if (!name) return state;
+      return {
+        ...state,
+        forge: { ...state.forge, companionNames: { ...state.forge.companionNames, [action.monsterId]: name } },
+      };
+    }
+    case 'SET_TEAM': {
+      if (state.mode !== 'FORGE') return state;
+      const team = action.monsterIds.filter((id) => state.forge.roster.includes(id)).slice(0, 1); // V1 : 1 slot
+      return { ...state, forge: { ...state.forge, team } };
+    }
+    case 'ASSIGN_WORKER': {
+      if (state.mode !== 'FORGE') return state;
+      if (action.monsterId !== null && !state.forge.roster.includes(action.monsterId)) return state;
+      const workers = { ...state.forge.workers };
+      if (action.monsterId === null) delete workers[action.buildingId];
+      else workers[action.buildingId] = action.monsterId;
+      return { ...state, forge: { ...state.forge, workers } };
     }
     case 'UPGRADE_SKILL': {
       if (state.mode !== 'RUN' || !state.run) return state;

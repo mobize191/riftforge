@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { BUILDINGS, type ResourceKey } from '../../data/buildings';
+import { BUILDINGS, WORKER_BONUS, type ResourceKey } from '../../data/buildings';
 import { canHold } from './caps';
 
 // Production par ticks purs : aucun Date.now dans le core, l'appelant (UI) fournit
@@ -38,12 +38,14 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         mineraiBrut: forge.mineraiBrut - (input.mineraiBrut ?? 0),
         lingots: forge.lingots - (input.lingots ?? 0),
       };
+      // Worker assigné au bâtiment : petit bonus de production (données TODO-BALANCE).
+      const workerBonus = state.forge.workers[buildingId] ? (WORKER_BONUS[buildingId] ?? 0) : 0;
       forge = {
         ...forge,
         credits: forge.credits + (output.credits ?? 0),
         essence: forge.essence + (output.essence ?? 0),
-        mineraiBrut: forge.mineraiBrut + (output.mineraiBrut ?? 0),
-        lingots: forge.lingots + (output.lingots ?? 0),
+        mineraiBrut: forge.mineraiBrut + (output.mineraiBrut ?? 0) + (buildingId === 'extracteur' ? workerBonus : 0),
+        lingots: forge.lingots + (output.lingots ?? 0) + (buildingId !== 'extracteur' ? workerBonus : 0),
       };
       pending -= def.cadenceTicks;
     }
