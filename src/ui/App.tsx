@@ -12,6 +12,9 @@ import GameCanvas, { type GameCanvasApi } from './GameCanvas';
 import CombatScreen from './screens/CombatScreen';
 import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
+import { RECIPES } from '../data/recipes';
+import { craftableRecipes } from '../core/combat/createModule';
+import { ELEMENTS } from '../data/elements';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 import { COMPANION_BY_MONSTER } from '../data/companions';
 
@@ -21,6 +24,7 @@ export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [view, setView] = useState<View>('title');
   const [combat, setCombat] = useState<CombatState | null>(null);
+  const [showModules, setShowModules] = useState(false);
   const levelRef = useRef<LevelMap | null>(null);
   const canvasApiRef = useRef<GameCanvasApi>(null);
   const familyIds = useMemo(
@@ -342,6 +346,13 @@ export default function App() {
           )}
         </div>
         <div className="flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => setShowModules((v) => !v)}
+            className="rounded border border-orange-300 px-3 py-2"
+            style={{ minHeight: '44px' }}
+          >
+            Modules ({run.modules.length} créés{showModules ? ' ▲' : ' ▼'})
+          </button>
           {state.forge.grimoire.map((slot, i) => (
             <button
               key={i}
@@ -353,9 +364,35 @@ export default function App() {
             </button>
           ))}
         </div>
+        {showModules && (
+          <div className="flex w-full max-w-xl flex-col gap-2 px-4">
+            <p className="text-sm opacity-80">
+              Orbes : {run.orbs.map((o) => o.element ?? 'composite').join(', ') || 'aucune'}
+            </p>
+            {craftableRecipes(
+              run.orbs,
+              RECIPES.map((r) => r.id),
+            ).map((r) => (
+              <button
+                key={r.id}
+                onClick={() =>
+                  setState((prev) => (prev ? reduce(prev, { type: 'CREATE_MODULE', recipeId: r.id }) : prev))
+                }
+                className="rounded border border-orange-300/80 px-4 py-2 text-left"
+                style={{ minHeight: '44px' }}
+              >
+                ✚ {r.name} (palier {r.tier}) — {r.inputs.map((e) => ELEMENTS[e].name).join(' + ')}
+                {state.forge.discoveredRecipes.includes(r.id) ? ' · déjà découverte' : ' · nouvelle découverte !'}
+              </button>
+            ))}
+            {craftableRecipes(run.orbs, RECIPES.map((r) => r.id)).length === 0 && (
+              <p className="text-sm opacity-60">Aucune recette réalisable avec les orbes actuelles.</p>
+            )}
+          </div>
+        )}
         <p className="text-sm opacity-60">
-          Flèches / ZQSD / WASD pour se déplacer, E pour interagir (coffre / sortie). Position : (
-          {state.run.playerPos.x}, {state.run.playerPos.y})
+          Flèches / ZQSD / WASD ou pavé tactile pour se déplacer, E pour interagir (coffre / sortie / autel).
+          Position : ({run.playerPos.x}, {run.playerPos.y})
         </p>
       </main>
     );

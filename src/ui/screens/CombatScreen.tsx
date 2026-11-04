@@ -190,15 +190,18 @@ export default function CombatScreen({
 
       <div className="flex w-full max-w-xl flex-wrap gap-2">
         <button
-          onClick={() => {
-            if (menu === 'root') {
-              onAction({ type: 'ATTACK', target: aliveTarget >= 0 ? aliveTarget : 0 });
-            } else setMenu('root');
-          }}
+          onClick={() => onAction({ type: 'ATTACK', target: aliveTarget >= 0 ? aliveTarget : 0 })}
           className="rounded bg-red-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          Attaquer (cible sélectionnée) / Modules
+          Attaquer (cible sélectionnée)
+        </button>
+        <button
+          onClick={() => setMenu(menu === 'attack' ? 'root' : 'attack')}
+          className="rounded bg-orange-700 px-4 py-3 font-semibold"
+          style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
+        >
+          Modules ({soloModules.length + createdModules.length + craftable.length})
         </button>
         <button
           onClick={() => setMenu(menu === 'items' ? 'root' : 'items')}
