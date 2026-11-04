@@ -14,6 +14,7 @@ import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
 import { createModule } from '../combat/createModule';
 import { applyFusion } from '../combat/fuse';
+import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 
 export { MAP_WIDTH, MAP_HEIGHT };
@@ -38,6 +39,8 @@ export type GameAction =
   | { type: 'UPGRADE_SKILL'; skillId: string }
   | { type: 'CREATE_MODULE'; recipeId: string }
   | { type: 'FUSE_ORBS'; indices: number[] }
+  | { type: 'SAVE_GRIMOIRE'; slot: number; name: string; recipeIds: string[] }
+  | { type: 'EXEC_GRIMOIRE'; slot: number }
   | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
   | { type: 'SET_TEAM'; monsterIds: string[] }
   | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null }
@@ -56,6 +59,7 @@ export function initialState(): GameState {
       roster: [],
       discoveredRecipes: [],
       orbStock: [],
+      grimoire: [],
       companionNames: {},
       team: [],
       workers: {},
@@ -163,6 +167,38 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (action.monsterId === null) delete workers[action.buildingId];
       else workers[action.buildingId] = action.monsterId;
       return { ...state, forge: { ...state.forge, workers } };
+    }
+    case 'SAVE_GRIMOIRE': {
+      // Jusqu'à 3 compositions favorites pré-enregistrées (§R4-07), persistantes.
+      if (state.mode !== 'FORGE') return state;
+      if (action.slot < 0 || action.slot >= 3) return state;
+      const grimoire = [...state.forge.grimoire];
+      grimoire[action.slot] = { name: action.name.slice(0, 24) || `Comp. ${action.slot + 1}`, recipeIds: action.recipeIds.slice(0, 10) };
+      return { ...state, forge: { ...state.forge, grimoire } };
+    }
+    case 'EXEC_GRIMOIRE': {
+      // Exécute la composition en un clic, hors combat, si les orbes suffisent.
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const slot: GrimoireSlot | undefined = state.forge.grimoire[action.slot];
+      if (!slot) return state;
+      let orbs = state.run.orbs;
+      const createdModules = [] as import('../types').Module[];
+      for (const recipeId of slot.recipeIds) {
+        const res = createModule(orbs, recipeId);
+        if (!res.ok) break; // orbes insuffisantes : on s'arrête là
+        orbs = res.orbs;
+        createdModules.push(res.module);
+      }
+      if (createdModules.length === 0) return state;
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          orbs,
+          modules: [...state.run.modules, ...createdModules],
+          discoveredRecipes: [...new Set([...state.run.discoveredRecipes, ...createdModules.map((m) => m.id)])],
+        },
+      };
     }
     case 'FUSE_ORBS': {
       // Hors combat : fusion libre, gratuite et illimitée (§SPEC-5.2).

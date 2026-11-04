@@ -153,6 +153,14 @@ export default function App() {
     setState((prev) => (prev ? reduce(prev, { type: 'ASSIGN_WORKER', buildingId, monsterId }) : prev));
   }, []);
 
+  const onSaveGrimoire = useCallback((slot: number, name: string, recipeIds: string[]) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'SAVE_GRIMOIRE', slot, name, recipeIds }) : prev));
+  }, []);
+
+  const onExecGrimoire = useCallback((slot: number) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'EXEC_GRIMOIRE', slot }) : prev));
+  }, []);
+
   // Production temps réel : l'UI dérive les ticks de l'horloge réelle et les injecte dans le core.
   useEffect(() => {
     if (view !== 'forge' && view !== 'game') return;
@@ -194,6 +202,7 @@ export default function App() {
         onRename={onRename}
         onSetTeam={onSetTeam}
         onAssignWorker={onAssignWorker}
+        onSaveGrimoire={onSaveGrimoire}
       />
     );
   }
@@ -244,6 +253,18 @@ export default function App() {
           onEncounter={onEncounter}
           onInteract={onInteract}
         />
+        <div className="flex flex-wrap justify-center gap-2">
+          {state.forge.grimoire.map((slot, i) => (
+            <button
+              key={i}
+              onClick={() => onExecGrimoire(i)}
+              className="rounded border border-violet-300 px-3 py-2"
+              style={{ minHeight: '44px' }}
+            >
+              Grimoire : {slot.name}
+            </button>
+          ))}
+        </div>
         <p className="text-sm opacity-60">
           Flèches / ZQSD / WASD pour se déplacer, E pour interagir (coffre / sortie). Position : (
           {state.run.playerPos.x}, {state.run.playerPos.y})

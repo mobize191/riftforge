@@ -35,7 +35,14 @@ Dernier commit publié : à compléter à chaque ticket.
 | R3-05 | done | montée de niveau des compétences en orbes (3/5/10) |
 | R3-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : capture -> nommage -> équipe compréhensible sans doc |
 | R3-07 | done | rejeu complet déterministe depuis un seul seed (capture->...->retour Forge) |
-| R4-01..R4-08 | pending | |
+| R4-01 | done | moteur de fusion (opposition, doublage, paliers) |
+| R4-02 | done | 18 recettes + création de module (consomme les orbes) |
+| R4-03 | done | codex permanent + liste des réalisables en run |
+| R4-04 | done | fusion gratuite hors combat, 1 tour en combat |
+| R4-05 | done | composites conservées à la mort, primordiales perdues |
+| R4-06 | done | affinités x1.5/x0.5 appliquées en combat |
+| R4-07 | EN ATTENTE DE VALIDATION HUMAINE | playtest : la fusion en combat ralentit-elle le rythme ? (voir Q4-1) |
+| R4-08 | pending | |
 | R5-01..R5-07 | pending | |
 | P6-A..P6-D | pending | |
 

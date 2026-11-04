@@ -59,6 +59,11 @@ export interface EquipmentInstance {
   defId: string;
 }
 
+export interface GrimoireSlot {
+  name: string;
+  recipeIds: string[];
+}
+
 export interface ForgeState {
   credits: number;
   essence: number;
@@ -69,6 +74,7 @@ export interface ForgeState {
   roster: string[];
   discoveredRecipes: string[];
   orbStock: Orb[];
+  grimoire: GrimoireSlot[];
   companionNames: Record<string, string>;
   team: string[];
   workers: Record<string, string>;

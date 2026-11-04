@@ -19,6 +19,7 @@ export default function ForgeScreen({
   onRename,
   onSetTeam,
   onAssignWorker,
+  onSaveGrimoire,
 }: {
   state: GameState;
   onBuy: (defId: string) => void;
@@ -30,6 +31,7 @@ export default function ForgeScreen({
   onRename: (monsterId: string, name: string) => void;
   onSetTeam: (monsterIds: string[]) => void;
   onAssignWorker: (buildingId: string, monsterId: string | null) => void;
+  onSaveGrimoire: (slot: number, name: string, recipeIds: string[]) => void;
 }) {
   const f = state.forge;
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
@@ -186,6 +188,27 @@ export default function ForgeScreen({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="w-full max-w-xl">
+        <h2 className="mb-2 font-semibold">Grimoire (jusqu’à 3 compositions favorites)</h2>
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2].map((slot) => (
+            <div key={slot} className="flex flex-wrap items-center gap-2 rounded border border-slate-500 px-3 py-2" style={btnStyle}>
+              <span className="flex-1">
+                Slot {slot + 1} : {f.grimoire[slot] ? `${f.grimoire[slot].name} (${f.grimoire[slot].recipeIds.length} recettes)` : 'vide'}
+              </span>
+              <button
+                className={`${btn} border-violet-300/70`}
+                style={btnStyle}
+                disabled={f.discoveredRecipes.length === 0}
+                onClick={() => onSaveGrimoire(slot, `Comp. ${slot + 1}`, f.discoveredRecipes)}
+              >
+                Enregistrer les recettes découvertes
+              </button>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="w-full max-w-xl">
