@@ -67,6 +67,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const bonus = equipmentBonuses(state);
       const maxHp = BALANCE.START_PLAYER_HP + bonus.hp;
       const attack = BALANCE.PLAYER_ATTACK + bonus.attack;
+      // 1 compétence initiale débloquée aléatoirement si un compagnon est en équipe (§SPEC-7.2).
+      let companionSkills: Record<string, number> = {};
+      const teamMonster = state.forge.team[0];
+      const teamDef = teamMonster ? COMPANION_BY_MONSTER[teamMonster] : undefined;
+      if (teamDef) {
+        const initial = rng.pick(teamDef.skills);
+        companionSkills = { [initial.id]: 1 };
+      }
       return {
         ...state,
         mode: 'RUN',
@@ -88,7 +96,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           orbs: startOrbs,
           modules: [],
           companions: [],
-          companionSkills: {},
+          companionSkills,
           companionKo: false,
         },
       };
