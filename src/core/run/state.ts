@@ -18,7 +18,23 @@ import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
 import { MONSTERS_BY_FAMILY } from '../../data/monsters';
-import { RIFT_MODIFIER_BY_ID, INSTABILITY } from '../../data/riftModifiers';
+import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE } from '../../data/riftModifiers';
+
+// R7-02 : la jauge d'instabilité monte à chaque action (combat, récolte) quand le
+// modificateur « instabilite » est actif ; monotone seedée (déterministe), seuils en data.
+function addInstability(run: import('../types').RunState, amount: number): import('../types').RunState {
+  if (!run.activeModifiers.includes('instabilite') || amount <= 0) return run;
+  const before = run.instability;
+  const instability = before + amount;
+  const journal = [...run.journal];
+  let elitePending = run.elitePending;
+  if (before < INSTABILITY.dangerThreshold && instability >= INSTABILITY.dangerThreshold) journal.push('danger');
+  if (before < INSTABILITY.eliteThreshold && instability >= INSTABILITY.eliteThreshold) {
+    journal.push('elite');
+    elitePending = true; // une élite traque le joueur -> prochain combat de carte
+  }
+  return { ...run, instability, elitePending, journal };
+}
 import { attractMonsters } from './encounter';
 import { settleContracts } from '../forge/contracts';
 
@@ -192,13 +208,27 @@ export function reduce(state: GameState, action: GameAction): GameState {
             ? state.run.level.monsters
             : state.run.level.monsters.filter((m) => !isTrigger(m)),
       };
+      // R7-02 : une élite traque le joueur -> ajoutée au prochain combat de carte.
+      let enemies = action.enemies;
+      let elitePending = state.run.elitePending;
+      let journal = state.run.journal;
+      if (elitePending && action.fromMap !== false) {
+        const { def } = biomeStructureOf(state.run.biomeIndex);
+        const family = MONSTERS_BY_FAMILY[def.family].map((m) => m.id);
+        const rng = createRng((state.run.seed ^ (state.run.floor * 337) ^ 0xe11e) >>> 0);
+        enemies = [...enemies, `${ELITE.idPrefix}${rng.pick(family)}`];
+        elitePending = false;
+        journal = [...journal, 'elite-spawn'];
+      }
       return {
         ...state,
         mode: 'COMBAT',
         run: {
           ...state.run,
           level,
-          encounter: action.enemies,
+          encounter: enemies,
+          elitePending,
+          journal,
           challengeId: action.challengeId ?? null,
           lastEvent: 'Un combat éclate !',
         },
@@ -221,6 +251,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           level: generateLevel(state.run.seed, floor, familyIds, levelOpts(biomeDef, floor, state.run.activeModifiers)),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
+          // R7-03 : le modificateur « élites » fait apparaître une élite à chaque nouveau niveau.
+          elitePending: state.run.activeModifiers.includes('elites') ? true : state.run.elitePending,
           journal: [...state.run.journal, `floor-${floor}`],
         },
       };
@@ -371,6 +403,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         playerHp: Math.max(1, Math.min(state.run.playerMaxHp, action.playerHp ?? state.run.playerHp)),
         lastEvent: null,
       };
+      run = addInstability(run, INSTABILITY.perCombat); // R7-02 : +jauge par combat
       if (action.victory && action.loot) {
         run = {
           ...run,
@@ -430,6 +463,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
             ...run,
             biomeIndex: nextBiomeIndex,
             activeModifiers: nextModifiers, // R7-01 : modificateurs du nouveau biome
+            elitePending: nextModifiers.includes('elites') ? true : run.elitePending, // R7-03
             floor: 1,
             level: generateLevel(run.seed, 1, nextFamily, levelOpts(nextDef, 1, nextModifiers)),
             playerPos: { x: 1, y: 1 },
@@ -575,6 +609,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           journal: [...run.journal, 'spore'],
           lastEvent: 'Spore récoltée (les monstres voisins sont attirés…).',
         };
+        run = addInstability(run, INSTABILITY.perHarvest); // R7-02 : +jauge par récolte
       }
       // R6-01+ : nœud de la ressource du biome courant (données / mercurium / optifibre).
       const resIdx = level.resourceNodes.findIndex((p) => p.x === dest.x && p.y === dest.y);
@@ -587,6 +622,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           journal: [...run.journal, `resource-${biomeDef.resourceId}`],
           lastEvent: `${biomeDef.resourceId} récoltée.`,
         };
+        run = addInstability(run, INSTABILITY.perHarvest); // R7-02 : +jauge par récolte
       }
       return { ...state, run };
     }
@@ -626,6 +662,21 @@ export function reduce(state: GameState, action: GameAction): GameState {
         const s2 = { ...state, run: { ...state.run, level: level2, lastEvent: 'L’autel de garde s’active…' } };
         const enemies = ['mousse', 'sporeling']; // TODO-BALANCE — garde de l'autel
         return reduce(s2, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde', fromMap: false });
+      }
+      // R7-02 : sanctuaire = purge complète de la jauge d'instabilité, usage unique.
+      const sanctIdx = level.sanctuaries.findIndex((s) => s.x === pos.x && s.y === pos.y);
+      if (sanctIdx >= 0 && state.run.activeModifiers.includes('instabilite')) {
+        const level2 = { ...level, sanctuaries: level.sanctuaries.filter((_, i) => i !== sanctIdx) };
+        return {
+          ...state,
+          run: {
+            ...state.run,
+            level: level2,
+            instability: 0,
+            journal: [...state.run.journal, 'sanctuaire'],
+            lastEvent: 'Sanctuaire : la jauge d’instabilité retombe à zéro.',
+          },
+        };
       }
       const chestIdx = level.chests.findIndex((c) => c.x === pos.x && c.y === pos.y);
       if (chestIdx >= 0) {

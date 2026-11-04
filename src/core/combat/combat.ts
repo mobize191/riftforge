@@ -9,6 +9,7 @@ import { BOSS_BY_ID } from '../../data/bosses';
 import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
 import { CHALLENGE_BY_ID, type ChallengeDef } from '../../data/challenges';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
+import { ELITE, MONSTER_LEVEL_BONUS, BLURRED_AFFINITY_VALUES, RARE_ORBS } from '../../data/riftModifiers';
 import type { ElementId } from '../types';
 
 export interface CompanionState {
@@ -76,6 +77,7 @@ export interface CombatState {
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
+  modifiers: string[]; // R7-03 — modificateurs de Faille actifs (élites, niveaux, affinités brouillées, orbes rares)
   log: string[];
 }
 
@@ -114,6 +116,7 @@ export function startCombat(
   companionKo = false,
   modules: string[] = [],
   challengeId?: string,
+  modifiers: string[] = [],
 ): CombatState {
   const challenge = challengeId ? CHALLENGE_BY_ID[challengeId] : undefined;
   const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false });
@@ -140,13 +143,20 @@ export function startCombat(
         ...mkStatuses(),
       };
     }
-    const def = MONSTER_BY_ID[id];
+    // R7-02/R7-03 : élite = monstre buffé, visible (préfixe + stats x2/+2)
+    const isElite = id.startsWith(ELITE.idPrefix);
+    const baseId = isElite ? id.slice(ELITE.idPrefix.length) : id;
+    const def = MONSTER_BY_ID[baseId];
+    // R7-03 : modificateur « monstres-niveaux » = +PV/+ATQ
+    const lvl = modifiers.includes('monstres-niveaux') ? MONSTER_LEVEL_BONUS.levels : 0;
+    const hp = (def?.hp ?? 5) * (isElite ? ELITE.hpMultiplier : 1) + lvl * MONSTER_LEVEL_BONUS.hpPerLevel;
+    const attack = (def?.attack ?? 1) + (isElite ? ELITE.attackBonus : 0) + lvl * MONSTER_LEVEL_BONUS.atkPerLevel;
     return {
       id: `${id}-${i}`,
-      name: def?.name ?? id,
-      hp: def?.hp ?? 5,
-      maxHp: def?.hp ?? 5,
-      attack: def?.attack ?? 1,
+      name: (isElite ? ELITE.namePrefix : '') + (def?.name ?? baseId),
+      hp,
+      maxHp: hp,
+      attack,
       isPlayer: false,
       ...mkStatuses(),
     };
@@ -181,6 +191,7 @@ export function startCombat(
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
+    modifiers,
     log: ['Un combat éclate !'],
   };
   // Si un ennemi est premier à l'initiative, il agit avant le premier choix du joueur.
@@ -312,7 +323,11 @@ function advance(state: CombatState, rng: Rng): CombatState {
 function checkVictory(state: CombatState, rng: Rng): CombatState {
   if (state.enemies.every((e) => e.hp <= 0)) {
     const credits = 5 + rng.int(10); // TODO-BALANCE
-    const orbCount = 1 + rng.int(2); // TODO-BALANCE
+    const baseOrbCount = 1 + rng.int(2); // TODO-BALANCE
+    // R7-03 : modificateur « orbes-rares » = drops d'orbes réduits (en data)
+    const orbCount = state.modifiers.includes('orbes-rares')
+      ? Math.floor(baseOrbCount / RARE_ORBS.lootOrbCountDivisor)
+      : baseOrbCount;
     const essence = 1 + rng.int(2); // TODO-BALANCE
     const minerai = 1 + rng.int(3); // TODO-BALANCE
     const elements: ElementId[] = ['feu', 'eau', 'terre', 'air'];
@@ -415,11 +430,14 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       let enemies = state.enemies;
       if (effect.kind === 'damage' || effect.kind === 'aoe') {
         const element = recipe.inputs[0];
+        const blurred = state.modifiers.includes('affinites-brouillees'); // R7-03 : multiplicateurs mélangés, seedés
         const hit = (e: Combatant, i: number): Combatant => {
           if (e.hp <= 0) return e;
           if (effect.kind === 'damage' && i !== target) return e;
-          const def = MONSTER_BY_ID[e.id.split('-')[0]];
-          const mult = def && element ? affinityMultiplier(element, def) : 1;
+          const baseId = e.id.split('-')[0].replace(/^elite-/, '');
+          const def = MONSTER_BY_ID[baseId];
+          let mult = def && element ? affinityMultiplier(element, def) : 1;
+          if (blurred) mult = BLURRED_AFFINITY_VALUES[Math.floor(rng.next() * BLURRED_AFFINITY_VALUES.length)];
           const dmg = Math.round(effect.power * mult);
           return { ...e, hp: Math.max(0, e.hp - dmg) };
         };

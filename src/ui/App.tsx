@@ -96,6 +96,7 @@ export default function App() {
           state.run.companionKo,
           state.run.modules.map((m) => m.id),
           state.run.challengeId ?? undefined,
+          state.run.activeModifiers,
         ),
       );
     }
@@ -117,6 +118,7 @@ export default function App() {
           prev.run.companionKo,
           prev.run.modules.map((m) => m.id),
           prev.run.challengeId ?? undefined,
+          prev.run.activeModifiers,
         ),
       );
       return reduce(prev, { type: 'ENTER_COMBAT', enemies, fromMap: true });
