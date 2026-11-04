@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { availableSoloModules, currentActorId, type CombatState, type CombatAction } from '../../core/combat/combat';
 import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
@@ -23,6 +23,19 @@ export default function CombatScreen({
   companionBondTier?: number; // R8-02 — teinte de lien par palier sur le portrait du compagnon
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack' | 'companions'>('root');
+  // R9-03 juice : flash d'impact par élément + tremblement sur gros dégâts + fondu d'entrée
+  const [fx, setFx] = useState<{ color: string; key: number } | null>(null);
+  const [shake, setShake] = useState(0);
+  const prevHpRef = useRef(combat.player.hp);
+  useEffect(() => {
+    if (combat.player.hp < prevHpRef.current) {
+      const drop = prevHpRef.current - combat.player.hp;
+      if (drop >= 4) setShake((n) => n + 1); // gros dégâts -> tremblement
+      setFx({ color: '#ff3344', key: Date.now() });
+    }
+    prevHpRef.current = combat.player.hp;
+  }, [combat.player.hp, combat.turn]);
+  const flashEl = (color: string) => setFx({ color, key: Date.now() });
   const [target, setTarget] = useState(0);
   const [fuseSel, setFuseSel] = useState<number[]>([]);
   const actorId = currentActorId(combat);
@@ -59,11 +72,20 @@ export default function CombatScreen({
   // Cible sélectionnée (clic sur l'ennemi) ; retombe sur la première cible vivante si elle meurt.
   const aliveTarget = combat.enemies[target]?.hp > 0 ? target : combat.enemies.findIndex((e) => e.hp > 0);
 
+
   return (
     <main
-      className="flex min-h-screen flex-col items-center gap-4 px-4 py-6"
+      className={`flex min-h-screen flex-col items-center gap-4 px-4 py-6 ${shake > 0 ? 'rf-shake' : ''} rf-fadein`}
       style={{ background: '#140a12', color: '#f8e8ec' }}
     >
+      {/* R9-03 : flash d'impact plein écran (couleur de l'élément) */}
+      {fx && <span key={fx.key} className="rf-flash" style={{ background: fx.color }} />}
+      <style>{`@keyframes rfshake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-4px,2px)} 50%{transform:translate(4px,-2px)} 75%{transform:translate(-3px,-2px)} }
+        .rf-shake { animation: rfshake 0.25s ease-out; }
+        @keyframes rfflash { 0%{opacity:0.55} 100%{opacity:0} }
+        .rf-flash { position: fixed; inset: 0; pointer-events: none; animation: rfflash 0.35s ease-out forwards; z-index: 40; }
+        @keyframes rffadein { from{opacity:0} to{opacity:1} }
+        .rf-fadein { animation: rffadein 0.25s ease-out; }`}</style>
       <h2 className="font-bold tracking-widest" style={{ fontSize: 'clamp(1.2rem, 5vw, 2rem)' }}>
         COMBAT — Round {combat.turn} · Au tour de : {isCompTurn ? `🤝 ${combat.companion?.name ?? 'compagnon'}` : '🧙 vous'}
         {combat.challenge && ` · Défi « ${combat.challenge.def.name} » : ${combat.challenge.turnsLeft} tours restants`}
@@ -210,6 +232,7 @@ export default function CombatScreen({
             <button
               key={m.id}
               onClick={() => {
+                flashEl(ELEMENTS[m.inputs[0]].color); // R9-03 flash par élément
                 onAction({ type: 'CAST_MODULE', moduleId: m.id, target: aliveTarget >= 0 ? aliveTarget : target });
                 setMenu('root');
               }}
@@ -223,6 +246,7 @@ export default function CombatScreen({
             <button
               key={m.id}
               onClick={() => {
+                flashEl(ELEMENTS[m.inputs[0]]?.color ?? '#ff5533'); // R9-03 flash par élément
                 onAction({ type: 'CAST_MODULE', moduleId: m.id, target: aliveTarget >= 0 ? aliveTarget : target });
                 setMenu('root');
               }}
