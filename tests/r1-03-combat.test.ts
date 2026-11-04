@@ -28,7 +28,7 @@ describe('R1-03 full menu combat', () => {
     let s = initialState();
     s = reduce(s, { type: 'START_RUN', seed: 3 });
     s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['amas'] });
-    s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 12, orbs: ["feu"], kills: 1, essence: 0, minerai: 0 } });
+    s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 12, orbs: ["feu"], kills: 1, essence: 0, minerai: 0, captured: [] } });
     expect(s.run?.lootCredits).toBe(12);
     s = reduce(s, { type: 'DIE' });
     expect(s.mode).toBe('RETOUR');

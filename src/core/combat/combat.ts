@@ -2,6 +2,7 @@ import { createRng, type Rng } from '../rng';
 import { MONSTER_BY_ID } from '../../data/monsters';
 import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
 import { RECIPES, type RecipeDef } from '../../data/recipes';
+import { CAPTURE } from '../../data/capture';
 import type { ElementId } from '../types';
 
 export interface Combatant {
@@ -28,6 +29,11 @@ export interface CombatLoot {
   kills: number;
   essence: number;
   minerai: number;
+  captured: string[];
+}
+
+export interface CapturedMonster {
+  monsterId: string;
 }
 
 export interface CombatState {
@@ -36,6 +42,7 @@ export interface CombatState {
   phase: CombatPhase;
   player: Combatant;
   enemies: Combatant[];
+  captured: string[];
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -46,7 +53,14 @@ export type CombatAction =
   | { type: 'ATTACK'; target: number }
   | { type: 'USE_ITEM'; itemId: string; target?: number }
   | { type: 'CAST_MODULE'; moduleId: string; target?: number }
+  | { type: 'CAPTURE'; target: number }
   | { type: 'FLEE' };
+
+// Probabilité de capture : augmente quand les PV restants baissent (monotone, §R3-01).
+export function captureChance(hp: number, maxHp: number): number {
+  const missing = maxHp > 0 ? 1 - hp / maxHp : 0;
+  return Math.min(1, CAPTURE.baseChance + missing * CAPTURE.missingHpWeight);
+}
 
 export function availableSoloModules(orbs: ElementId[]): RecipeDef[] {
   const held = new Set(orbs);
@@ -91,6 +105,7 @@ export function startCombat(
       stunned: false,
     },
     enemies,
+    captured: [],
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -129,7 +144,7 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
     return {
       ...state,
       phase: 'won',
-      loot: { credits, orbs, kills: state.enemies.length, essence, minerai },
+      loot: { credits, orbs, kills: state.enemies.length, essence, minerai, captured: state.captured },
       log: [...state.log, `Victoire ! Butin : ${credits} crédits, ${essence} essence, ${minerai} minerai, ${orbs.length} orbe(s).`],
     };
   }
@@ -210,6 +225,26 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         };
       }
       return state;
+    }
+    case 'CAPTURE': {
+      const target = state.enemies[action.target];
+      if (!target || target.hp <= 0) return state;
+      if (rng.next() < captureChance(target.hp, target.maxHp)) {
+        const monsterId = target.id.split('-')[0];
+        log.push(`Capturé : ${target.name} !`);
+        const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: 0 } : e));
+        let next: CombatState = {
+          ...state,
+          enemies,
+          captured: [...state.captured, monsterId],
+          log,
+        };
+        next = checkVictory(next, rng);
+        if (next.phase === 'won') return next;
+        return enemyTurn(next, rng);
+      }
+      log.push(`Échec de la capture sur ${target.name}.`);
+      return enemyTurn({ ...state, log }, rng);
     }
     case 'FLEE': {
       if (rng.next() < FLEE_CHANCE) {

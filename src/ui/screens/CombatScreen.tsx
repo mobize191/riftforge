@@ -128,6 +128,13 @@ export default function CombatScreen({
           Objets
         </button>
         <button
+          onClick={() => onAction({ type: 'CAPTURE', target })}
+          className="rounded bg-violet-700 px-4 py-3 font-semibold"
+          style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
+        >
+          Capturer
+        </button>
+        <button
           onClick={() => onAction({ type: 'FLEE' })}
           className="rounded bg-slate-600 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}

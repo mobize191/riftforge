@@ -14,7 +14,7 @@ describe('R2-01 persistent resource economy', () => {
     s = reduce(s, {
       type: 'EXIT_COMBAT',
       victory: true,
-      loot: { credits: 10, orbs: [], kills: 1, essence: 2, minerai: 3 },
+      loot: { credits: 10, orbs: [], kills: 1, essence: 2, minerai: 3, captured: [] },
     });
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });

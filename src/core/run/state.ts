@@ -84,6 +84,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           elapsedTicks: 0,
           orbs: startOrbs,
           modules: [],
+          companions: [],
         },
       };
     }
@@ -114,6 +115,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lootEssence: run.lootEssence + action.loot.essence,
           lootMinerai: run.lootMinerai + action.loot.minerai,
           xp: run.xp + action.loot.kills,
+          companions: [...run.companions, ...action.loot.captured],
           orbs: [
             ...run.orbs,
             ...action.loot.orbs.map((el, i) => ({

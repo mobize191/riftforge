@@ -92,6 +92,7 @@ export interface RunState {
   elapsedTicks: number;
   orbs: Orb[];
   modules: Module[];
+  companions: string[];
 }
 
 export interface GameState {
