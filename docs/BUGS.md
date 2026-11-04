@@ -30,6 +30,8 @@ Légende : ✅ corrigé (commit) · 🔄 en attente de validation humaine · ❌
 
 | B24 | fuzz bot | `EXEC_GRIMOIRE` pouvait recréer un module déjà possédé (doublon + orbes perdues) | ✅ | dedupe dans EXEC_GRIMOIRE, trouvé par `tests/fuzz-bot.test.ts` |
 
+- `e2e/smoke.spec.ts` (Playwright, IHM réelle, à lancer en local — voir PROGRESS.md).
+
 ## Bots de test (vérification automatique de chaque cas)
 - `tests/fuzz-bot.test.ts` (NOUVEAU) : **bot aléatoire seedé** — 200 sessions d'actions aléatoires
   sur tout le jeu (Forge/run/combat), invariants à chaque pas : aucun crash, save round-trip OK,

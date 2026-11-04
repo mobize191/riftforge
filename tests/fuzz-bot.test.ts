@@ -125,7 +125,7 @@ function invariants(s: GameState, c?: CombatState | null) {
 
 describe('fuzz bot — actions aléatoires seedées sur tout le jeu', () => {
   it('200 sessions aléatoires : aucun crash, invariants tenus, combats jamais bloqués', { timeout: 60000 }, () => {
-    const SESSIONS = 200;
+    const SESSIONS = Number(process.env.FUZZ_SESSIONS ?? 200);
     let combats = 0;
     let combatsTermines = 0;
     for (let seed = 1; seed <= SESSIONS; seed++) {
