@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { availableSoloModules, currentActorId, type CombatState, type CombatAction } from '../../core/combat/combat';
+import { availableSoloModules, actorLabel, type CombatState, type CombatAction, moduleEffectLabel } from '../../core/combat/combat';
 import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
@@ -38,8 +38,9 @@ export default function CombatScreen({
   const flashEl = (color: string) => setFx({ color, key: Date.now() });
   const [target, setTarget] = useState(0);
   const [fuseSel, setFuseSel] = useState<number[]>([]);
-  const actorId = currentActorId(combat);
+  const actorId = combat.order[combat.actorIdx % combat.order.length];
   const isCompTurn = actorId === 'companion';
+  const label = actorLabel(combat); // B27 : le tour du compagnon doit être bien visible
   const soloModules = availableSoloModules(combat.orbs);
   const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
   const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
@@ -243,7 +244,7 @@ export default function CombatScreen({
               className="rounded border px-4 py-2 text-left"
               style={{ minHeight: '44px', borderColor: ELEMENTS[m.inputs[0]].color }}
             >
-              {m.name} ({ELEMENTS[m.inputs[0]].name}) — gratuit
+              {m.name} ({ELEMENTS[m.inputs[0]].name}) — {moduleEffectLabel(m)} — gratuit
             </button>
           ))}
           {createdModules.map((m) => (
@@ -257,7 +258,7 @@ export default function CombatScreen({
               className="rounded border border-red-300 px-4 py-2 text-left"
               style={{ minHeight: '44px' }}
             >
-              ▶ {m.name} (créé, lancement gratuit)
+              ▶ {m.name} — {moduleEffectLabel(m)} (créé, lancement gratuit)
             </button>
           ))}
           {combat.orbs.length >= 2 && (

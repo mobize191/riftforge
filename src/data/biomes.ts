@@ -110,7 +110,7 @@ export const BIOME_STRUCTURES: Record<string, BiomeStructure> = {
     bossId: 'grand-index', // TODO-BALANCE
     family: 'gremlin',
     resourceId: 'donnees',
-    monsterCountBase: 6, // TODO-BALANCE (ajusté R9-01)
+    monsterCountBase: 8, // TODO-BALANCE (ajusté R9-01)
     monsterCountPerFloor: 1, // TODO-BALANCE (ajusté R9-01)
     resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de données
     altarsPerFloor: 1, // TODO-BALANCE
@@ -126,7 +126,7 @@ export const BIOME_STRUCTURES: Record<string, BiomeStructure> = {
     resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de mercurium
     altarsPerFloor: 1, // TODO-BALANCE
     burnZonesPerFloor: 4, // TODO-BALANCE — twist sol brûlant
-    burnDamage: 6, // TODO-BALANCE (ajusté R9-01) — dégâts exacts par tour sur une case brûlante
+    burnDamage: 7, // TODO-BALANCE (ajusté R9-01) — dégâts exacts par tour sur une case brûlante
   },
   fibration: {
     floors: 4, // TODO-BALANCE

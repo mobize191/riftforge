@@ -55,3 +55,11 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   présence en combat, compétence au bon tour, refus au mauvais tour, attaque du
   compagnon à son tour, K.O. persistant dans la run + réveil à la Forge, jalon sol 3,
   XP de lien, robustesse 200 seeds). Fuzz 5000 sessions / 9466 combats / 0 violation.
+
+## B27 — HUD « Au tour de » peu visible pour le compagnon (fix)
+- **Vu** : la ligne « Au tour de : … » était noyée dans le titre de combat ; au tour du
+  compagnon, rien ne le signalait clairement.
+- **Fix** : bannière dédiée colorée (vert = tour du compagnon, bleu = joueur) via
+  `actorLabel()` (core, testé). Les effets des modules sont aussi affichés en FR
+  (`moduleEffectLabel`) et scalent avec l'attaque du joueur (BALANCE.MODULE_ATK_SCALING).
+- **Tests** : `tests/r9-08-combat-hud.test.ts` (3 tests).

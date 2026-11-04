@@ -8,6 +8,7 @@ import { affinityMultiplier } from '../../data/affinities';
 import { BOSS_BY_ID } from '../../data/bosses';
 import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
 import { CHALLENGE_BY_ID, type ChallengeDef } from '../../data/challenges';
+import { BALANCE } from '../../data/balance';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import { ELITE, MONSTER_LEVEL_BONUS, BLURRED_AFFINITY_VALUES, RARE_ORBS } from '../../data/riftModifiers';
 import type { ElementId } from '../types';
@@ -200,6 +201,41 @@ export function startCombat(
 
 export function currentActorId(state: CombatState): string {
   return state.order[state.actorIdx % state.order.length];
+}
+
+// Libellé du HUD « Au tour de : … » (testé : le tour du compagnon doit être visible).
+export function actorLabel(state: CombatState): string {
+  const id = currentActorId(state);
+  if (id === 'companion') return `🧝 ${state.companion?.name ?? 'compagnon'}`;
+  if (id === 'player') return '🧑‍🔧 vous';
+  const enemy = state.enemies.find((e) => e.id === id);
+  return enemy ? enemy.name : id;
+}
+
+// Libellé FR de l'effet d'un module (affiché dans l'UI de combat).
+export function moduleEffectLabel(recipe: RecipeDef): string {
+  const e = recipe.effect;
+  switch (e.kind) {
+    case 'damage':
+      return `dégâts ${e.power}`;
+    case 'aoe':
+      return `dégâts de zone ${e.power}`;
+    case 'heal':
+    case 'purify':
+      return `soin ${e.power} PV`;
+    case 'shield':
+      return `bouclier ${e.power}`;
+    case 'dot':
+      return `poison ${e.power}/tour x${e.duration ?? 1}`;
+    case 'push':
+      return e.power >= 2 ? 'projection de tous' : 'projection';
+    case 'slow':
+      return e.power >= 2 ? 'ralentit tous' : 'ralentit';
+    case 'blind':
+      return 'aveugle';
+    default:
+      return e.kind;
+  }
 }
 
 function companionAct(state: CombatState): CombatState {
@@ -438,7 +474,10 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
           const def = MONSTER_BY_ID[baseId];
           let mult = def && element ? affinityMultiplier(element, def) : 1;
           if (blurred) mult = BLURRED_AFFINITY_VALUES[Math.floor(rng.next() * BLURRED_AFFINITY_VALUES.length)];
-          const dmg = Math.round(effect.power * mult);
+          // R9 : les modules scalent avec l'attaque du joueur (valeur en data) pour rester
+          // utiles quand l'attaque de base one-shotte.
+          const power = effect.power + state.player.attack * BALANCE.MODULE_ATK_SCALING;
+          const dmg = Math.round(power * mult);
           return { ...e, hp: Math.max(0, e.hp - dmg) };
         };
         enemies = enemies.map(hit);
@@ -459,8 +498,9 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       } else if (effect.kind === 'dot') {
         const enemy = enemies[target];
         if (!enemy || enemy.hp <= 0) return state;
-        enemies = enemies.map((e, i) => (i === target ? { ...e, dot: effect.power } : e));
-        log.push(`${recipe.name} sur ${enemy.name} : poison ${effect.power}/tour.`);
+        const dotPower = Math.round(effect.power + state.player.attack * BALANCE.MODULE_ATK_SCALING);
+        enemies = enemies.map((e, i) => (i === target ? { ...e, dot: dotPower } : e));
+        log.push(`${recipe.name} sur ${enemy.name} : poison ${dotPower}/tour.`);
       } else if (effect.kind === 'slow') {
         enemies = enemies.map((e, i) => (i === target || effect.power >= 2 ? { ...e, slowed: e.hp > 0 } : e));
         log.push(`${recipe.name} : ralenti${effect.power >= 2 ? ' (tous)' : ''}.`);

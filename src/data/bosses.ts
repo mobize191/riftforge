@@ -87,7 +87,7 @@ export const BOSS_BIOME_3: BossDef = {
 export const BOSS_BIOME_4: BossDef = {
   id: 'noeud-final',
   name: 'Le Nœud Final',
-  hp: 405, // TODO-BALANCE
+  hp: 320, // TODO-BALANCE
   weaknesses: ['feu', 'air'], // TODO-BALANCE
   resistances: ['terre'], // TODO-BALANCE
   attacks: [

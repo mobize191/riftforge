@@ -17,4 +17,7 @@ export const BALANCE = {
   // Cibles de simulation « première run gagnable » (§SPEC-2, §R4-08). TODO-BALANCE.
   FIRST_RUN_WIN_TARGET_MIN: 0.001, // TODO-BALANCE — 1/1000 au minimum
   FIRST_RUN_WIN_TARGET_MAX: 0.002, // TODO-BALANCE — 1/500 au maximum
+  // Scaling des modules avec l'attaque du joueur (R9) : dégâts module = power + ATQ x ce
+  // facteur, pour que les modules restent utiles quand l'attaque de base one-shote.
+  MODULE_ATK_SCALING: 0.2, // ajusté R9-01 // TODO-BALANCE
 } as const;
