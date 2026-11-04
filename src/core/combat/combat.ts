@@ -303,6 +303,8 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
 export function combatReduce(state: CombatState, action: CombatAction): CombatState {
   if (state.phase !== 'player') return state;
   const rng = createRng((state.seed ^ (state.turn * 7919)) >>> 0);
+  // Garde anti-blocage : plus aucun ennemi vivant -> victoire, quoi qu'il arrive.
+  if (state.enemies.every((e) => e.hp <= 0)) return checkVictory(state, rng);
   const log = [...state.log];
 
   switch (action.type) {

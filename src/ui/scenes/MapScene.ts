@@ -232,6 +232,13 @@ export class MapScene extends Phaser.Scene {
         this.sporeSprites.delete(k);
       }
     }
+    const seenAltar = new Set(this.level.altars.map((a) => this.keyOf(a)));
+    for (const [k, spr] of this.altarSprites) {
+      if (!seenAltar.has(k)) {
+        spr.destroy();
+        this.altarSprites.delete(k);
+      }
+    }
     // monstres : rapproche les sprites des monstres restants (index -> position courante)
     const alive = this.level.monsters;
     const sprites = [...this.monsterSprites.values()];

@@ -218,3 +218,60 @@ describe('bot IHM — scénario complet rejoué comme l’UI', () => {
     expect(s).toBe(before); // refusé : déjà créé, orbes non consommées
   });
 });
+
+describe('bot IHM — couverture des bugs remontés', () => {
+  it('sorts combinés : chaque type de module créé puis lancé ne bloque jamais le combat', () => {
+    for (const recipeId of ['combustion', 'magma', 'vapeur', 'boue', 'cryo-brume', 'poussiere', 'plaque-blindee', 'cyclone', 'condensation', 'seve-synthetique']) {
+      const recipe = RECIPES.find((r) => r.id === recipeId)!;
+      let c = startCombat(11, 30, 30, 4, ['mousse', 'cuirasse'], recipe.inputs as never, null, {}, false, [recipeId]);
+      let guard = 0;
+      while (c.phase === 'player' && guard++ < 100) {
+        const alive = c.enemies.findIndex((e) => e.hp > 0);
+        c = combatReduce(c, { type: 'CAST_MODULE', moduleId: recipeId, target: alive >= 0 ? alive : 0 });
+        if (guard > 1) c = combatReduce(c, { type: 'ATTACK', target: c.enemies.findIndex((e) => e.hp > 0) >= 0 ? c.enemies.findIndex((e) => e.hp > 0) : 0 });
+      }
+      expect(['won', 'lost', 'fled']).toContain(c.phase); // jamais 'player' bloqué
+    }
+  });
+
+  it('défi (autel) à usage unique via le flux UI : INTERACT -> combat -> retour -> plus d’autel', () => {
+    let s = reduce(initialState(), { type: 'START_RUN', seed: 6 });
+    const altar = s.run!.level!.altars[0];
+    s = reduce(s, { type: 'MOVE_PLAYER', to: { x: altar.x, y: altar.y } });
+    s = reduce(s, { type: 'INTERACT' });
+    expect(s.mode).toBe('COMBAT');
+    expect(s.run!.challengeId).toBe('autel-garde');
+    s = reduce(s, { type: 'EXIT_COMBAT', victory: false, playerHp: 20 }); // défi échoué ou fui
+    expect(s.mode).toBe('RUN');
+    // re-INTERACT sur la même case : plus de défi
+    s = reduce(s, { type: 'INTERACT' });
+    expect(s.mode).toBe('RUN');
+    expect(s.run!.challengeId).toBeNull();
+  });
+
+  it('compagnon : en équipe -> compétence utilisable en combat ; PAS worker en même temps', () => {
+    let s = initialState();
+    s = { ...s, forge: { ...s.forge, roster: ['mousse'] } };
+    s = reduce(s, { type: 'SET_TEAM', monsterIds: ['mousse'] });
+    // exclu : worker + équipe en même temps
+    const withTeam = s;
+    s = reduce(s, { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: 'mousse' });
+    expect(s).toBe(withTeam); // refusé
+    // mais worker seul OK
+    s = reduce(s, { type: 'SET_TEAM', monsterIds: [] });
+    s = reduce(s, { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: 'mousse' });
+    expect(s.forge.workers['extracteur']).toEqual(['mousse']);
+    // et remettre en équipe retire le worker
+    s = reduce(s, { type: 'SET_TEAM', monsterIds: ['mousse'] });
+    expect(s.forge.team).toEqual(['mousse']);
+    expect(s.forge.workers['extracteur'] ?? []).toEqual([]);
+    // combat : le compagnon est présent et agit
+    s = reduce(s, { type: 'START_RUN', seed: 9 });
+    s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['mousse'], fromMap: true });
+    const c = startCombat(9, s.run!.playerHp, s.run!.playerMaxHp, s.run!.playerAttack, ['mousse'], [], COMPANION_BY_MONSTER['mousse'], s.run!.companionSkills);
+    expect(c.companion).not.toBeNull();
+    const skillId = Object.keys(c.companion!.skills)[0];
+    const c2 = combatReduce(c, { type: 'USE_COMPANION_SKILL', skillId });
+    expect(c2.log.some((l) => l.includes('niv'))).toBe(true);
+  });
+});

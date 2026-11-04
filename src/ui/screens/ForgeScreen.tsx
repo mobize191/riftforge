@@ -180,6 +180,8 @@ export default function ForgeScreen({
                 <button
                   className={`${btn} border-sky-300/70`}
                   style={btnStyle}
+                  disabled={f.team.includes(id)}
+                  title={f.team.includes(id) ? 'Déjà en équipe de combat' : ''}
                   onClick={() =>
                     onAssignWorker(
                       'extracteur',
@@ -187,7 +189,7 @@ export default function ForgeScreen({
                     )
                   }
                 >
-                  {(f.workers['extracteur'] ?? []).includes(id) ? '✓ Worker extracteur' : '+ Worker extracteur'}
+                  {(f.workers['extracteur'] ?? []).includes(id) ? '✓ Worker extracteur' : f.team.includes(id) ? 'En équipe' : '+ Worker extracteur'}
                 </button>
               </li>
             ))}

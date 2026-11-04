@@ -199,8 +199,17 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'SET_TEAM': {
       if (state.mode !== 'FORGE') return state;
-      const team = action.monsterIds.filter((id) => state.forge.roster.includes(id)).slice(0, 1); // V1 : 1 slot
-      return { ...state, forge: { ...state.forge, team } };
+      // V1 : 1 slot d'équipe ; un compagnon ne peut pas être à la fois en équipe et worker.
+      // (Mise en équipe = échange automatique : le compagnon quitte son poste de worker.)
+      const team = action.monsterIds
+        .filter((id) => state.forge.roster.includes(id))
+        .slice(0, 1);
+      // exclusivité dans l'autre sens : un nouveau membre d'équipe quitte son poste de worker
+      const workers2 = Object.fromEntries(
+        Object.entries(state.forge.workers).map(([b, list]) => [b, list.filter((w) => !team.includes(w))]),
+      );
+      for (const b of Object.keys(workers2)) if (workers2[b].length === 0) delete workers2[b];
+      return { ...state, forge: { ...state.forge, team, workers: workers2 } };
     }
     case 'ASSIGN_WORKER': {
       if (state.mode !== 'FORGE') return state;
@@ -211,6 +220,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         return { ...state, forge: { ...state.forge, workers } };
       }
       if (!state.forge.roster.includes(action.monsterId)) return state;
+      if (state.forge.team.includes(action.monsterId)) return state; // déjà en équipe
       if (current.includes(action.monsterId)) return state; // pas de doublon
       // un compagnon ne peut être worker que sur un seul bâtiment à la fois
       const workers = Object.fromEntries(
@@ -316,6 +326,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       let run = {
         ...state.run,
         encounter: null,
+        challengeId: null, // le défi ne dure que le combat concerné
         companionKo: action.companionKo ?? state.run.companionKo,
         // Les PV restants du combat persistent entre les combats (pas de soin gratuit).
         playerHp: Math.max(1, Math.min(state.run.playerMaxHp, action.playerHp ?? state.run.playerHp)),
