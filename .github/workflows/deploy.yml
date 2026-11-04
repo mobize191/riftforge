@@ -26,7 +26,24 @@ jobs:
           cache: pnpm
       - run: pnpm install
       - run: pnpm vitest run
+        env:
+          FUZZ_SESSIONS: 1000
       - run: pnpm next build
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm next build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
 
   deploy:
     needs: build

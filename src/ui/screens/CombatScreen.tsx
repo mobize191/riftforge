@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { availableSoloModules, type CombatState, type CombatAction } from '../../core/combat/combat';
+import { availableSoloModules, currentActorId, type CombatState, type CombatAction } from '../../core/combat/combat';
 import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
@@ -20,6 +20,9 @@ export default function CombatScreen({
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack' | 'companions'>('root');
   const [target, setTarget] = useState(0);
+  const [fuseSel, setFuseSel] = useState<number[]>([]);
+  const actorId = currentActorId(combat);
+  const isCompTurn = actorId === 'companion';
   const soloModules = availableSoloModules(combat.orbs);
   const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
   const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
@@ -58,7 +61,7 @@ export default function CombatScreen({
       style={{ background: '#140a12', color: '#f8e8ec' }}
     >
       <h2 className="font-bold tracking-widest" style={{ fontSize: 'clamp(1.2rem, 5vw, 2rem)' }}>
-        COMBAT — Tour {combat.turn}
+        COMBAT — Round {combat.turn} · Au tour de : {isCompTurn ? `🤝 ${combat.companion?.name ?? 'compagnon'}` : '🧙 vous'}
         {combat.challenge && ` · Défi « ${combat.challenge.def.name} » : ${combat.challenge.turnsLeft} tours restants`}
       </h2>
       <div className="w-full max-w-xl rounded-lg border border-slate-500 p-3">
@@ -172,6 +175,39 @@ export default function CombatScreen({
               ▶ {m.name} (créé, lancement gratuit)
             </button>
           ))}
+          {combat.orbs.length >= 2 && (
+            <div className="rounded border border-fuchsia-300/70 p-2">
+              <p className="mb-1 text-sm opacity-80">Fusionner 2 orbes (coûte le tour) :</p>
+              <div className="mb-2 flex flex-wrap gap-1">
+                {combat.orbs.map((el, i) => (
+                  <button
+                    key={i}
+                    onClick={() =>
+                      setFuseSel((sel) =>
+                        sel.includes(i) ? sel.filter((x) => x !== i) : sel.length < 2 ? [...sel, i] : [sel[1], i],
+                      )
+                    }
+                    className={`rounded border px-2 py-1 ${fuseSel.includes(i) ? 'border-fuchsia-300 bg-fuchsia-900/60' : 'border-slate-500'}`}
+                    style={{ minHeight: '44px', minWidth: '44px', background: ELEMENTS[el]?.color }}
+                  >
+                    {el}
+                  </button>
+                ))}
+              </div>
+              <button
+                disabled={fuseSel.length !== 2}
+                onClick={() => {
+                  onAction({ type: 'FUSE_IN_COMBAT', indices: fuseSel });
+                  setFuseSel([]);
+                  setMenu('root');
+                }}
+                className="rounded border border-fuchsia-300 px-3 py-2 disabled:opacity-40"
+                style={{ minHeight: '44px' }}
+              >
+                ✦ Fusionner ({fuseSel.length}/2 sélectionnées)
+              </button>
+            </div>
+          )}
           {craftable.map((r) => (
             <button
               key={r.id}
@@ -194,30 +230,33 @@ export default function CombatScreen({
           className="rounded bg-red-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          Attaquer (cible sélectionnée)
+          {isCompTurn ? `Attaquer (${combat.companion?.name})` : 'Attaquer (cible sélectionnée)'}
         </button>
         <button
           onClick={() => setMenu(menu === 'attack' ? 'root' : 'attack')}
-          className="rounded bg-orange-700 px-4 py-3 font-semibold"
+          disabled={isCompTurn}
+          className="rounded bg-orange-700 px-4 py-3 font-semibold disabled:opacity-40"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
           Modules ({soloModules.length + createdModules.length + craftable.length})
         </button>
         <button
           onClick={() => setMenu(menu === 'items' ? 'root' : 'items')}
-          className="rounded bg-sky-700 px-4 py-3 font-semibold"
+          disabled={isCompTurn}
+          className="rounded bg-sky-700 px-4 py-3 font-semibold disabled:opacity-40"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
           Objets
         </button>
         <button
           onClick={() => setMenu(menu === 'companions' ? 'root' : 'companions')}
-          className="rounded bg-emerald-700 px-4 py-3 font-semibold"
+          className={`rounded px-4 py-3 font-semibold ${isCompTurn ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-emerald-700'} disabled:opacity-40`}
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          Compagnons
+          Compagnons{isCompTurn ? ' (son tour !)' : ''}
         </button>
         <button
+          disabled={isCompTurn}
           onClick={() => onAction({ type: 'CAPTURE', target: aliveTarget >= 0 ? aliveTarget : target })}
           className="rounded bg-violet-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
@@ -225,6 +264,7 @@ export default function CombatScreen({
           Capturer
         </button>
         <button
+          disabled={isCompTurn}
           onClick={() => onAction({ type: 'FLEE' })}
           className="rounded bg-slate-600 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}

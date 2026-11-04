@@ -23,9 +23,10 @@ describe('R4-04 fusion hors combat / en combat', () => {
   it('en combat : la fusion passe le tour (les ennemis jouent)', () => {
     let c = startCombat(1, 20, 20, 4, ['mousse'], ['feu', 'feu']);
     const hpBefore = c.player.hp;
+    const actorBefore = c.actorIdx;
     c = combatReduce(c, { type: 'FUSE_IN_COMBAT', indices: [0, 1] });
-    expect(c.turn).toBe(2); // le tour a été consommé
-    expect(c.player.hp).toBeLessThanOrEqual(hpBefore); // riposte subie
+    expect(c.actorIdx).toBeGreaterThan(actorBefore); // le tour de l'acteur a été consommé
+    expect(c.player.hp).toBeLessThanOrEqual(hpBefore); // riposte subie si l'ennemi a joué entre-temps
     expect(c.orbs.every((o) => o === 'feu' || true)).toBe(true);
   });
 

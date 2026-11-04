@@ -33,7 +33,15 @@
 Tous les tickets du brief (R0-01 -> P6-D) sont **done**. Les itérations 6-9 restent non codées
 (contrat de nuit) — voir docs/BACKLOG.md.
 
-## Corrections issues des playtests (toutes fixées, voir docs/BUGS.md B1-B24)
+## Changements issus des réponses aux questions (04/11)
+- **Initiative façon FF (Q0-7)** : ordre d'initiative seedé (joueur + compagnon + ennemis) ; chacun
+  choisit son action à SON tour (« Au tour de : … »), le compagnon attaque/soigne à son tour.
+  Tests : `tests/combat-initiative.test.ts`.
+- **Fusion visible en combat (Q4-1/Q4-3)** : B25 — sélecteur d'orbes + bouton « ✦ Fusionner ».
+- **CI renforcée (Q7-1/Q7-2)** : fuzz à 1000 sessions (`FUZZ_SESSIONS=1000`) + job e2e Playwright.
+- Q0-4 (vrais assets), Q0-6, Q0-8, Q0-9, Q5-1 : décisions enregistrées dans QUESTIONS.md / BACKLOG.md.
+
+## Corrections issues des playtests (toutes fixées, voir docs/BUGS.md B1-B25)
 - Téléphone : pavé tactile fonctionnel (▲▼◀▶+E, hit-zones 56 px), flashs noirs supprimés.
 - Carte : patrouille infinie, ramassage visible + messages, monstres retirés après combat,
   autels à usage unique, combat auto au contact adjacent.

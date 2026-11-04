@@ -27,6 +27,7 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
 | B21 | playtest | Compagnon à la fois équipe et worker | ✅ | exclusivité double sens (échange auto), `3adc80d` |
 | B22 | playtest | Défis infinis | ✅ | cause racine : challengeId non remis à null -> tous les combats chronométrés ; autel usage unique + sprite sync, `3adc80d` |
 | B23 | playtest | « Quitter la Faille » en run = clic mort | ✅ | abandon propre DIE->RETURN_FORGE, `b6b6b24` |
+| B25 | playtest | La fusion d'orbes n'avait aucun bouton en combat (visible seulement hors combat) | ✅ | sélecteur d'orbes + « ✦ Fusionner (coûte le tour) » dans le menu Modules, ce commit |
 | B24 | fuzz bot | EXEC_GRIMOIRE recréait un module déjà créé (doublon, orbes perdues) | ✅ | dedupe, `c70f642` |
 
 ## Processus

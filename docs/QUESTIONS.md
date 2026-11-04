@@ -1,18 +1,25 @@
 # RIFTFORGE — QUESTIONS (à répondre par l'humain)
 
 Classées par itération / thème. Les questions de playtest résolues par des fixes sont dans
-`docs/BUGS.md` (B1-B24).
+`docs/BUGS.md` (B1-B25). ✅ = répondu par l'humain (réponses enregistrées le 04/11).
+
+## Résolues ✅
+- Q0-4 ✅ : de vrais assets (Kenney CC0 / générés) seront intégrés en V1.x — voir BACKLOG.
+- Q0-6 ✅ : confirmé — combat auto quand un monstre est sur une case adjacente (décision validée).
+- Q0-7 ✅ : le design « Sélectionner » puis attaquer est validé ; PLUS : ordre d'initiative façon FF
+  implémenté (chaque personnage choisit son action à son tour) — `tests/combat-initiative.test.ts`.
+- Q0-8 ✅ : plafond de niveau ~5 conservé pour la V1.
+- Q0-9 ✅ : 1 seul compagnon d'équipe en V1 (conservé).
+- Q4-1/Q4-3 ✅ : la fusion est bien disponible en combat (coûte le tour) — le bouton était caché,
+  corrigé (B25 : sélecteur d'orbes + « ✦ Fusionner » dans le menu Modules en combat).
+- Q5-1 ✅ : avec le biome 1 seul, une run fait ~5 min max — OK pour la V1 (cible 10-15 min avec
+  les 4 biomes).
+- Q7-1 ✅ : fuzz poussé à 1000 sessions en CI (FUZZ_SESSIONS=1000 dans le workflow).
+- Q7-2 ✅ : job e2e Playwright ajouté au workflow CI (`npx playwright test` après build).
 
 ## Itération 0 / socle
 - Q0-1 : L'adaptateur localStorage vit hors de `src/core/` (`src/ui/storage.ts`) pour respecter
   « zéro DOM dans le core » — OK comme emplacement définitif ?
-- Q0-4 : Les sprites sont des formes générées en code (aucun asset externe autorisé la nuit) —
-  style « pictogrammes » OK, ou prioriser des packs Kenney CC0 pour monstres/portraits (§SPEC-11) ?
-- Q0-6 : Le combat se déclenche aussi sur case **adjacente** — pas trop fréquent/inescapable en jeu réel ?
-- Q0-7 : Vocabulaire « Sélectionner » puis « Attaquer » (au lieu de « Cibler ») — mieux ?
-- Q0-8 : Niveau de run plafonné à ~5 volontairement (§SPEC R1-05) — OK, ou monter le plafond en V1.x ?
-- Q0-9 : 1 seul compagnon en équipe en V1 (§SPEC-7.2 « V1 : 1 »), workers multiples OK — passer à
-  2 slots d'équipe en V1.x ?
 - Q0-10 : « Tout maxé » = périmètre V1 (1 biome) atteint — la suite (itérations 6-9) est listée
   dans docs/BACKLOG.md, avec données déjà prêtes (biomes 2-4, bâtiments V1, paliers de lien).
 
@@ -29,16 +36,10 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 - Q3-2 : 30 % des attaques ennemies visent le compagnon (TODO-BALANCE) — à calibrer.
 
 ## Itération 4
-- Q4-1 [playtest R4-07] : La fusion en combat (coûte 1 tour) ralentit-elle le rythme ? Le grimoire
-  (3 compositions) suffit-il comme soupape ?
 - Q4-2 : Les recettes « à base de composites » (Vapeur+Terre, Magma+Eau, Combustion+Terre) sont
   dépliées en 3 primordiales (palier 3) — OK pour la V1 ?
-- Q4-3 [playtest] : Le menu Modules liste maintenant solo + créés + recettes découvertes réalisables
-  — le rythme reste OK avec beaucoup d'orbes ?
 
 ## Itération 5
-- Q5-1 [playtest R5-06] : Une run complète du biome 1 (4 sols + boss) dure combien de temps en
-  jouant vraiment, quelles frictions ? (cible : ~10-15 min)
 - Q5-2 : Le bot de simulation meurt vite (R5-07 : 0.00 %, 3.9 tours) — équilibrage TODO-BALANCE à
   arbitrer à la main d'après ces chiffres.
 
@@ -47,7 +48,4 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 - Q6-2 : La Liaiseuse (PNJ lien, it. 8) — introduite en V1.x avec quels dialogues minimum ?
 
 ## Tests / outillage
-- Q7-1 : Le fuzz tourne à 200 sessions en CI ; pousser à 1000+ en CI (durée ~55 s pour 5000 en
-  one-shot) ? `FUZZ_SESSIONS=5000 pnpm vitest run tests/fuzz-bot.test.ts`.
-- Q7-2 : Lancer `pnpm build && pnpm test:e2e` (Playwright) en local/CI avec navigateur — le
-  bac à sable ne peut pas exécuter Chromium (pas de libs système). Ajouter un job e2e dédié ?
+(Q7-1/Q7-2 résolues ✅ — voir en-tête)

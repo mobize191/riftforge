@@ -61,7 +61,9 @@ export interface CapturedMonster {
 
 export interface CombatState {
   seed: number;
-  turn: number;
+  turn: number; // numéro de round
+  actorIdx: number; // index dans order[] de l'acteur courant
+  order: string[]; // ids d'acteurs : 'player', 'companion', ids d'ennemis — façon FF, chacun agit à son tour
   phase: CombatPhase;
   player: Combatant;
   enemies: Combatant[];
@@ -149,9 +151,16 @@ export function startCombat(
       ...mkStatuses(),
     };
   });
-  return {
+  const order = createRng((seed ^ 0x51f15e) >>> 0).shuffle([
+    'player',
+    ...(companion && !companion.ko ? ['companion'] : []),
+    ...enemies.filter((e) => e.hp > 0).map((e) => e.id),
+  ]);
+  const initial: CombatState = {
     seed,
     turn: 1,
+    actorIdx: 0,
+    order,
     phase: 'player',
     player: {
       id: 'player',
@@ -174,6 +183,12 @@ export function startCombat(
     loot: null,
     log: ['Un combat éclate !'],
   };
+  // Si un ennemi est premier à l'initiative, il agit avant le premier choix du joueur.
+  return advance(initial, createRng((seed ^ 0xa77a6e) >>> 0));
+}
+
+export function currentActorId(state: CombatState): string {
+  return state.order[state.actorIdx % state.order.length];
 }
 
 function companionAct(state: CombatState): CombatState {
@@ -193,86 +208,105 @@ function companionAct(state: CombatState): CombatState {
   };
 }
 
-function enemyTurn(state: CombatState, rng: Rng): CombatState {
-  const state2 = { ...state, usedSkillsThisTurn: [] };
+// Un ennemi agit (attaque, DoT, boss télégraphié, etc.). Renvoie l'état mis à jour.
+function enemyAct(state: CombatState, i: number, rng: Rng): CombatState {
+  let e = state.enemies[i];
+  if (e.hp <= 0) return state;
   const log = [...state.log];
-  let player = state2.player;
-  let companion = state2.companion;
-  for (let i = 0; i < state2.enemies.length; i++) {
-    let e = state2.enemies[i];
-    if (e.hp <= 0) continue;
-    if (e.stunned) {
-      log.push(`${e.name} est projeté·e et perd son tour.`);
+  let player = state.player;
+  let companion = state.companion;
+  let enemies = state.enemies;
+  let telegraph = state.telegraph;
+  if (e.stunned) {
+    log.push(`${e.name} est projeté·e et perd son tour.`);
+    return { ...state, log };
+  }
+  if (e.id.startsWith('boss:')) {
+    const boss = bossDefOf({ ...state, enemies: state.enemies.map((x, j) => (j === i ? e : x)) });
+    if (!boss) return state;
+    if (telegraph) {
+      const atk = boss.attacks.find((a) => a.name === telegraph) ?? boss.attacks[0];
+      const absorbed = Math.min(player.shield, atk.damage);
+      const dmg = atk.damage - absorbed;
+      player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
+      log.push(`${boss.name} exécute ${atk.name} : -${dmg} PV.`);
+      telegraph = null;
+      if (player.hp <= 0) return { ...state, player, log, telegraph, phase: 'lost' };
+      return { ...state, player, log, telegraph };
+    }
+    const next = nextBossAttack(boss, e.hp, e.maxHp, rng);
+    log.push(`${boss.name} prépare ${next.name}…`);
+    return { ...state, log, telegraph: next.name };
+  }
+  if (e.dot > 0) {
+    const hp = Math.max(0, e.hp - e.dot);
+    log.push(`${e.name} subit ${e.dot} dégâts de poison.`);
+    e = { ...e, hp, dot: e.dot - 1 };
+    enemies = enemies.map((x, j) => (j === i ? e : x));
+    if (hp <= 0) return { ...state, enemies, log };
+  }
+  if (e.slowed && rng.next() < 0.5) { // TODO-BALANCE
+    log.push(`${e.name} est ralenti·e et perd son tour.`);
+    return { ...state, enemies, log };
+  }
+  if (e.blinded && rng.next() < 0.5) { // TODO-BALANCE
+    log.push(`L'attaque de ${e.name} manque sa cible (aveuglé).`);
+    return { ...state, enemies, log };
+  }
+  // 30 % des attaques visent le compagnon (tirage seedé).
+  if (companion && !companion.ko && rng.next() < 0.3) { // TODO-BALANCE
+    const dmg = e.attack;
+    const hp = Math.max(0, companion.hp - dmg);
+    companion = { ...companion, hp, ko: hp <= 0 };
+    log.push(`${e.name} attaque ${companion.name} : -${dmg} PV${hp <= 0 ? ' — K.O. !' : '.'}`);
+    return { ...state, player, companion, enemies, log };
+  }
+  const absorbed = Math.min(player.shield, e.attack);
+  const dmg = e.attack - absorbed;
+  player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
+  log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}.`);
+  return { ...state, player, companion, enemies, log };
+}
+
+// Avance l'initiative jusqu'au prochain acteur allié (joueur ou compagnon vivant) ou la fin.
+function advance(state: CombatState, rng: Rng): CombatState {
+  let s: CombatState = { ...state, usedSkillsThisTurn: [] };
+  for (let guard = 0; guard < 1000; guard++) {
+    s = checkVictory(s, rng);
+    if (s.phase !== 'player') return s;
+    if (s.player.hp <= 0) return { ...s, phase: 'lost' };
+    const actorId = currentActorId(s);
+    if (actorId === 'player') {
+      return { ...s, phase: 'player' }; // au joueur de choisir son action
+    }
+    if (actorId === 'companion') {
+      if (s.companion && !s.companion.ko) return { ...s, phase: 'player' }; // au joueur de choisir pour le compagnon
+      s = { ...s, actorIdx: s.actorIdx + 1 };
       continue;
     }
-    // Boss : télégraphie l'attaque un tour, l'exécute le suivant (§SPEC-5.1).
-    if (e.id.startsWith('boss:')) {
-      const boss = bossDefOf({ ...state, enemies: state.enemies.map((x, j) => (j === i ? e : x)) });
-      if (!boss) continue;
-      if (state.telegraph) {
-        const atk = boss.attacks.find((a) => a.name === state.telegraph) ?? boss.attacks[0];
-        const absorbed = Math.min(player.shield, atk.damage);
-        const dmg = atk.damage - absorbed;
-        player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
-        log.push(`${boss.name} exécute ${atk.name} : -${dmg} PV.`);
-        state = { ...state, telegraph: null };
-        if (player.hp <= 0) return { ...state, player, log, phase: 'lost' };
-        continue;
+    const ei = s.enemies.findIndex((e) => e.id === actorId);
+    if (ei >= 0) s = enemyAct(s, ei, rng);
+    // nouveau round ?
+    const newIdx = s.actorIdx + 1;
+    if (newIdx % s.order.length === 0) {
+      s = { ...s, actorIdx: newIdx, turn: s.turn + 1 };
+      if (s.challenge) {
+        const turnsLeft = s.challenge.turnsLeft - 1;
+        if (turnsLeft <= 0 && s.enemies.some((e) => e.hp > 0)) {
+          return {
+            ...s,
+            challenge: { ...s.challenge, turnsLeft: 0 },
+            phase: 'challenge-failed',
+            log: [...s.log, `Échec du défi ${s.challenge.def.name} : plus de tours.`],
+          };
+        }
+        s = { ...s, challenge: { ...s.challenge, turnsLeft } };
       }
-      const next = nextBossAttack(boss, e.hp, e.maxHp, rng);
-      log.push(`${boss.name} prépare ${next.name}…`);
-      state = { ...state, telegraph: next.name };
-      continue;
+    } else {
+      s = { ...s, actorIdx: newIdx };
     }
-    if (e.dot > 0) {
-      const hp = Math.max(0, e.hp - e.dot);
-      log.push(`${e.name} subit ${e.dot} dégâts de poison.`);
-      e = { ...e, hp, dot: e.dot - 1 };
-      state.enemies[i] = e;
-      if (hp <= 0) continue;
-    }
-    if (e.slowed && rng.next() < 0.5) { // TODO-BALANCE
-      log.push(`${e.name} est ralenti·e et perd son tour.`);
-      continue;
-    }
-    if (e.blinded && rng.next() < 0.5) { // TODO-BALANCE
-      log.push(`L'attaque de ${e.name} manque sa cible (aveuglé).`);
-      continue;
-    }
-    // 30 % des attaques visent le compagnon (tirage seedé).
-    if (companion && !companion.ko && rng.next() < 0.3) { // TODO-BALANCE
-      const dmg = e.attack;
-      const hp = Math.max(0, companion.hp - dmg);
-      companion = { ...companion, hp, ko: hp <= 0 };
-      log.push(`${e.name} attaque ${companion.name} : -${dmg} PV${hp <= 0 ? ' — K.O. !' : '.'}`);
-      continue;
-    }
-    const absorbed = Math.min(player.shield, e.attack);
-    const dmg = e.attack - absorbed;
-    player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
-    log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}.`);
   }
-  if (player.hp <= 0) {
-    return { ...state, player, companion, log, phase: 'lost' };
-  }
-  const nextTurn: CombatState = { ...state2, player, companion, log, phase: 'player', turn: state.turn + 1 };
-  // Un DoT peut achever le dernier ennemi pendant la phase ennemie -> victoire.
-  const afterVictory = checkVictory(nextTurn, rng);
-  if (afterVictory.phase === 'won') return afterVictory;
-  if (nextTurn.challenge) {
-    const turnsLeft = nextTurn.challenge.turnsLeft - 1;
-    if (turnsLeft <= 0 && nextTurn.enemies.some((e) => e.hp > 0)) {
-      // Échec du défi : pas de mort, juste pas de récompense (§SPEC-4.3).
-      return {
-        ...nextTurn,
-        challenge: { ...nextTurn.challenge, turnsLeft: 0 },
-        phase: 'challenge-failed',
-        log: [...log, `Échec du défi ${nextTurn.challenge.def.name} : plus de tours.`],
-      };
-    }
-    return { ...nextTurn, challenge: { ...nextTurn.challenge, turnsLeft } };
-  }
-  return nextTurn;
+  return s;
 }
 
 function checkVictory(state: CombatState, rng: Rng): CombatState {
@@ -302,10 +336,18 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
 
 export function combatReduce(state: CombatState, action: CombatAction): CombatState {
   if (state.phase !== 'player') return state;
-  const rng = createRng((state.seed ^ (state.turn * 7919)) >>> 0);
+  const rng = createRng((state.seed ^ (state.turn * 7919) ^ (state.actorIdx * 104729)) >>> 0);
   // Garde anti-blocage : plus aucun ennemi vivant -> victoire, quoi qu'il arrive.
   if (state.enemies.every((e) => e.hp <= 0)) return checkVictory(state, rng);
   const log = [...state.log];
+  const actorId = currentActorId(state);
+  const isCompanionTurn = actorId === 'companion';
+  // Le compagnon n'agit que pendant SON tour ; le joueur pendant le sien.
+  if (isCompanionTurn && action.type !== 'ATTACK' && action.type !== 'USE_COMPANION_SKILL') return state;
+  if (!isCompanionTurn && action.type === 'USE_COMPANION_SKILL') return state;
+  if (isCompanionTurn && action.type === 'FLEE') return state;
+  // L'acteur courant vient de jouer : on avance l'initiative d'un cran avant de résoudre la suite.
+  const afterActor = (st: CombatState): CombatState => advance({ ...st, actorIdx: st.actorIdx + 1 }, rng);
 
   switch (action.type) {
     case 'ATTACK': {
@@ -317,13 +359,17 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         ti = firstAlive;
       }
       const target = state.enemies[ti];
-      const dmg = Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)); // TODO-BALANCE variance
+      const attacker = isCompanionTurn ? state.companion : null;
+      const atkStat = attacker
+        ? (MONSTER_BY_ID[Object.values(COMPANION_BY_MONSTER).find((d) => d.id === attacker.defId)?.monsterId ?? '']?.attack ?? 1)
+        : state.player.attack;
+      const dmg = Math.max(1, atkStat + (rng.next() < 0.25 ? 1 : 0)); // TODO-BALANCE variance
       const enemies = state.enemies.map((e, i) => (i === ti ? { ...e, hp: Math.max(0, e.hp - dmg), stunned: false } : e));
-      log.push(`Vous attaquez ${target.name} : -${dmg} PV.`);
+      log.push(`${attacker ? attacker.name : 'Vous'} attaque ${target.name} : -${dmg} PV.`);
       let next: CombatState = { ...state, enemies, log };
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;
-      return enemyTurn(next, rng);
+      return afterActor(next);
     }
     case 'USE_ITEM': {
       const idx = state.items.findIndex((it) => it.def.id === action.itemId && it.usesLeft > 0);
@@ -333,7 +379,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       if (item.def.kind === 'heal') {
         const player = { ...state.player, hp: Math.min(state.player.maxHp, state.player.hp + item.def.power) };
         log.push(`${item.def.name} : +${item.def.power} PV.`);
-        return enemyTurn({ ...state, player, items, log }, rng);
+        return afterActor({ ...state, player, items, log });
       }
       const target = action.target ?? 0;
       const enemy = state.enemies[target];
@@ -343,7 +389,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       let next: CombatState = { ...state, enemies, items, log };
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;
-      return enemyTurn(next, rng);
+      return afterActor(next);
     }
     case 'CAST_MODULE': {
       const recipe = RECIPES.find((r) => r.id === action.moduleId);
@@ -407,7 +453,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       let next: CombatState = { ...state, enemies, player, log };
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;
-      return enemyTurn(next, rng);
+      return afterActor(next);
     }
     case 'CAPTURE': {
       const target = state.enemies[action.target];
@@ -424,10 +470,10 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         };
         next = checkVictory(next, rng);
         if (next.phase === 'won') return next;
-        return enemyTurn(next, rng);
+        return afterActor(next);
       }
       log.push(`Échec de la capture sur ${target.name}.`);
-      return enemyTurn({ ...state, log }, rng);
+      return afterActor({ ...state, log });
     }
     case 'CRAFT_MODULE': {
       // Création d'un module en combat : consomme les orbes requises, le module est gardé.
@@ -459,7 +505,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         player = { ...player, hp: Math.min(player.maxHp, player.hp + skill.healPerLevel * level) };
       }
       log.push(`${comp.name} : ${skill.name} niv ${level}${skill.healPerLevel > 0 ? ` (+${skill.healPerLevel * level} PV)` : ''}.`);
-      return enemyTurn({ ...state, player, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] }, rng);
+      return afterActor({ ...state, player, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] });
     }
     case 'FUSE_IN_COMBAT': {
       // En combat, la fusion coûte 1 tour (§SPEC-5.2) : on fusionne puis les ennemis jouent.
@@ -477,14 +523,14 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       const newOrbs = res.orbs
         .filter((o) => o.kind === 'primordial')
         .map((o) => o.element as ElementId);
-      return enemyTurn({ ...state, orbs: newOrbs, log }, rng);
+      return afterActor({ ...state, orbs: newOrbs, log });
     }
     case 'FLEE': {
       if (rng.next() < FLEE_CHANCE) {
         return { ...state, phase: 'fled', log: [...log, 'Vous fuyez le combat.'] };
       }
       log.push('Fuite ratée !');
-      return enemyTurn({ ...state, log }, rng);
+      return afterActor({ ...state, log });
     }
     default:
       return state;
