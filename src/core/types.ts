@@ -75,6 +75,9 @@ export interface ForgeState {
   optifibre: number; // R6-03 — ressource du biome 4
   runCompleted: boolean; // R6-03 — victoire de run (boss du biome 4 vaincu)
   allBiomesCleared: boolean; // R7-01 — débloque les modificateurs de Faille
+  homeEquipment: EquipmentInstance[]; // R6-07 — rangements de la Maison du héros
+  defeatedBosses: string[]; // R6-07 — trophées : boss vaincus (persistants)
+  lastHomeEvent: string | null; // R6-07 — texte léger du repos à la Maison
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];

@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'riftforge-save';
 
 export interface SaveFile {
@@ -19,7 +19,18 @@ export class UnknownSaveVersionError extends Error {
 export function migrate(save: SaveFile): SaveFile {
   // v1 -> v2 (R6-01/R6-03) : nouvelles ressources de Forge (donnees, mercurium,
   // optifibre), flags runCompleted/allBiomesCleared, et champs de run multi-biomes.
-  if (save.version === 1) {
+  // v2 -> v3 (R6-07) : Maison du héros (homeEquipment, defeatedBosses, lastHomeEvent).
+  if (save.version === 1 || save.version === 2) {
+    if (save.version === 2) {
+      const prevForge = save.state.forge as Partial<typeof save.state.forge>;
+      const forge = {
+        ...prevForge,
+        homeEquipment: prevForge.homeEquipment ?? [],
+        defeatedBosses: prevForge.defeatedBosses ?? [],
+        lastHomeEvent: prevForge.lastHomeEvent ?? null,
+      } as typeof save.state.forge;
+      return { version: 3, state: { ...save.state, forge } };
+    }
     // les champs v1 peuvent manquer les nouvelles clés : on les remplit par défaut
     const prevForge = save.state.forge as Partial<typeof save.state.forge>;
     const prevRun = save.state.run as Partial<NonNullable<typeof save.state.run>> | null;
@@ -40,7 +51,19 @@ export function migrate(save: SaveFile): SaveFile {
           runCompleted: prevRun.runCompleted ?? false,
         } as NonNullable<typeof save.state.run>)
       : save.state.run;
-    return { version: 2, state: { ...save.state, forge, run } };
+    return {
+      version: 3,
+      state: {
+        ...save.state,
+        forge: {
+          ...forge,
+          homeEquipment: (forge as Partial<typeof forge>).homeEquipment ?? [],
+          defeatedBosses: (forge as Partial<typeof forge>).defeatedBosses ?? [],
+          lastHomeEvent: (forge as Partial<typeof forge>).lastHomeEvent ?? null,
+        },
+        run,
+      },
+    };
   }
   return save;
 }

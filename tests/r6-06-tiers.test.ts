@@ -70,7 +70,7 @@ describe('R6-06 tiers supérieurs Forge & Labo', () => {
   });
 
   it('sauvegarde versionnée : round-trip v2 identique, migration v1 -> v2, version inconnue refusée', () => {
-    expect(SAVE_VERSION).toBe(2);
+    expect(SAVE_VERSION).toBe(3); // v3 depuis R6-07 (Maison du héros)
     let s = reduce(initialState(), { type: 'START_RUN', seed: 5 });
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });

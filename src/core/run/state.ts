@@ -67,7 +67,10 @@ export type GameAction =
   | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
   | { type: 'SET_TEAM'; monsterIds: string[] }
   | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null } // null = retire TOUS les workers du bâtiment
-  | { type: 'NEXT_FLOOR' };
+  | { type: 'NEXT_FLOOR' }
+  | { type: 'EQUIP_ITEM'; instanceId: string } // R6-07 — Maison : équiper un objet rangé
+  | { type: 'UNEQUIP_ITEM'; instanceId: string } // R6-07 — Maison : ranger l'objet porté
+  | { type: 'REST_AT_HOME' }; // R6-07 — repos à la Maison (texte léger)
 
 export function initialState(): GameState {
   return {
@@ -83,6 +86,9 @@ export function initialState(): GameState {
       optifibre: 0,
       runCompleted: false,
       allBiomesCleared: false,
+      homeEquipment: [],
+      defeatedBosses: [],
+      lastHomeEvent: null,
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -398,7 +404,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run = {
           ...run,
           runCompleted: isFinalBoss ? true : run.runCompleted,
-          journal: [...run.journal, 'boss-killed', ...(isFinalBoss ? ['boss-final'] : [])],
+          journal: [...run.journal, 'boss-killed', `boss:${bossId}`, ...(isFinalBoss ? ['boss-final'] : [])],
         };
         if (isFinalBoss) {
           // R6-03 : victoire de run -> retour à la Forge avec le butin.
@@ -437,6 +443,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const run = state.run;
       // Les compagnons capturés rejoignent l'écurie (persistant) ; le compagnon K.O. se réveille.
       const roster = [...new Set([...state.forge.roster, ...(run?.companions ?? [])])];
+      // R6-07 : trophées — boss vaincus persistants (lus depuis le journal de la run).
+      const defeatedBosses = [...new Set([...state.forge.defeatedBosses, ...(run?.journal ?? []).filter((e) => e.startsWith('boss:')).map((e) => e.slice(5))])];
       // Codex permanent : toute recette découverte une fois est connue pour toujours (§SPEC-5.2).
       const discovered = [...new Set([...state.forge.discoveredRecipes, ...(run?.discoveredRecipes ?? [])])];
       // À la mort : orbes primordiales non consommées perdues, composites conservées (§SPEC-3).
@@ -477,6 +485,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           roster,
           discoveredRecipes: discovered,
           orbStock: [...state.forge.orbStock, ...keptComposites],
+          defeatedBosses,
           runCompleted,
           allBiomesCleared: withContracts.forge.allBiomesCleared || runCompleted,
         },
@@ -645,6 +654,42 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'UPGRADE_LAB': {
       return upgradeLab(state);
+    }
+    case 'EQUIP_ITEM': {
+      // R6-07 Maison du héros : équiper un objet rangé (déjà possédé, rangé à la Maison).
+      if (state.mode !== 'FORGE') return state;
+      const inst = state.forge.homeEquipment.find((e) => e.id === action.instanceId);
+      if (!inst) return state;
+      return {
+        ...state,
+        forge: {
+          ...state.forge,
+          homeEquipment: state.forge.homeEquipment.filter((e) => e.id !== action.instanceId),
+          equipment: [...state.forge.equipment, inst],
+        },
+      };
+    }
+    case 'UNEQUIP_ITEM': {
+      // R6-07 Maison du héros : ranger l'objet porté (plusieurs sets possibles).
+      if (state.mode !== 'FORGE') return state;
+      const inst = state.forge.equipment.find((e) => e.id === action.instanceId);
+      if (!inst) return state;
+      return {
+        ...state,
+        forge: {
+          ...state.forge,
+          equipment: state.forge.equipment.filter((e) => e.id !== action.instanceId),
+          homeEquipment: [...state.forge.homeEquipment, inst],
+        },
+      };
+    }
+    case 'REST_AT_HOME': {
+      // R6-07 : repos à la Maison — texte léger, aucun effet mécanique.
+      if (state.mode !== 'FORGE') return state;
+      return {
+        ...state,
+        forge: { ...state.forge, lastHomeEvent: 'Vous vous reposez un moment à la Maison. La Faille vous attend.' },
+      };
     }
     case 'ADVANCE_TICKS': {
       // L'UI fournit les ticks écoulés (dérivés de l'horloge réelle hors du core).
