@@ -113,6 +113,7 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
 - **Pivot cyber-chimique en V2+** : au fil des nouveaux biomes, on glisse vers **Acide, Base, Plasma, Virus, Signal, Nanite**… Le ton reste chimie/technologie, jamais sorcellerie ; la table des recettes marie le classique (Vapeur = Feu+Eau) et le techno (Corrosion, Infestation…).
 - Un **module de soin** doit être accessible dès le premier biome.
 - **Affinités/faiblesses** par ennemi, cycle simple à mémoriser + exceptions cyber (virus > machines, acide > blindés…).
+- **Amendement D3 (R10) — courbe ennemie continue** : PV et dégâts des monstres **monotones (croissants) sur les 4 biomes**, boss = pics nets. **Invariant testé sur toute la table : aucun trash du biome N+1 n'a plus de PV que le boss du biome N** (`tests/r10-04-courbe-ennemie.test.ts`). Le kit de départ encaisse plusieurs coups au biome 1.
 - **Supports/vecteurs (post-V1)** : idée notée — les armes ont un **type conducteur** (métal, virus, signal…) qui porte et modifie les modules canalisés ; couche de profondeur trop riche pour la V1.
 - **Terminologie** : on dit **modules** (évolutions technologiques), pas sorts.
 

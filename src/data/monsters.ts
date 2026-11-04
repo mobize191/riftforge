@@ -42,30 +42,35 @@ export const MONSTERS: MonsterDef[] = [
   },
 ];
 
-// --- R6-01..R6-03 : familles des biomes 2-4 (TODO-BALANCE : stats de dev) ---
+// --- R6-01..R6-03 : familles des biomes 2-4 ---
+// R10-04 (D3) : courbe continue — PV et dégâts monotones par biome, et
+// PV(trash du biome N+1) <= PV(boss du biome N) pour tout N (invariant testé).
 
 // Biome 2 — Les Datacathédrales (famille gremlin, ressource « données »).
+// PV entre 14 et 28 (boss biome 1 = 30 PV), dégâts 4-5.
 export const GREMLINS: MonsterDef[] = [
-  { id: 'fouineur', name: 'Fouineur de données', family: 'gremlin', hp: 31, attack: 10, weaknesses: ['eau'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'sapeur', name: 'Sapeur de circuits', family: 'gremlin', hp: 45, attack: 9, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
-  { id: 'arroseur', name: 'Arroseur de bugs', family: 'gremlin', hp: 36, attack: 11, weaknesses: ['feu'], resistances: ['eau'] }, // TODO-BALANCE
-  { id: 'horloge-cassee', name: 'Horloge cassée', family: 'gremlin', hp: 54, attack: 10, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'fouineur', name: 'Fouineur de données', family: 'gremlin', hp: 16, attack: 4, weaknesses: ['eau'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'sapeur', name: 'Sapeur de circuits', family: 'gremlin', hp: 20, attack: 4, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'arroseur', name: 'Arroseur de bugs', family: 'gremlin', hp: 24, attack: 5, weaknesses: ['feu'], resistances: ['eau'] }, // TODO-BALANCE
+  { id: 'horloge-cassee', name: 'Horloge cassée', family: 'gremlin', hp: 28, attack: 5, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
 ];
 
 // Biome 3 — Les Hauts-Fourneaux (famille élémentaire, ressource « mercurium »).
+// PV entre 40 et 130 (boss biome 2 = 270 PV), dégâts 6-9.
 export const ELEMENTAIRES: MonsterDef[] = [
-  { id: 'brasero', name: 'Brasero vivant', family: 'elementaire', hp: 40, attack: 11, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
-  { id: 'geyser', name: 'Geyser', family: 'elementaire', hp: 31, attack: 10, weaknesses: ['terre'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'cendre', name: 'Spectre de cendre', family: 'elementaire', hp: 49, attack: 10, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
-  { id: 'magmaton', name: 'Magmaton', family: 'elementaire', hp: 58, attack: 12, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'brasero', name: 'Brasero vivant', family: 'elementaire', hp: 40, attack: 6, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'geyser', name: 'Geyser', family: 'elementaire', hp: 60, attack: 7, weaknesses: ['terre'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'cendre', name: 'Spectre de cendre', family: 'elementaire', hp: 90, attack: 8, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'magmaton', name: 'Magmaton', family: 'elementaire', hp: 130, attack: 9, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
 ];
 
 // Biome 4 — La Fibration (famille vermine des réseaux, ressource « optifibre »).
+// PV entre 150 et 260 (boss biome 3 = 337 PV), dégâts 10-12.
 export const VERMINE: MonsterDef[] = [
-  { id: 'wyrm', name: 'Wyrm de fibre', family: 'vermine', hp: 36, attack: 11, weaknesses: ['feu'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'vampire-reseau', name: 'Vampire du réseau', family: 'vermine', hp: 45, attack: 12, weaknesses: ['air'], resistances: ['eau'] }, // TODO-BALANCE
-  { id: 'drone-corrompu', name: 'Drone corrompu', family: 'vermine', hp: 54, attack: 10, weaknesses: ['eau'], resistances: ['terre'] }, // TODO-BALANCE
-  { id: 'tisseuse', name: 'Tisseuse de fil', family: 'vermine', hp: 40, attack: 11, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'wyrm', name: 'Wyrm de fibre', family: 'vermine', hp: 150, attack: 10, weaknesses: ['feu'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'vampire-reseau', name: 'Vampire du réseau', family: 'vermine', hp: 180, attack: 11, weaknesses: ['air'], resistances: ['eau'] }, // TODO-BALANCE
+  { id: 'drone-corrompu', name: 'Drone corrompu', family: 'vermine', hp: 220, attack: 11, weaknesses: ['eau'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'tisseuse', name: 'Tisseuse de fil', family: 'vermine', hp: 260, attack: 12, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
 ];
 
 MONSTERS.push(...GREMLINS, ...ELEMENTAIRES, ...VERMINE);
