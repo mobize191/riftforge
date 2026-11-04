@@ -41,3 +41,14 @@ export const COMPANIONS: CompanionDef[] = [
 export const COMPANION_BY_MONSTER: Record<string, CompanionDef> = Object.fromEntries(
   COMPANIONS.map((c) => [c.monsterId, c]),
 );
+
+// Coûts en orbes pour monter une compétence du niveau n au niveau n+1 (§SPEC-7.2).
+// TODO-BALANCE: ~3 puis 5 puis 10.
+export const SKILL_UPGRADE_ORB_COSTS: Record<number, number> = {
+  1: 3, // TODO-BALANCE
+  2: 5, // TODO-BALANCE
+  3: 10, // TODO-BALANCE
+  4: 10, // TODO-BALANCE
+};
+
+export const SKILL_MAX_LEVEL = 5; // TODO-BALANCE

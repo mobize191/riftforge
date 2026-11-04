@@ -12,6 +12,7 @@ import { craftLabRecipe, upgradeLab } from '../forge/lab';
 import { advanceProduction } from '../forge/production';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
+import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -32,6 +33,7 @@ export type GameAction =
   | { type: 'ADVANCE_TICKS'; ticks: number }
   | { type: 'TICK_RUN'; ticks: number }
   | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
+  | { type: 'UPGRADE_SKILL'; skillId: string }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -123,6 +125,30 @@ export function reduce(state: GameState, action: GameAction): GameState {
           level: generateLevel(state.run.seed, floor),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
+        },
+      };
+    }
+    case 'UPGRADE_SKILL': {
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const teamMonster = state.forge.team[0];
+      const def = teamMonster ? CBM[teamMonster] : undefined;
+      if (!def) return state;
+      const skill = def.skills.find((s) => s.id === action.skillId);
+      if (!skill) return state;
+      const level = state.run.companionSkills[action.skillId] ?? 0;
+      if (level === 0 || level >= Math.min(skill.maxLevel, SKILL_MAX_LEVEL)) return state;
+      const cost = SKILL_UPGRADE_ORB_COSTS[level];
+      if (cost === undefined) return state;
+      const primordial = state.run.orbs.filter((o) => o.kind === 'primordial');
+      if (primordial.length < cost) return state; // refus si stock insuffisant
+      // Consomme `cost` orbes primordiales (les composites sont épargnées, §SPEC-5.2).
+      const consumed = new Set(primordial.slice(0, cost).map((o) => o.id));
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          orbs: state.run.orbs.filter((o) => !consumed.has(o.id)),
+          companionSkills: { ...state.run.companionSkills, [action.skillId]: level + 1 },
         },
       };
     }
