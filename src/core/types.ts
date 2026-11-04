@@ -97,6 +97,7 @@ export interface RunState {
   companions: string[];
   companionSkills: Record<string, number>;
   companionKo: boolean;
+  pendingMilestone: boolean;
 }
 
 export interface GameState {

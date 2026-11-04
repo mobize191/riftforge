@@ -11,6 +11,7 @@ import { LAB } from '../../data/lab';
 import { craftLabRecipe, upgradeLab } from '../forge/lab';
 import { advanceProduction } from '../forge/production';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
+import { applyChoice, type MilestoneChoice } from './milestone';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -30,6 +31,7 @@ export type GameAction =
   | { type: 'UPGRADE_LAB' }
   | { type: 'ADVANCE_TICKS'; ticks: number }
   | { type: 'TICK_RUN'; ticks: number }
+  | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
   | { type: 'NEXT_FLOOR' };
 
 export function initialState(): GameState {
@@ -98,6 +100,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           companions: [],
           companionSkills,
           companionKo: false,
+          pendingMilestone: false,
         },
       };
     }
@@ -108,6 +111,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'NEXT_FLOOR': {
       if (state.mode !== 'RUN' || !state.run) return state;
       const floor = state.run.floor + 1;
+      // 1 jalon par biome, vers le milieu (après le 2e niveau, §SPEC-7.2).
+      const teamMonster = state.forge.team[0];
+      const hasCompanion = teamMonster ? !!COMPANION_BY_MONSTER[teamMonster] : false;
+      const pendingMilestone = floor === 3 && hasCompanion && !state.run.pendingMilestone ? true : state.run.pendingMilestone;
       return {
         ...state,
         run: {
@@ -115,6 +122,21 @@ export function reduce(state: GameState, action: GameAction): GameState {
           floor,
           level: generateLevel(state.run.seed, floor),
           playerPos: { x: 1, y: 1 },
+          pendingMilestone,
+        },
+      };
+    }
+    case 'RESOLVE_MILESTONE': {
+      if (state.mode !== 'RUN' || !state.run || !state.run.pendingMilestone) return state;
+      const teamMonster = state.forge.team[0];
+      const def = teamMonster ? COMPANION_BY_MONSTER[teamMonster] : undefined;
+      if (!def) return state;
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          pendingMilestone: false,
+          companionSkills: applyChoice(state.run.companionSkills, action.choice, def),
         },
       };
     }

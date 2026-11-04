@@ -30,9 +30,9 @@ export const COMPANIONS: CompanionDef[] = [
     support: 'soin',
     skills: [
       { id: 'soin-simple', name: 'Soin simple', maxLevel: 3, healPerLevel: 2 }, // TODO-BALANCE
-      { id: 'soin-rapide', name: 'Soin rapide', maxLevel: 2, healPerLevel: 1, requires: 'soin-simple' }, // TODO-BALANCE
       { id: 'bouclier-ally', name: 'Barrière', maxLevel: 2, healPerLevel: 0 }, // TODO-BALANCE (bouclier, it. 3+)
-      { id: 'antidote', name: 'Antidote', maxLevel: 1, healPerLevel: 0, requires: 'soin-simple' }, // TODO-BALANCE
+      { id: 'antidote', name: 'Antidote', maxLevel: 1, healPerLevel: 0 }, // TODO-BALANCE
+      { id: 'soin-rapide', name: 'Soin rapide', maxLevel: 2, healPerLevel: 1, requires: 'soin-simple' }, // TODO-BALANCE
       { id: 'soin-majeur', name: 'Soin majeur', maxLevel: 5, healPerLevel: 4, requires: 'soin-rapide' }, // TODO-BALANCE
     ],
   },
