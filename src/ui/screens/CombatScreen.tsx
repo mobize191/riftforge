@@ -187,13 +187,17 @@ export default function CombatScreen({
           <p className="text-sm opacity-80">
             {combat.companion.name} — PV {combat.companion.hp}/{combat.companion.maxHp}
             {combat.companion.ko ? ' — K.O.' : ''}
+            {/* B26 : les compétences ne se déclenchent qu'au tour du compagnon (initiative FF) */}
+            {!isCompTurn && !combat.companion.ko && (
+              <span className="block text-amber-300">Compétences utilisables uniquement au tour du compagnon.</span>
+            )}
           </p>
           {Object.entries(combat.companion.skills)
             .filter(([, lvl]) => lvl > 0)
             .map(([skillId, lvl]) => (
               <button
                 key={skillId}
-                disabled={combat.companion!.ko}
+                disabled={combat.companion!.ko || !isCompTurn}
                 onClick={() => {
                   onAction({ type: 'USE_COMPANION_SKILL', skillId });
                   setMenu('root');
@@ -201,7 +205,7 @@ export default function CombatScreen({
                 className="rounded border border-emerald-300 px-4 py-2 text-left disabled:opacity-40"
                 style={{ minHeight: '44px' }}
               >
-                {skillId} niv {lvl} — gratuit
+                {skillId} niv {lvl} — gratuit{!isCompTurn ? ' (tour du compagnon requis)' : ''}
               </button>
             ))}
         </div>

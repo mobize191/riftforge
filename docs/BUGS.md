@@ -43,3 +43,15 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   (9189 combats, 0 violation). `FUZZ_SESSIONS=N` pour pousser.
 - `e2e/smoke.spec.ts` : Playwright (IHM réelle, Chromium headless 390 px) — à lancer en local :
   `pnpm build && pnpm test:e2e` (voir PROGRESS.md).
+
+## B26 — Menu « Compagnons » cliquable au mauvais tour (fix session R6-9)
+- **Vu** : au tour du joueur, les boutons de compétences du compagnon semblaient actifs
+  mais le core refuse `USE_COMPANION_SKILL` hors du tour du compagnon (initiative FF,
+  Q0-7) -> clic sans effet, sans explication. C'est probablement pourquoi un joueur
+  « n'arrive pas à jouer avec son compagnon ».
+- **Fix** : boutons désactivés + mention « tour du compagnon requis » quand ce n'est pas
+  son tour (CombatScreen).
+- **Tests** : `tests/companion-play.test.ts` (8 tests : capture -> écurie -> équipe ->
+  présence en combat, compétence au bon tour, refus au mauvais tour, attaque du
+  compagnon à son tour, K.O. persistant dans la run + réveil à la Forge, jalon sol 3,
+  XP de lien, robustesse 200 seeds). Fuzz 5000 sessions / 9466 combats / 0 violation.
