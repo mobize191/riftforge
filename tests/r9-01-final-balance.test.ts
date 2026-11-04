@@ -3,15 +3,15 @@ import { describe, it, expect } from 'vitest';
 // départ) avec le bot compétent ; la victoire première-run doit tomber dans la bande
 // §SPEC-2 (0,1–0,2 % = 1/500–1/1000). Valeurs ajustées UNIQUEMENT en src/data/.
 import { initialState, reduce, biomeStructureOf } from '../src/core/run/state';
-import { startCombat, combatReduce, type CombatState } from '../src/core/combat/combat';
+import { startCombat, combatReduce, moduleEnergyCost, type CombatState } from '../src/core/combat/combat';
 import { monsterAt, pickEncounter } from '../src/core/run/encounter';
 import { isWall, type LevelMap } from '../src/core/run/generate';
 import { MONSTERS_BY_FAMILY, MONSTER_BY_ID } from '../src/data/monsters';
 import { RECIPES, RECIPE_BY_ID } from '../src/data/recipes';
+import { BALANCE } from '../src/data/balance';
 import { BOSS_BY_ID } from '../src/data/bosses';
 import { affinityMultiplier } from '../src/data/affinities';
 import { createModule } from '../src/core/combat/createModule';
-import { BALANCE } from '../src/data/balance';
 import type { ElementId } from '../src/core/types';
 
 const CRAFT_PRIORITY = ['seve-synthetique', 'condensation', 'deflagration', 'combustion', 'souffle-thermique', 'obsidienne', 'magma', 'trait-incandescent', 'jet-pression', 'plaque-blindee'];
@@ -68,7 +68,7 @@ function botCombat(c: CombatState): CombatState {
     const hpRatio = c.player.hp / c.player.maxHp;
     if (hpRatio < 0.3) {
       const heal = c.modules.find((id) => ['heal', 'purify'].includes(RECIPE_BY_ID[id]?.effect.kind ?? ''));
-      if (heal) {
+      if (heal && c.energy >= moduleEnergyCost(RECIPE_BY_ID[heal])) {
         c = combatReduce(c, { type: 'CAST_MODULE', moduleId: heal });
         continue;
       }
@@ -112,7 +112,15 @@ function botCombat(c: CombatState): CombatState {
         consider(alive.reduce((a, { e }) => a + eff.power * multOf(el, e), 0), { type: 'CAST_MODULE', moduleId: recipe.id, target: alive[0].i });
       }
     }
-    c = combatReduce(c, best ? best.action : { type: 'ATTACK', target: alive[0].i });
+    // R10-02 (D1) : action inabordable ignorée (retombe sur l'attaque / pass gratuit).
+    const coutBest = best ? (best.action.type === 'CAST_MODULE' ? moduleEnergyCost(RECIPE_BY_ID[best.action.moduleId]) : BALANCE.ENERGY_COST_ATTACK) : 0;
+    if (best && coutBest <= c.energy) {
+      c = combatReduce(c, best.action);
+    } else if (c.energy >= BALANCE.ENERGY_COST_ATTACK) {
+      c = combatReduce(c, { type: 'ATTACK', target: alive[0].i });
+    } else {
+      c = combatReduce(c, { type: 'CAPTURE', target: alive[0].i }); // tour passé (gratuit)
+    }
   }
   return c;
 }

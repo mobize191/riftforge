@@ -1,7 +1,7 @@
 import { createRng, type Rng } from '../rng';
 import { MONSTER_BY_ID } from '../../data/monsters';
 import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
-import { RECIPES, type RecipeDef } from '../../data/recipes';
+import { RECIPES, RECIPE_BY_ID, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
 import { applyFusion } from './fuse';
 import { affinityMultiplier } from '../../data/affinities';
@@ -78,7 +78,8 @@ export interface CombatState {
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
-  modifiers: string[]; // R7-03 — modificateurs de Faille actifs (élites, niveaux, affinités brouillées, orbes rares)
+  modifiers: string[];
+  energy: number; // R10-02 (D1) : énergie de combat (régénérée à chaque round, remise à zéro à chaque combat)
   log: string[];
 }
 
@@ -96,6 +97,13 @@ export type CombatAction =
 export function captureChance(hp: number, maxHp: number): number {
   const missing = maxHp > 0 ? 1 - hp / maxHp : 0;
   return Math.min(1, CAPTURE.baseChance + missing * CAPTURE.missingHpWeight);
+}
+
+// R10-02 (D1) : coût d'énergie du lancement d'un module, lu en data (TODO-BALANCE).
+// Accepte une recette ou un tier ; recette inconnue -> coût d'un tier 1.
+export function moduleEnergyCost(recipeOrTier: RecipeDef | number | undefined): number {
+  const tier = typeof recipeOrTier === 'number' ? recipeOrTier : recipeOrTier?.tier ?? 1;
+  return BALANCE.ENERGY_COST_MODULE_TIER[tier] ?? BALANCE.ENERGY_COST_MODULE_TIER[1];
 }
 
 export function availableSoloModules(orbs: ElementId[]): RecipeDef[] {
@@ -193,6 +201,7 @@ export function startCombat(
     orbs,
     loot: null,
     modifiers,
+    energy: BALANCE.COMBAT_ENERGY_START, // R10-02 (D1) : énergie de départ du combat
     log: ['Un combat éclate !'],
   };
   // Si un ennemi est premier à l'initiative, il agit avant le premier choix du joueur.
@@ -333,10 +342,15 @@ function advance(state: CombatState, rng: Rng): CombatState {
     }
     const ei = s.enemies.findIndex((e) => e.id === actorId);
     if (ei >= 0) s = enemyAct(s, ei, rng);
-    // nouveau round ?
+    // nouveau round ? R10-02 (D1) : régénération d'énergie au changement de round.
     const newIdx = s.actorIdx + 1;
     if (newIdx % s.order.length === 0) {
-      s = { ...s, actorIdx: newIdx, turn: s.turn + 1 };
+      s = {
+        ...s,
+        actorIdx: newIdx,
+        turn: s.turn + 1,
+        energy: Math.min(BALANCE.COMBAT_ENERGY_MAX, (s.energy ?? 0) + BALANCE.COMBAT_ENERGY_REGEN),
+      };
       if (s.challenge) {
         const turnsLeft = s.challenge.turnsLeft - 1;
         if (turnsLeft <= 0 && s.enemies.some((e) => e.hp > 0)) {
@@ -393,12 +407,33 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
   const log = [...state.log];
   const actorId = currentActorId(state);
   const isCompanionTurn = actorId === 'companion';
+
+  // R10-02 (D1) : coût d'énergie par action. Le compagnon n'est pas soumis
+  // à l'énergie (compétences déjà payées en orbes) ; fusion, capture, objets
+  // et la fuite restent gratuits (la fusion coûte déjà son tour).
+  const energyCost = (a: CombatAction): number => {
+    if (isCompanionTurn) return 0;
+    if (a.type === 'ATTACK') return BALANCE.ENERGY_COST_ATTACK;
+    if (a.type === 'CAST_MODULE') {
+      const r = RECIPE_BY_ID[a.moduleId] ?? RECIPES.find((x) => x.id === a.moduleId);
+      return moduleEnergyCost(r);
+    }
+    return 0;
+  };
+  const cout = energyCost(action);
+  if (cout > (state.energy ?? 0)) {
+    // Refus propre : aucun effet, aucun tour consommé, message FR explicite.
+    log.push(`Pas assez d'énergie (${cout} requis, ${state.energy ?? 0} disponibles) — +${BALANCE.COMBAT_ENERGY_REGEN} par tour.`);
+    return { ...state, log };
+  }
   // Le compagnon n'agit que pendant SON tour ; le joueur pendant le sien.
   if (isCompanionTurn && action.type !== 'ATTACK' && action.type !== 'USE_COMPANION_SKILL') return state;
   if (!isCompanionTurn && action.type === 'USE_COMPANION_SKILL') return state;
   if (isCompanionTurn && action.type === 'FLEE') return state;
-  // L'acteur courant vient de jouer : on avance l'initiative d'un cran avant de résoudre la suite.
-  const afterActor = (st: CombatState): CombatState => advance({ ...st, actorIdx: st.actorIdx + 1 }, rng);
+  // L'acteur courant vient de jouer : on avance l'initiative d'un cran avant de résoudre la suite,
+  // en dépensant l'énergie du tour (0 pour compagnon/fusion/capture/objets).
+  const afterActor = (st: CombatState): CombatState =>
+    advance({ ...st, actorIdx: st.actorIdx + 1, energy: Math.max(0, (st.energy ?? 0) - cout) }, rng);
 
   switch (action.type) {
     case 'ATTACK': {

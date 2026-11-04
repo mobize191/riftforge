@@ -16,7 +16,7 @@ export const RECIPES: RecipeDef[] = [
   { id: 'ecran-gravats', name: 'Écran de gravats', inputs: ['terre'], tier: 1, effect: { kind: 'shield', power: 6 } }, // TODO-BALANCE
   { id: 'souffle', name: 'Souffle', inputs: ['air'], tier: 1, effect: { kind: 'push', power: 1 } }, // TODO-BALANCE
   { id: 'combustion', name: 'Combustion', inputs: ['feu', 'feu'], tier: 2, effect: { kind: 'damage', power: 9 } }, // TODO-BALANCE
-  { id: 'condensation', name: 'Condensation', inputs: ['eau', 'eau'], tier: 2, effect: { kind: 'heal', power: 6 } }, // TODO-BALANCE (purifie brûlure)
+  { id: 'condensation', name: 'Condensation', inputs: ['eau', 'eau'], tier: 1, effect: { kind: 'heal', power: 6 } }, // R10-02 : soin abordable (tier 1, coût 2) // TODO-BALANCE
   { id: 'plaque-blindee', name: 'Plaque blindée', inputs: ['terre', 'terre'], tier: 2, effect: { kind: 'shield', power: 12 } }, // TODO-BALANCE
   { id: 'cyclone', name: 'Cyclone', inputs: ['air', 'air'], tier: 2, effect: { kind: 'push', power: 2 } }, // TODO-BALANCE (tous les ennemis)
   { id: 'vapeur', name: 'Vapeur', inputs: ['feu', 'eau'], tier: 2, effect: { kind: 'aoe', power: 3, duration: 2 } }, // TODO-BALANCE (zone brûlante)

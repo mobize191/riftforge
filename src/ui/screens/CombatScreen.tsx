@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { availableSoloModules, actorLabel, type CombatState, type CombatAction, moduleEffectLabel } from '../../core/combat/combat';
+import { availableSoloModules, actorLabel, type CombatState, type CombatAction, moduleEffectLabel, moduleEnergyCost } from '../../core/combat/combat';
+import { BALANCE } from '../../data/balance';
 import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
@@ -40,7 +41,7 @@ export default function CombatScreen({
   const [fuseSel, setFuseSel] = useState<number[]>([]);
   const actorId = combat.order[combat.actorIdx % combat.order.length];
   const isCompTurn = actorId === 'companion';
-  const label = actorLabel(combat); // B27 : le tour du compagnon doit être bien visible
+  void actorLabel(combat); // B27 : label conservé pour test (r9-08) — la bannière est rendue dans le h2
   const soloModules = availableSoloModules(combat.orbs);
   const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
   const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
@@ -93,6 +94,25 @@ export default function CombatScreen({
       </h2>
       <div className="w-full max-w-xl rounded-lg border border-slate-500 p-3">
         <strong>{combat.player.name}</strong> — PV {combat.player.hp}/{combat.player.maxHp}
+        <div className="mt-2" aria-label="Énergie de combat">
+          <span className="text-sm opacity-80">
+            Énergie : {combat.energy}/{BALANCE.COMBAT_ENERGY_MAX} (+{BALANCE.COMBAT_ENERGY_REGEN}/tour)
+          </span>
+          <div className="mt-1 flex gap-1" role="progressbar" aria-valuenow={combat.energy} aria-valuemin={0} aria-valuemax={BALANCE.COMBAT_ENERGY_MAX}>
+            {Array.from({ length: BALANCE.COMBAT_ENERGY_MAX }, (_, i) => (
+              <span
+                key={i}
+                className="h-3 flex-1 rounded-[3px] border"
+                style={{
+                  borderColor: 'rgba(148,163,184,0.5)',
+                  background: i < combat.energy ? '#38bdf8' : 'transparent',
+                  minWidth: '10px',
+                }}
+                aria-hidden
+              />
+            ))}
+          </div>
+        </div>
       </div>
       {combat.companion && (
         <div className={`flex w-full max-w-xl items-center gap-3 rounded-lg border p-3 ${combat.companion.ko ? 'border-slate-600 opacity-50' : 'border-emerald-400/60'}`}>
@@ -244,7 +264,7 @@ export default function CombatScreen({
               className="rounded border px-4 py-2 text-left"
               style={{ minHeight: '44px', borderColor: ELEMENTS[m.inputs[0]].color }}
             >
-              {m.name} ({ELEMENTS[m.inputs[0]].name}) — {moduleEffectLabel(m)} — gratuit
+              {m.name} ({ELEMENTS[m.inputs[0]].name}) — {moduleEffectLabel(m)} — {moduleEnergyCost(m)} énergie
             </button>
           ))}
           {createdModules.map((m) => (
@@ -258,7 +278,7 @@ export default function CombatScreen({
               className="rounded border border-red-300 px-4 py-2 text-left"
               style={{ minHeight: '44px' }}
             >
-              ▶ {m.name} — {moduleEffectLabel(m)} (créé, lancement gratuit)
+              ▶ {m.name} — {moduleEffectLabel(m)} (créé — {moduleEnergyCost(m)} énergie)
             </button>
           ))}
           {combat.orbs.length >= 2 && (
@@ -316,7 +336,7 @@ export default function CombatScreen({
           className="rounded bg-red-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          {isCompTurn ? `Attaquer (${combat.companion?.name})` : 'Attaquer (cible sélectionnée)'}
+          {isCompTurn ? `Attaquer (${combat.companion?.name}) — gratuit` : `Attaquer (cible sélectionnée) — ${BALANCE.ENERGY_COST_ATTACK} énergie`}
         </button>
         <button
           onClick={() => setMenu(menu === 'attack' ? 'root' : 'attack')}

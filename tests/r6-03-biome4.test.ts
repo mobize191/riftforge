@@ -102,6 +102,10 @@ describe('R6-03 biome 4 — La Fibration', () => {
     while (c.phase === 'player' && guard++ < 50) {
       c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
       if (c.phase === 'player') c = combatReduce(c, { type: 'ATTACK', target: 0 });
+      // R10-02 : si l'action est refusée (énergie insuffisante), on passe le tour gratuitement.
+      if (c.phase === 'player' && c.log[c.log.length - 1]?.includes("Pas assez d'énergie")) {
+        c = combatReduce(c, { type: 'CAPTURE', target: 0 });
+      }
     }
     expect(c.phase).toBe('won');
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: c.loot ?? undefined, playerHp: c.player.hp });
@@ -122,6 +126,10 @@ describe('R6-03 biome 4 — La Fibration', () => {
     while (c.phase === 'player' && guard++ < 50) {
       c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
       if (c.phase === 'player') c = combatReduce(c, { type: 'ATTACK', target: 0 });
+      // R10-02 : si l'action est refusée (énergie insuffisante), on passe le tour gratuitement.
+      if (c.phase === 'player' && c.log[c.log.length - 1]?.includes("Pas assez d'énergie")) {
+        c = combatReduce(c, { type: 'CAPTURE', target: 0 });
+      }
     }
     expect(c.phase).toBe('won');
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: c.loot ?? undefined, playerHp: c.player.hp });

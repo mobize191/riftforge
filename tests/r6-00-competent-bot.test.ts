@@ -6,12 +6,13 @@ import { describe, it, expect } from 'vitest';
 // - soigne sous 30 % PV (module de soin, puis gélule), fuit sous 15 % sans soin
 // - PV persistants entre les combats (comme l'UI : playerHp transmis à EXIT_COMBAT)
 import { initialState, reduce } from '../src/core/run/state';
-import { startCombat, combatReduce, type CombatState } from '../src/core/combat/combat';
+import { startCombat, combatReduce, moduleEnergyCost, type CombatState } from '../src/core/combat/combat';
 import { monsterAt, pickEncounter } from '../src/core/run/encounter';
 import { isWall, type LevelMap } from '../src/core/run/generate';
 import { MONSTERS, MONSTER_BY_ID } from '../src/data/monsters';
 import { BOSS_BY_ID } from '../src/data/bosses';
 import { RECIPES, RECIPE_BY_ID } from '../src/data/recipes';
+import { BALANCE } from '../src/data/balance';
 import { affinityMultiplier } from '../src/data/affinities';
 import { createModule } from '../src/core/combat/createModule';
 import { BIOME_1_STRUCTURE } from '../src/data/biomes';
@@ -103,7 +104,7 @@ function botCombat(c: CombatState, moduleUsage: Record<string, number>): CombatS
         const r = RECIPE_BY_ID[id];
         return r && (r.effect.kind === 'heal' || r.effect.kind === 'purify');
       });
-      if (healModuleId) {
+      if (healModuleId && c.energy >= moduleEnergyCost(RECIPE_BY_ID[healModuleId])) {
         moduleUsage[healModuleId] = (moduleUsage[healModuleId] ?? 0) + 1;
         c = combatReduce(c, { type: 'CAST_MODULE', moduleId: healModuleId });
         continue;
@@ -121,7 +122,7 @@ function botCombat(c: CombatState, moduleUsage: Record<string, number>): CombatS
     // 2) Bouclier si PV moyens et bouclier disponible.
     if (hpRatio < 0.5 && c.player.shield === 0) {
       const shieldModuleId = c.modules.find((id) => RECIPE_BY_ID[id]?.effect.kind === 'shield');
-      if (shieldModuleId) {
+      if (shieldModuleId && c.energy >= moduleEnergyCost(RECIPE_BY_ID[shieldModuleId])) {
         moduleUsage[shieldModuleId] = (moduleUsage[shieldModuleId] ?? 0) + 1;
         c = combatReduce(c, { type: 'CAST_MODULE', moduleId: shieldModuleId });
         continue;
@@ -179,13 +180,22 @@ function botCombat(c: CombatState, moduleUsage: Record<string, number>): CombatS
         consider(bv * 0.5, { type: 'CAST_MODULE', moduleId: recipe.id, target: bi }); // dégâts différés : peu prioritaires
       }
     }
-    if (best) {
+    // R10-02 (D1) : le bot tient compte de l'énergie — une action inabordable
+    // est ignorée (retombe sur l'attaque de base, coût 1).
+    const coutAction = (a: Parameters<typeof combatReduce>[1]): number =>
+      a.type === 'ATTACK' ? BALANCE.ENERGY_COST_ATTACK : a.type === 'CAST_MODULE' ? moduleEnergyCost(RECIPE_BY_ID[a.moduleId]) : 0;
+    const abordable = best && coutAction(best.action) <= c.energy;
+    if (abordable && best) {
       const action = best.action;
       if (action.type === 'CAST_MODULE') moduleUsage[action.moduleId] = (moduleUsage[action.moduleId] ?? 0) + 1;
       c = combatReduce(c, action);
       continue;
     }
-    c = combatReduce(c, { type: 'ATTACK', target: alive[0].i });
+    if (c.energy >= BALANCE.ENERGY_COST_ATTACK) {
+      c = combatReduce(c, { type: 'ATTACK', target: alive[0].i });
+    } else {
+      c = combatReduce(c, { type: 'CAPTURE', target: alive[0].i }); // pass gratuit (avance le round)
+    }
   }
   return c;
 }

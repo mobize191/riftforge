@@ -9,7 +9,7 @@ export const MONSTERS: MonsterDef[] = [
     name: 'Mousse sporulée',
     family: 'spore',
     hp: 9, // TODO-BALANCE
-    attack: 3, // TODO-BALANCE
+    attack: 2, // TODO-BALANCE (R10 : kit départ encaisse plusieurs coups au biome 1)
     weaknesses: ['feu'],
     resistances: ['eau'],
   },
@@ -18,7 +18,7 @@ export const MONSTERS: MonsterDef[] = [
     name: 'Sporeling',
     family: 'spore',
     hp: 7, // TODO-BALANCE
-    attack: 4, // TODO-BALANCE
+    attack: 3, // TODO-BALANCE (R10 : idem)
     weaknesses: ['air'],
     resistances: [],
   },
@@ -27,7 +27,7 @@ export const MONSTERS: MonsterDef[] = [
     name: 'Champignon cuirassé',
     family: 'spore',
     hp: 13, // TODO-BALANCE
-    attack: 3, // TODO-BALANCE
+    attack: 2, // TODO-BALANCE (R10 : kit départ encaisse plusieurs coups au biome 1)
     weaknesses: ['terre'],
     resistances: ['air'],
   },
@@ -36,7 +36,7 @@ export const MONSTERS: MonsterDef[] = [
     name: 'Amas de spores',
     family: 'spore',
     hp: 11, // TODO-BALANCE
-    attack: 4, // TODO-BALANCE
+    attack: 3, // TODO-BALANCE (R10 : idem)
     weaknesses: ['eau'],
     resistances: ['feu'],
   },

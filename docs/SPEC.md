@@ -90,7 +90,8 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
 
 **Règle centrale : les orbes se sacrifient à la CRÉATION, pas au lancement.**
 
-- Lancer un module acquis est **gratuit — pas de système de mana**. La ressource rare, c'est la création.
+- Lancer un module acquis est **gratuit en orbes — pas de consommable de mana**. La ressource rare, c'est la création.
+- **Amendement D1 (R10) — Énergie de combat** : lancer un module n'est plus gratuit en *tours-effectifs*. Chaque round, le joueur régénère **+E énergie** (data, `BALANCE.COMBAT_ENERGY_REGEN`) ; l'énergie se conserve **au sein d'un combat** (plafond `COMBAT_ENERGY_MAX`) et revient au niveau de départ (`COMBAT_ENERGY_START`) **à chaque nouveau combat**. Coûts (data) : attaque de base = 1 ; module palier 1 = 2, palier 2 = 5, palier 3 = 8. **Invariant : aucun module de palier ≥ 2 ne peut être lancé à chaque tour** (coût > régénération, testé sur toute la table des recettes). Le compagnon n'est pas soumis à l'énergie (compétences déjà payées en orbes) ; la fusion d'orbes en combat coûte toujours son tour mais aucune énergie.
 - **Créer un module consomme ses orbes** ; le module est ensuite **gardé jusqu'à la fin de la run**.
 - En entrant dans la Faille : **3-4 orbes aléatoires** offertes. Récolte ensuite : butin de combats, coffres, orbes visibles sur la carte — l'abondance va croissant, donc **le choix de création s'élargit en avançant**.
 - **Orbes composites** : fusionner des orbes produit une orbe composite (conservée **automatiquement** en fin de combat), ingrédient de modules encore plus puissants. En profondeur, on en trouve déjà toutes faites.

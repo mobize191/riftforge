@@ -229,6 +229,10 @@ describe('bot IHM — couverture des bugs remontés', () => {
         const alive = c.enemies.findIndex((e) => e.hp > 0);
         c = combatReduce(c, { type: 'CAST_MODULE', moduleId: recipeId, target: alive >= 0 ? alive : 0 });
         if (guard > 1) c = combatReduce(c, { type: 'ATTACK', target: c.enemies.findIndex((e) => e.hp > 0) >= 0 ? c.enemies.findIndex((e) => e.hp > 0) : 0 });
+        // R10-02 : action refusée (énergie) -> on passe le tour gratuitement (capture).
+        if (c.phase === 'player' && c.log[c.log.length - 1]?.includes("Pas assez d'énergie")) {
+          c = combatReduce(c, { type: 'CAPTURE', target: c.enemies.findIndex((e) => e.hp > 0) >= 0 ? c.enemies.findIndex((e) => e.hp > 0) : 0 });
+        }
       }
       expect(['won', 'lost', 'fled']).toContain(c.phase); // jamais 'player' bloqué
     }
