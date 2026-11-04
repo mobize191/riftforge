@@ -19,13 +19,13 @@ export const EQUIPMENT_SLOT_LIMITS: Record<EquipmentSlot, number> = {
 
 // Équipement achetable chez le Marchand (itération 1). TODO-BALANCE: coûts et stats de dev.
 export const MERCHANT_ITEMS: EquipmentDef[] = [
-  { id: 'lame-rustique', name: 'Lame rouillée', cost: 15, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE
-  { id: 'cuirasse-fer', name: 'Cuirasse de fer', cost: 20, attackBonus: 0, hpBonus: 6 , slot: 'armure' }, // TODO-BALANCE
-  { id: 'bottes-faille', name: 'Bottes de Faille', cost: 25, attackBonus: 0, hpBonus: 4 , slot: 'accessoire' }, // TODO-BALANCE
+  { id: 'lame-rustique', name: 'Lame rouillée', cost: 45, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE
+  { id: 'cuirasse-fer', name: 'Cuirasse de fer', cost: 60, attackBonus: 0, hpBonus: 6 , slot: 'armure' }, // TODO-BALANCE
+  { id: 'bottes-faille', name: 'Bottes de Faille', cost: 75, attackBonus: 0, hpBonus: 4 , slot: 'accessoire' }, // TODO-BALANCE
   // R6-06 / Q1-1 : le Marchand passe à 6 équipements achetables. TODO-BALANCE.
-  { id: 'dague-venin', name: 'Dague de venin', cost: 35, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE (R10-03 D2 : jamais de one-shot)
-  { id: 'egide-lapis', name: 'Égide de lapis', cost: 40, attackBonus: 0, hpBonus: 9 , slot: 'bouclier' }, // TODO-BALANCE
-  { id: 'greves-plomb', name: 'Grèves de plomb', cost: 30, attackBonus: 0, hpBonus: 5 , slot: 'armure' }, // TODO-BALANCE
+  { id: 'dague-venin', name: 'Dague de venin', cost: 105, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE (R10-03 D2 : jamais de one-shot) — coût x3 en R10-05
+  { id: 'egide-lapis', name: 'Égide de lapis', cost: 120, attackBonus: 0, hpBonus: 9 , slot: 'bouclier' }, // TODO-BALANCE
+  { id: 'greves-plomb', name: 'Grèves de plomb', cost: 90, attackBonus: 0, hpBonus: 5 , slot: 'armure' }, // TODO-BALANCE
 ];
 
 export const EQUIPMENT_BY_ID: Record<string, EquipmentDef> = Object.fromEntries(
@@ -45,7 +45,7 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 4, // TODO-BALANCE
     hpBonus: 0, slot: 'arme',
-    craftCost: { essence: 3, mineraiBrut: 2, lingots: 1 }, // TODO-BALANCE
+    craftCost: { essence: 6, mineraiBrut: 4, lingots: 2 }, // TODO-BALANCE
   },
   {
     id: 'armure-lingot',
@@ -53,7 +53,7 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 0,
     hpBonus: 10, slot: 'armure', // TODO-BALANCE
-    craftCost: { mineraiBrut: 4, lingots: 2 }, // TODO-BALANCE
+    craftCost: { mineraiBrut: 8, lingots: 4 }, // TODO-BALANCE
   },
   {
     id: 'charm-essence',
@@ -61,7 +61,7 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 2, // TODO-BALANCE
     hpBonus: 6, slot: 'accessoire', // TODO-BALANCE
-    craftCost: { essence: 5, lingots: 1, credits: 10 }, // TODO-BALANCE
+    craftCost: { essence: 10, lingots: 2, credits: 30 }, // TODO-BALANCE
   },
   // R6-06 : tiers 2+ — exigent lingots puis composants puis ressources de biomes
   // profonds (mercurium, optifibre). TODO-BALANCE.
@@ -71,7 +71,7 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 6, // TODO-BALANCE
     hpBonus: 0, slot: 'arme',
-    craftCost: { lingots: 3, mercurium: 2, mineraiBrut: 4 }, // TODO-BALANCE — tier 2 (biome 3)
+    craftCost: { lingots: 6, mercurium: 6, mineraiBrut: 8 }, // TODO-BALANCE — tier 2 (biome 3)
   },
   {
     id: 'armure-optifibre',
@@ -79,7 +79,7 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 0,
     hpBonus: 14, slot: 'armure', // TODO-BALANCE
-    craftCost: { lingots: 3, optifibre: 2, essence: 4 }, // TODO-BALANCE — tier 3 (biome 4)
+    craftCost: { lingots: 6, optifibre: 6, essence: 8 }, // TODO-BALANCE — tier 3 (biome 4)
   },
   {
     id: 'orbe-donnees',
@@ -87,6 +87,6 @@ export const CRAFTABLE_EQUIPMENT: CraftableEquipmentDef[] = [
     cost: 0,
     attackBonus: 3, // TODO-BALANCE
     hpBonus: 8, slot: 'accessoire', // TODO-BALANCE
-    craftCost: { lingots: 2, donnees: 2, essence: 3 }, // TODO-BALANCE — tier 2 (biome 2)
+    craftCost: { lingots: 4, donnees: 5, essence: 6 }, // TODO-BALANCE — tier 2 (biome 2)
   },
 ];

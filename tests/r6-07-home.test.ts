@@ -8,7 +8,7 @@ import { serialize, deserialize, importSave, SAVE_VERSION } from '../src/core/sa
 describe('R6-07 Maison du héros', () => {
   it('changement d’équipement persistant (équiper/ranger, plusieurs sets, save comprise)', () => {
     let s = initialState();
-    s = { ...s, forge: { ...s.forge, credits: 100 } };
+    s = { ...s, forge: { ...s.forge, credits: 400 } };
     s = reduce(s, { type: 'BUY_ITEM', defId: 'lame-rustique' });
     s = reduce(s, { type: 'BUY_ITEM', defId: 'cuirasse-fer' });
     expect(s.forge.equipment.length).toBe(2);

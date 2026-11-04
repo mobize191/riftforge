@@ -31,5 +31,12 @@ export const BALANCE = {
   ENERGY_COST_ATTACK: 1, // attaque de base
   // Coût de lancement d'un module par palier. Invariant D1 : aucun tier >= 2 ne
   // peut être lancé chaque tour (cost > regen, testé sur toute la table).
+  // Butin de combat en crédits/essence/minerai (R10-05 D4 : ralenti, en data).
+  COMBAT_LOOT_CREDITS_MIN: 2, // TODO-BALANCE
+  COMBAT_LOOT_CREDITS_SPREAD: 4, // TODO-BALANCE
+  COMBAT_LOOT_ESSENCE_MIN: 1, // TODO-BALANCE
+  COMBAT_LOOT_ESSENCE_SPREAD: 1, // TODO-BALANCE
+  COMBAT_LOOT_MINERAI_MIN: 1, // TODO-BALANCE
+  COMBAT_LOOT_MINERAI_SPREAD: 2, // TODO-BALANCE
   ENERGY_COST_MODULE_TIER: { 1: 2, 2: 5, 3: 8 } as Record<number, number>, // TODO-BALANCE
 } as const;

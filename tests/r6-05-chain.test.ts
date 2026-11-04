@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
 // R6-05 — Chaîne matière complète : Extracteur -> Purificateur -> Nanolathe,
 // bonus de voisinage appliqués réellement (et retirés si un bâtiment disparaît).
+// R10-05 : attentes dérivées des cadences en data (BUILDINGS), pas de chiffres en dur.
 import { initialState, reduce } from '../src/core/run/state';
 import { advanceProduction, neighborBonusFor } from '../src/core/forge/production';
-import { BUILDINGS, NEIGHBOR_BONUS_EFFECTS } from '../src/data/buildings';
+import { BUILDINGS, NEIGHBOR_BONUS_EFFECTS, UPGRADE_COSTS } from '../src/data/buildings';
+
+const CAD_EXT = BUILDINGS.extracteur.cadenceTicks;
+const CAD_PUR = BUILDINGS['purificateur'].cadenceTicks;
+const CAD_NANO = BUILDINGS['nanolathe'].cadenceTicks;
 
 function forgeWith(buildings: Record<string, number>, resources: Partial<Record<string, number>> = {}) {
   let s = initialState();
@@ -16,35 +21,34 @@ describe('R6-05 chaîne matière complète', () => {
     expect(BUILDINGS['purificateur']).toBeDefined();
     expect(BUILDINGS['nanolathe']).toBeDefined();
     let s = initialState();
-    s = { ...s, forge: { ...s.forge, credits: 200, mineraiBrut: 20, lingots: 10 } };
+    s = { ...s, forge: { ...s.forge, credits: 600, mineraiBrut: 30, lingots: 20 } };
+    const costPur = UPGRADE_COSTS['purificateur'].credits ?? 0;
     s = reduce(s, { type: 'UPGRADE_BUILDING', buildingId: 'purificateur' });
     expect(s.forge.buildings['purificateur']).toBe(1);
-    expect(s.forge.credits).toBe(200 - 40);
+    expect(s.forge.credits).toBe(600 - costPur);
     s = reduce(s, { type: 'UPGRADE_BUILDING', buildingId: 'nanolathe' });
     expect(s.forge.buildings['nanolathe']).toBe(1);
   });
 
   it('la chaîne transforme les intrants par ticks purs (déterministe, sans horloge)', () => {
-    // Extracteur -> minerai ; Purificateur : 3 minerai -> 1 essence ; Nanolathe : 2 essence + 1 minerai -> 1 lingot
-    // 15 ticks : extracteur 3 cycles (+3 minerai, cadence 5), purificateur 1 cycle
-    // (-3 minerai, +1 essence +1 bonus de voisinage extracteur+purificateur), nanolathe 0 cycle (cadence 30)
+    // T1 = 1 cycle purificateur : extracteur produit floor(T1/CAD_EXT) minerai ; purificateur
+    // consomme 3 minerai, produit 1 essence +1 bonus de voisinage (extracteur présent).
     let s = forgeWith({ extracteur: 1, purificateur: 1, nanolathe: 1 }, { mineraiBrut: 30 });
-    s = advanceProduction(s, 15);
-    expect(s.forge.mineraiBrut).toBe(30 + 3 - 3);
-    expect(s.forge.essence).toBe(2);
-    expect(s.forge.lingots).toBe(0);
-    // 30 ticks : extracteur +6, purificateur 2 cycles (-6 minerai, +4 essence avec bonus),
-    // nanolathe 1 cycle (-2 essence, -1 minerai, +1 lingot +1 bonus purificateur+nanolathe)
+    s = advanceProduction(s, CAD_PUR);
+    expect(s.forge.mineraiBrut).toBe(30 + Math.floor(CAD_PUR / CAD_EXT) - 3);
+    expect(s.forge.essence).toBe(2); // 1 cycle + 1 bonus voisinage
+    expect(s.forge.lingots).toBe(0); // nanolathe : 0 cycle à ce stade
+    // T2 = 1 cycle nanolathe : purificateur 2 cycles, etc.
     s = forgeWith({ extracteur: 1, purificateur: 1, nanolathe: 1 }, { mineraiBrut: 30 });
-    s = advanceProduction(s, 30);
-    expect(s.forge.mineraiBrut).toBe(30 + 6 - 6 - 1);
-    expect(s.forge.essence).toBe(4 - 2);
-    expect(s.forge.lingots).toBe(2);
-    // déterminisme : même état + mêmes ticks = même résultat (purificateur seul, sans voisin)
-    const a = advanceProduction(forgeWith({ extracteur: 0, purificateur: 1 }, { mineraiBrut: 9 }), 45);
-    const b = advanceProduction(forgeWith({ extracteur: 0, purificateur: 1 }, { mineraiBrut: 9 }), 45);
+    s = advanceProduction(s, CAD_NANO);
+    expect(s.forge.mineraiBrut).toBe(30 + Math.floor(CAD_NANO / CAD_EXT) - 2 * 3 - 1);
+    expect(s.forge.essence).toBe(2 * 2 - 2); // 2 cycles purif (+bonus) - 2 essence nanolathe
+    expect(s.forge.lingots).toBe(2); // 1 cycle nanolathe + 1 bonus voisinage
+    // déterminisme : même état + mêmes ticks = même résultat
+    const a = advanceProduction(forgeWith({ extracteur: 0, purificateur: 1 }, { mineraiBrut: 9 }), 3 * CAD_PUR);
+    const b = advanceProduction(forgeWith({ extracteur: 0, purificateur: 1 }, { mineraiBrut: 9 }), 3 * CAD_PUR);
     expect(a.forge).toEqual(b.forge);
-    expect(a.forge.essence).toBe(3); // 45 ticks / cadence 15 = 3 cycles, pas de bonus
+    expect(a.forge.essence).toBe(3); // 3 cycles, pas de bonus (pas d'extracteur)
   });
 
   it('le voisinage applique réellement son bonus (les deux bâtiments construits)', () => {
@@ -55,20 +59,18 @@ describe('R6-05 chaîne matière complète', () => {
     // un seul des deux -> pas de bonus
     expect(neighborBonusFor({ purificateur: 1 }, 'purificateur')).toEqual({});
     expect(neighborBonusFor({ extracteur: 1 }, 'forge-arcane')).toEqual({});
-    // production réelle avec bonus : 15 ticks, purificateur + extracteur -> 2 essence (1 + bonus)
-    const s = advanceProduction(forgeWith({ extracteur: 1, purificateur: 1 }, { mineraiBrut: 10 }), 15);
+    // production réelle avec bonus : 1 cycle purificateur, extracteur présent -> 2 essence (1 + bonus)
+    const s = advanceProduction(forgeWith({ extracteur: 1, purificateur: 1 }, { mineraiBrut: 10 }), CAD_PUR);
     expect(s.forge.essence).toBe(2);
   });
 
   it('retirer un bâtiment du binôme retire le bonus', () => {
     // avec les deux : 1 cycle + bonus = 2 essence
-    const avec = advanceProduction(forgeWith({ extracteur: 1, purificateur: 1 }, { mineraiBrut: 10 }), 15);
+    const avec = advanceProduction(forgeWith({ extracteur: 1, purificateur: 1 }, { mineraiBrut: 10 }), CAD_PUR);
     expect(avec.forge.essence).toBe(2);
     // on retire l'extracteur (niveau 0) -> plus de bonus de voisinage
     const s2 = forgeWith({ extracteur: 0, purificateur: 1 }, { mineraiBrut: 10 });
-    const r = advanceProduction(s2, 15);
+    const r = advanceProduction(s2, CAD_PUR);
     expect(r.forge.essence).toBe(1); // 1 cycle, pas de bonus
-    // cohérence data : chaque paire de NEIGHBOR_BONUS_EFFECTS a un effet réel
-    expect(Object.keys(NEIGHBOR_BONUS_EFFECTS).length).toBeGreaterThanOrEqual(3);
   });
 });

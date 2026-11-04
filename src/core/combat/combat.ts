@@ -372,14 +372,15 @@ function advance(state: CombatState, rng: Rng): CombatState {
 
 function checkVictory(state: CombatState, rng: Rng): CombatState {
   if (state.enemies.every((e) => e.hp <= 0)) {
-    const credits = 5 + rng.int(10); // TODO-BALANCE
+    // R10-05 (D4) : butin de combat ralenti, montants en data (BALANCE, TODO-BALANCE).
+    const credits = BALANCE.COMBAT_LOOT_CREDITS_MIN + rng.int(BALANCE.COMBAT_LOOT_CREDITS_SPREAD);
     const baseOrbCount = 1 + rng.int(2); // TODO-BALANCE
     // R7-03 : modificateur « orbes-rares » = drops d'orbes réduits (en data)
     const orbCount = state.modifiers.includes('orbes-rares')
       ? Math.floor(baseOrbCount / RARE_ORBS.lootOrbCountDivisor)
       : baseOrbCount;
-    const essence = 1 + rng.int(2); // TODO-BALANCE
-    const minerai = 1 + rng.int(3); // TODO-BALANCE
+    const essence = BALANCE.COMBAT_LOOT_ESSENCE_MIN + rng.int(BALANCE.COMBAT_LOOT_ESSENCE_SPREAD);
+    const minerai = BALANCE.COMBAT_LOOT_MINERAI_MIN + rng.int(BALANCE.COMBAT_LOOT_MINERAI_SPREAD);
     const elements: ElementId[] = ['feu', 'eau', 'terre', 'air'];
     const orbs: ElementId[] = Array.from({ length: orbCount }, () => rng.pick(elements));
     return {

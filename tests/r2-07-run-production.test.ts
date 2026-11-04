@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
+import { BUILDINGS, STORAGE_CAPS } from '../src/data/buildings';
+import { storageCap } from '../src/core/forge/caps';
 
 describe('R2-07 production pendant la run', () => {
   it('X ticks simulés pendant la run -> production créditée au retour, entretien appliqué', () => {
@@ -10,8 +12,10 @@ describe('R2-07 production pendant la run', () => {
     expect(s.forge.mineraiBrut).toBe(0);
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });
-    // extracteur : 250 ticks / 5 = 50 minerai, cap = 50*2 = 100 -> tout passe ; entretien 2 crédits
-    expect(s.forge.mineraiBrut).toBe(50);
+    // extracteur : 250 ticks / cadence (data) = floor(250/cadence) minerai, cap entrepôt x2 -> tout passe
+    const attendu = Math.floor(250 / BUILDINGS.extracteur.cadenceTicks);
+    expect(attendu).toBeLessThanOrEqual(storageCap(s, 'mineraiBrut'));
+    expect(s.forge.mineraiBrut).toBe(attendu);
     expect(s.forge.credits).toBe(0 - 2 >= 0 ? 0 : 0); // entretien plafonné à 0 si pas de crédits
     expect(s.run).toBeNull();
   });

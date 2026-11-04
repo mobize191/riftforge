@@ -15,13 +15,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   extracteur: {
     id: 'extracteur',
     name: 'Extracteur',
-    cadenceTicks: 5, // TODO-BALANCE
+    cadenceTicks: 12, // TODO-BALANCE (R10-05 D4 : production ralentie)
     output: { mineraiBrut: 1 }, // TODO-BALANCE
   },
   'forge-arcane': {
     id: 'forge-arcane',
     name: 'Forge Arcane',
-    cadenceTicks: 20, // TODO-BALANCE
+    cadenceTicks: 45, // TODO-BALANCE (R10-05 D4)
     input: { essence: 1, mineraiBrut: 2 }, // TODO-BALANCE
     output: { lingots: 1 }, // TODO-BALANCE
   },
@@ -29,14 +29,14 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   purificateur: {
     id: 'purificateur',
     name: 'Purificateur',
-    cadenceTicks: 15, // TODO-BALANCE
+    cadenceTicks: 35, // TODO-BALANCE (R10-05 D4)
     input: { mineraiBrut: 3 }, // TODO-BALANCE
     output: { essence: 1 }, // TODO-BALANCE — purifie le minerai brut en essence
   },
   nanolathe: {
     id: 'nanolathe',
     name: 'Nanolathe',
-    cadenceTicks: 30, // TODO-BALANCE
+    cadenceTicks: 70, // TODO-BALANCE (R10-05 D4)
     input: { essence: 2, mineraiBrut: 1 }, // TODO-BALANCE
     output: { lingots: 1 }, // TODO-BALANCE — plus efficace que la Forge Arcane seule
   },
@@ -51,14 +51,14 @@ export const STARTING_BUILDINGS: Record<string, number> = {
 // Caps de stockage par ressource (§SPEC-6.4). TODO-BALANCE.
 export type ResourceKey = 'credits' | 'essence' | 'mineraiBrut' | 'lingots' | 'spores' | 'donnees' | 'mercurium' | 'optifibre';
 export const STORAGE_CAPS: Record<ResourceKey, number> = {
-  credits: 500, // TODO-BALANCE
-  essence: 50, // TODO-BALANCE
-  mineraiBrut: 50, // TODO-BALANCE
-  lingots: 25, // TODO-BALANCE
-  spores: 20, // TODO-BALANCE
-  donnees: 20, // TODO-BALANCE — R6-01, ressource du biome 2
-  mercurium: 20, // TODO-BALANCE — R6-02, ressource du biome 3
-  optifibre: 20, // TODO-BALANCE — R6-03, ressource du biome 4
+  credits: 150, // TODO-BALANCE (R10-05 D4 : caps plus stricts)
+  essence: 20, // TODO-BALANCE (R10-05 D4)
+  mineraiBrut: 30, // TODO-BALANCE (R10-05 D4)
+  lingots: 10, // TODO-BALANCE (R10-05 D4)
+  spores: 8, // TODO-BALANCE (R10-05 D4)
+  donnees: 8, // TODO-BALANCE (R10-05 D4) — R6-01, ressource du biome 2
+  mercurium: 8, // TODO-BALANCE (R10-05 D4) — R6-02, ressource du biome 3
+  optifibre: 8, // TODO-BALANCE (R10-05 D4) — R6-03, ressource du biome 4
 };
 
 // L'Entrepôt augmente tous les caps : cap effectif = base * multiplicateur(level).
@@ -67,15 +67,15 @@ export const ENTREPOS = {
   id: 'entrepot',
   name: 'Entrepôts',
   capMultiplierPerLevel: 2, // TODO-BALANCE (niveau 1 -> x2)
-  upgradeCost: { credits: 30 }, // TODO-BALANCE
+  upgradeCost: { credits: 90 }, // TODO-BALANCE (R10-05 D4)
 } as const;
 
 export const UPGRADE_COSTS: Record<string, Record<string, number>> = {
-  entrepot: { credits: 30 }, // TODO-BALANCE
-  extracteur: { credits: 20 }, // TODO-BALANCE
-  'forge-arcane': { credits: 20 }, // TODO-BALANCE
-  purificateur: { credits: 40, mineraiBrut: 10 }, // TODO-BALANCE — coût de construction (R6-05)
-  nanolathe: { credits: 120, lingots: 5 }, // TODO-BALANCE — coût de construction (R6-05)
+  entrepot: { credits: 90 }, // TODO-BALANCE (R10-05 D4 : coûts x3)
+  extracteur: { credits: 60 }, // TODO-BALANCE (R10-05 D4)
+  'forge-arcane': { credits: 60 }, // TODO-BALANCE (R10-05 D4)
+  purificateur: { credits: 120, mineraiBrut: 20 }, // TODO-BALANCE (R10-05 D4) — coût de construction (R6-05)
+  nanolathe: { credits: 300, lingots: 10 }, // TODO-BALANCE (R10-05 D4) — coût de construction (R6-05)
 };
 
 // Bonus de production d'un worker assigné à un bâtiment (§R3-06). TODO-BALANCE.

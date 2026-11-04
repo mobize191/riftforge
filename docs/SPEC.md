@@ -169,6 +169,7 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
   - **Crédits** (or) · **Essence** (mana) · **Minerai brut** (matière de base).
 - **1 ressource spécifique par biome** (spores, données, mercurium, optifibre) ; 2ᵉ ressource par biome en V2.
 - **Ressources rares** : butin des défis à tours limités et des Modificateurs.
+- **Amendement D4 (R10) — économie ralentie** : production ralentie (cadences ×2-3), caps de stockage plus stricts, coûts des bâtiments et équipements multipliés (×3), butin de combat réduit (montants en data). **Le haut de gamme exige des quantités de mercurium/optifibre inaccessibles sans avoir atteint les biomes 3-4** (invariant testé par simulation : 20 morts au biome 1 = haut de gamme inaccessible). Cible : équipement complet ≈ 15-20 runs. Le tier 1 reste accessible aux seuls communs (§SPEC-6.3).
 - **Forge Arcane et Labo de canalisation existent dès le début** — ils ne sont pas au bout de la chaîne :
   - Tier 1 : leurs recettes ne demandent que du commun (essence + minerai brut). *« Tant que vous n'avez que du minerai, la forge se contente du minerai. »*
   - Tiers supérieurs : ils exigent des lingots, puis des composants, puis les ressources de biomes profonds.

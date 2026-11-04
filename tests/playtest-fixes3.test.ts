@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
 import { advanceProduction } from '../src/core/forge/production';
-import { WORKER_BONUS } from '../src/data/buildings';
+import { BUILDINGS, WORKER_BONUS } from '../src/data/buildings';
 
 describe('retours playtest (3)', () => {
   it('combat lancé depuis une case adjacente : le monstre est quand même retiré de la carte', () => {
@@ -30,7 +30,7 @@ describe('retours playtest (3)', () => {
     s = reduce(s, { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: 'mousse' });
     s = reduce(s, { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: 'sporeling' });
     expect(s.forge.workers['extracteur']).toHaveLength(2);
-    s = advanceProduction(s, 5); // 1 cycle
+    s = advanceProduction(s, BUILDINGS.extracteur.cadenceTicks); // 1 cycle
     expect(s.forge.mineraiBrut).toBe(1 + 2 * WORKER_BONUS.extracteur);
   });
 

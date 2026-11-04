@@ -21,7 +21,7 @@ describe('R6-06 tiers supérieurs Forge & Labo', () => {
   it('tier 1 toujours craftable avec les seuls communs ; tiers 2+ refusés sans les intrants', () => {
     // tier 1 (lame-arcane : essence + minerai + lingot... non, charmé) — on prend un craft tier 1 pur commun
     let s = initialState();
-    s = { ...s, forge: { ...s.forge, essence: 5, mineraiBrut: 4, credits: 50, lingots: 2 } };
+    s = { ...s, forge: { ...s.forge, essence: 12, mineraiBrut: 8, credits: 60, lingots: 3 } };
     const t1 = CRAFTABLE_EQUIPMENT.find((e) => e.id === 'charm-essence')!; // essence+lingots+credits
     s = reduce(s, { type: 'CRAFT_ITEM', defId: t1.id });
     expect(s.forge.equipment.some((e) => e.defId === t1.id)).toBe(true);
@@ -30,14 +30,14 @@ describe('R6-06 tiers supérieurs Forge & Labo', () => {
     s = reduce(s, { type: 'CRAFT_ITEM', defId: 'lame-mercurielle' });
     expect(s).toBe(before); // refus propre
     // avec mercurium + lingots -> OK
-    s = { ...s, forge: { ...s.forge, mercurium: 2, lingots: 5, mineraiBrut: 10 } };
+    s = { ...s, forge: { ...s.forge, mercurium: 6, lingots: 6, mineraiBrut: 8 } }; // coûts R10-05
     s = reduce(s, { type: 'CRAFT_ITEM', defId: 'lame-mercurielle' });
     expect(s.forge.equipment.some((e) => e.defId === 'lame-mercurielle')).toBe(true);
     // tier 3 refusé sans optifibre
     const b2 = s;
     s = reduce(s, { type: 'CRAFT_ITEM', defId: 'armure-optifibre' });
     expect(s).toBe(b2);
-    s = { ...s, forge: { ...s.forge, optifibre: 2, essence: 10, lingots: 5 } };
+    s = { ...s, forge: { ...s.forge, optifibre: 6, essence: 10, lingots: 6 } }; // coûts R10-05
     s = reduce(s, { type: 'CRAFT_ITEM', defId: 'armure-optifibre' });
     expect(s.forge.equipment.some((e) => e.defId === 'armure-optifibre')).toBe(true);
   });

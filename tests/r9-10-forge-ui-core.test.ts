@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 // construits » sans placement (rétrocompatible R6-05).
 import { initialState, reduce } from '../src/core/run/state';
 import { advanceProduction, neighborBonusFor } from '../src/core/forge/production';
-import { FORGE_GRID } from '../src/data/buildings';
+import { BUILDINGS, FORGE_GRID } from '../src/data/buildings';
 
 function forgeWith(buildings: Record<string, number>, resources: Record<string, number> = {}) {
   let s = initialState();
@@ -42,10 +42,10 @@ describe('B29 placement des bâtiments', () => {
     // production réelle : adjacents = +1 lingot, non adjacents = 0
     const sAdj = forgeWith({ extracteur: 1, 'forge-arcane': 1 }, { mineraiBrut: 10, essence: 5 });
     sAdj.forge.buildingPos = { extracteur: { x: 0, y: 0 }, 'forge-arcane': { x: 0, y: 1 } };
-    const rAdj = advanceProduction(sAdj, 20);
+    const rAdj = advanceProduction(sAdj, BUILDINGS['forge-arcane'].cadenceTicks);
     const sLoin = forgeWith({ extracteur: 1, 'forge-arcane': 1 }, { mineraiBrut: 10, essence: 5 });
     sLoin.forge.buildingPos = { extracteur: { x: 0, y: 0 }, 'forge-arcane': { x: 3, y: 2 } };
-    const rLoin = advanceProduction(sLoin, 20);
+    const rLoin = advanceProduction(sLoin, BUILDINGS['forge-arcane'].cadenceTicks);
     expect(rAdj.forge.lingots).toBe(rLoin.forge.lingots + 1);
   });
 });

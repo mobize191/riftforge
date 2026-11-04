@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
 import { serialize, deserialize } from '../src/core/save/save';
 import { advanceProduction } from '../src/core/forge/production';
-import { WORKER_BONUS } from '../src/data/buildings';
+import { BUILDINGS, WORKER_BONUS } from '../src/data/buildings';
 
 function forgeWithRoster() {
   const s = initialState();
@@ -26,10 +26,10 @@ describe('R3-06 écurie, nommage, workers', () => {
 
   it('un worker assigné applique son bonus de production', () => {
     let s = reduce(forgeWithRoster(), { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: 'mousse' });
-    s = advanceProduction(s, 5); // 1 cycle extracteur
+    s = advanceProduction(s, BUILDINGS.extracteur.cadenceTicks); // 1 cycle extracteur
     expect(s.forge.mineraiBrut).toBe(1 + WORKER_BONUS.extracteur);
     s = reduce(s, { type: 'ASSIGN_WORKER', buildingId: 'extracteur', monsterId: null });
-    s = advanceProduction(s, 5);
+    s = advanceProduction(s, BUILDINGS.extracteur.cadenceTicks);
     expect(s.forge.mineraiBrut).toBe(1 + WORKER_BONUS.extracteur + 1);
   });
 });
