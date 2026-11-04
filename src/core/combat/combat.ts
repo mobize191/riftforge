@@ -5,6 +5,8 @@ import { RECIPES, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
 import { applyFusion } from './fuse';
 import { affinityMultiplier } from '../../data/affinities';
+import { BOSS_BY_ID } from '../../data/bosses';
+import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import type { ElementId } from '../types';
 
@@ -60,6 +62,7 @@ export interface CombatState {
   captured: string[];
   companion: CompanionState | null;
   modules: string[];
+  telegraph: string | null;
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -111,6 +114,18 @@ export function startCombat(
       }
     : null;
   const enemies: Combatant[] = enemyIds.map((id, i) => {
+    if (id.startsWith('boss:')) {
+      const boss = BOSS_BY_ID[id.slice(5)];
+      return {
+        id: `boss:${id.slice(5)}-0`,
+        name: boss?.name ?? id,
+        hp: boss?.hp ?? 30,
+        maxHp: boss?.hp ?? 30,
+        attack: 0,
+        isPlayer: false,
+        ...mkStatuses(),
+      };
+    }
     const def = MONSTER_BY_ID[id];
     return {
       id: `${id}-${i}`,
@@ -139,6 +154,7 @@ export function startCombat(
     captured: [],
     companion,
     modules,
+    telegraph: null,
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -172,6 +188,25 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
     if (e.hp <= 0) continue;
     if (e.stunned) {
       log.push(`${e.name} est projeté·e et perd son tour.`);
+      continue;
+    }
+    // Boss : télégraphie l'attaque un tour, l'exécute le suivant (§SPEC-5.1).
+    if (e.id.startsWith('boss:')) {
+      const boss = bossDefOf({ ...state, enemies: state.enemies.map((x, j) => (j === i ? e : x)) });
+      if (!boss) continue;
+      if (state.telegraph) {
+        const atk = boss.attacks.find((a) => a.name === state.telegraph) ?? boss.attacks[0];
+        const absorbed = Math.min(player.shield, atk.damage);
+        const dmg = atk.damage - absorbed;
+        player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
+        log.push(`${boss.name} exécute ${atk.name} : -${dmg} PV.`);
+        state = { ...state, telegraph: null };
+        if (player.hp <= 0) return { ...state, player, log, phase: 'lost' };
+        continue;
+      }
+      const next = nextBossAttack(boss, e.hp, e.maxHp, rng);
+      log.push(`${boss.name} prépare ${next.name}…`);
+      state = { ...state, telegraph: next.name };
       continue;
     }
     if (e.dot > 0) {
