@@ -144,3 +144,47 @@ Voir docs/QUESTIONS.md — Q6-3 (substitution assets), Q6-4 (simu mono-run), Q7-
 ## Blocages
 
 Aucun — `docs/BLOCKED.md` n'existe pas. Aucun échec répété 3x sur un ticket.
+
+---
+
+# Phase R10 (refonte combat V1.1, vague 1) — session locale, terminée
+
+- **Dernier commit** : `afcb713` sur `main` (8 commits R10-01 -> R10-08, ordre strict respecté).
+- **Preuves** (exécutées EN LOCAL, sorties dans les corps de commit) :
+  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **84 fichiers / 261 tests**, **15 tests e2e Playwright (3,7 min, 390 px headless local)**.
+- **Vérification headed** : `pnpm dev` + parcours complet (scripts/headed-final.mjs) -> 0 pageerror après fix B36.
+
+## État par ticket
+
+| Ticket | État | Commit | Notes |
+|---|---|---|---|
+| R10-01 | done | f5b8084 | parcours compagnon complet (capture -> écurie -> équipe -> combat -> compétence) en unitaire + e2e local + 8 captures |
+| R10-02 | done | f1e546a | énergie de combat D1 : jauge HUD, coûts 1/2/5/8, refus FR, invariant D1 testé, e2e jauge+coûts+refus réel |
+| R10-03 | done | 31312dc | D2 : scaling ATK par palier (data), nerf armes (jamais de one-shot tier 1, testé), « Faiblesse ! »/« Résisté ! » dans le log réel (e2e) |
+| R10-04 | done | bfbb323 | D3 : courbe continue en data, invariant PV(trash N+1) <= PV(boss N) testé sur toute la table |
+| R10-05 | done | af0c5ac | D4 : économie ralentie en data ; simu 20 morts biome 1 = haut de gamme inaccessible, tier 1 OK |
+| R10-06 | done | 121e8b7 | re-simu 1000 runs : 0,200 % (bande tenue), morts biome1=30,3 % / b2=57,1 % / b3=11,7 % / b4=0,7 %, 4 biomes visités |
+| R10-07 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | 35ca5e5 | lisibilité combat prouvée en auto (e2e + captures) ; playtest humain « un combat se comprend sans doc » à valider |
+| R10-08 | done | afcb713 | suite IHM locale : save par vrai fichier, persistance reload, clavier+focus, touch 390 px, audio+mute, matrice 390/768/1440/2560, 30 captures commitées |
+
+## Bugs trouvés/corrigés cette session (docs/BUGS.md)
+
+- **B35** : serveur e2e cross-platform (scripts/serve-e2e.mjs) + timeouts WebGL ; fix hydratation React #418 (mute lu en useEffect).
+- **B36** : crash `setPosition` à la 2e descente en headed -> garde `if (!this.player)` dans MapScene.tryMove.
+
+## Décisions D1-D5
+
+Reportées dans docs/SPEC.md (§5.2 D1/D2, §5.3 D3, §6.3 D4, §7 D5). Chiffres uniquement en src/data/ (TODO-BALANCE).
+
+## Simulations (sorties des tests)
+
+- `[R10-06] runs=1000 victoires=2 taux=0.200% tours moyens=1077.5 morts=998 par biome: biome1=303 biome2=571 biome3=117 biome4=7`
+- `[R9-01] runs=1000 victoires=2 taux=0.200%` (bande §SPEC-2 0,1-0,2 % conservée)
+
+## Blocages
+
+Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'existe toujours pas.
+
+## Vague 2 (R11)
+
+Non codée (périmètre strict). Idées déjà dans docs/BACKLOG.md + §6 du brief R10.
