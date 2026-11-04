@@ -4,6 +4,7 @@ import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
 import { RECIPES, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
 import { applyFusion } from './fuse';
+import { affinityMultiplier } from '../../data/affinities';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import type { ElementId } from '../types';
 
@@ -278,14 +279,22 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       const effect = recipe.effect;
       let player = state.player;
       let enemies = state.enemies;
-      if (effect.kind === 'damage') {
-        const enemy = enemies[target];
-        if (!enemy || enemy.hp <= 0) return state;
-        enemies = enemies.map((e, i) => (i === target ? { ...e, hp: Math.max(0, e.hp - effect.power) } : e));
-        log.push(`${recipe.name} sur ${enemy.name} : -${effect.power} PV.`);
-      } else if (effect.kind === 'aoe') {
-        enemies = enemies.map((e) => (e.hp > 0 ? { ...e, hp: Math.max(0, e.hp - effect.power) } : e));
-        log.push(`${recipe.name} : zone, -${effect.power} PV à tous.`);
+      if (effect.kind === 'damage' || effect.kind === 'aoe') {
+        const element = recipe.inputs[0];
+        const hit = (e: Combatant, i: number): Combatant => {
+          if (e.hp <= 0) return e;
+          if (effect.kind === 'damage' && i !== target) return e;
+          const def = MONSTER_BY_ID[e.id.split('-')[0]];
+          const mult = def && element ? affinityMultiplier(element, def) : 1;
+          const dmg = Math.round(effect.power * mult);
+          return { ...e, hp: Math.max(0, e.hp - dmg) };
+        };
+        enemies = enemies.map(hit);
+        log.push(
+          effect.kind === 'damage'
+            ? `${recipe.name} sur ${enemies[target]?.name} : -${Math.round(effect.power * (MONSTER_BY_ID[enemies[target]?.id.split('-')[0] ?? ''] ? affinityMultiplier(element, MONSTER_BY_ID[enemies[target].id.split('-')[0]]) : 1))} PV.`
+            : `${recipe.name} : zone, -${effect.power} PV à tous.`,
+        );
       } else if (effect.kind === 'shield') {
         player = { ...player, shield: player.shield + effect.power };
         log.push(`${recipe.name} : +${effect.power} bouclier.`);
