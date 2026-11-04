@@ -18,8 +18,8 @@ export default function CombatScreen({
   onAction: (a: CombatAction) => void;
   onEnd: (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko?: boolean) => void;
 }) {
-  const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
-  const [target] = useState(0);
+  const [menu, setMenu] = useState<'root' | 'items' | 'attack' | 'companions'>('root');
+  const [target, setTarget] = useState(0);
   const soloModules = availableSoloModules(combat.orbs);
   const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
   const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
@@ -49,6 +49,8 @@ export default function CombatScreen({
   }
 
   const alive = combat.enemies.map((e, i) => ({ ...e, index: i })).filter((e) => e.hp > 0);
+  // Cible sélectionnée (clic sur l'ennemi) ; retombe sur la première cible vivante si elle meurt.
+  const aliveTarget = combat.enemies[target]?.hp > 0 ? target : combat.enemies.findIndex((e) => e.hp > 0);
 
   return (
     <main
@@ -81,25 +83,47 @@ export default function CombatScreen({
         {combat.enemies.map((e, i) => (
           <li
             key={e.id}
-            className={`rounded border px-4 py-2 ${e.hp <= 0 ? 'border-slate-600 opacity-40 line-through' : 'border-red-400/60 bg-red-950/40'}`}
+            className={`rounded border px-4 py-2 ${e.hp <= 0 ? 'border-slate-600 opacity-40 line-through' : i === aliveTarget ? 'border-amber-400 bg-amber-950/60 ring-2 ring-amber-300' : 'border-red-400/60 bg-red-950/40'}`}
             style={{ minHeight: '44px' }}
           >
             {e.name} — PV {e.hp}/{e.maxHp} · ATK {e.attack}
-            {menu === 'attack' && e.hp > 0 && (
+            {e.hp > 0 && (
               <button
-                onClick={() => {
-                  onAction({ type: 'ATTACK', target: i });
-                  setMenu('root');
-                }}
-                className="ml-3 rounded bg-red-700 px-3 py-1"
+                onClick={() => setTarget(i)}
+                className={`ml-3 rounded px-3 py-1 ${i === aliveTarget ? 'bg-amber-500 text-black font-bold' : 'bg-slate-600'}`}
                 style={{ minHeight: '44px' }}
               >
-                Cibler
+                {i === aliveTarget ? '◉ Sélectionné' : 'Sélectionner'}
               </button>
             )}
           </li>
         ))}
       </ul>
+
+      {menu === 'companions' && combat.companion && (
+        <div className="flex w-full max-w-xl flex-col gap-2">
+          <p className="text-sm opacity-80">
+            {combat.companion.name} — PV {combat.companion.hp}/{combat.companion.maxHp}
+            {combat.companion.ko ? ' — K.O.' : ''}
+          </p>
+          {Object.entries(combat.companion.skills)
+            .filter(([, lvl]) => lvl > 0)
+            .map(([skillId, lvl]) => (
+              <button
+                key={skillId}
+                disabled={combat.companion!.ko}
+                onClick={() => {
+                  onAction({ type: 'USE_COMPANION_SKILL', skillId });
+                  setMenu('root');
+                }}
+                className="rounded border border-emerald-300 px-4 py-2 text-left disabled:opacity-40"
+                style={{ minHeight: '44px' }}
+              >
+                {skillId} niv {lvl} — gratuit
+              </button>
+            ))}
+        </div>
+      )}
 
       {menu === 'items' && (
         <div className="flex w-full max-w-xl flex-col gap-2">
@@ -126,7 +150,7 @@ export default function CombatScreen({
             <button
               key={m.id}
               onClick={() => {
-                onAction({ type: 'CAST_MODULE', moduleId: m.id, target });
+                onAction({ type: 'CAST_MODULE', moduleId: m.id, target: aliveTarget >= 0 ? aliveTarget : target });
                 setMenu('root');
               }}
               className="rounded border px-4 py-2 text-left"
@@ -139,7 +163,7 @@ export default function CombatScreen({
             <button
               key={m.id}
               onClick={() => {
-                onAction({ type: 'CAST_MODULE', moduleId: m.id, target });
+                onAction({ type: 'CAST_MODULE', moduleId: m.id, target: aliveTarget >= 0 ? aliveTarget : target });
                 setMenu('root');
               }}
               className="rounded border border-red-300 px-4 py-2 text-left"
@@ -166,11 +190,15 @@ export default function CombatScreen({
 
       <div className="flex w-full max-w-xl flex-wrap gap-2">
         <button
-          onClick={() => setMenu(menu === 'attack' ? 'root' : 'attack')}
+          onClick={() => {
+            if (menu === 'root') {
+              onAction({ type: 'ATTACK', target: aliveTarget >= 0 ? aliveTarget : 0 });
+            } else setMenu('root');
+          }}
           className="rounded bg-red-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >
-          Attaque & Modules
+          Attaquer (cible sélectionnée) / Modules
         </button>
         <button
           onClick={() => setMenu(menu === 'items' ? 'root' : 'items')}
@@ -180,7 +208,14 @@ export default function CombatScreen({
           Objets
         </button>
         <button
-          onClick={() => onAction({ type: 'CAPTURE', target })}
+          onClick={() => setMenu(menu === 'companions' ? 'root' : 'companions')}
+          className="rounded bg-emerald-700 px-4 py-3 font-semibold"
+          style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
+        >
+          Compagnons
+        </button>
+        <button
+          onClick={() => onAction({ type: 'CAPTURE', target: aliveTarget >= 0 ? aliveTarget : target })}
           className="rounded bg-violet-700 px-4 py-3 font-semibold"
           style={{ minHeight: '44px', flex: 1, minWidth: '120px' }}
         >

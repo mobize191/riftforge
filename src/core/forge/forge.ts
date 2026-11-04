@@ -39,6 +39,7 @@ export function buyEquipment(state: GameState, defId: string): GameState {
   const def: EquipmentDef | undefined = EQUIPMENT_BY_ID[defId];
   if (!def) return state;
   if (state.forge.credits < def.cost) return state;
+  if (state.forge.equipment.some((e) => e.defId === defId)) return state; // pas de doublon
   return {
     ...state,
     forge: {
@@ -74,6 +75,7 @@ export function craftEquipment(state: GameState, defId: string): GameState {
   if (state.mode !== 'FORGE') return state;
   const def = CRAFTABLE_EQUIPMENT.find((e) => e.id === defId);
   if (!def) return state;
+  if (state.forge.equipment.some((e) => e.defId === defId)) return state; // pas de doublon
   const next = spendResources(state, def.craftCost);
   if (next === state) return next;
   return {

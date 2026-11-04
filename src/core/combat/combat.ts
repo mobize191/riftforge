@@ -70,6 +70,7 @@ export interface CombatState {
   modules: string[];
   telegraph: string | null;
   challenge: ChallengeState | null;
+  usedSkillsThisTurn: string[];
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -82,6 +83,7 @@ export type CombatAction =
   | { type: 'CAST_MODULE'; moduleId: string; target?: number }
   | { type: 'CAPTURE'; target: number }
   | { type: 'CRAFT_MODULE'; recipeId: string }
+  | { type: 'USE_COMPANION_SKILL'; skillId: string }
   | { type: 'FUSE_IN_COMBAT'; indices: number[] }
   | { type: 'FLEE' };
 
@@ -166,6 +168,7 @@ export function startCombat(
     modules,
     telegraph: null,
     challenge: challenge ? { def: challenge, turnsLeft: challenge.turns } : null,
+    usedSkillsThisTurn: [],
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -191,11 +194,12 @@ function companionAct(state: CombatState): CombatState {
 }
 
 function enemyTurn(state: CombatState, rng: Rng): CombatState {
+  const state2 = { ...state, usedSkillsThisTurn: [] };
   const log = [...state.log];
-  let player = state.player;
-  let companion = state.companion;
-  for (let i = 0; i < state.enemies.length; i++) {
-    let e = state.enemies[i];
+  let player = state2.player;
+  let companion = state2.companion;
+  for (let i = 0; i < state2.enemies.length; i++) {
+    let e = state2.enemies[i];
     if (e.hp <= 0) continue;
     if (e.stunned) {
       log.push(`${e.name} est projeté·e et perd son tour.`);
@@ -251,7 +255,7 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
   if (player.hp <= 0) {
     return { ...state, player, companion, log, phase: 'lost' };
   }
-  const nextTurn = { ...state, player, companion, log, phase: 'player' as const, turn: state.turn + 1 };
+  const nextTurn = { ...state2, player, companion, log, phase: 'player' as const, turn: state.turn + 1 };
   if (nextTurn.challenge) {
     const turnsLeft = nextTurn.challenge.turnsLeft - 1;
     if (turnsLeft <= 0 && nextTurn.enemies.some((e) => e.hp > 0)) {
@@ -265,7 +269,7 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
     }
     nextTurn.challenge = { ...nextTurn.challenge, turnsLeft };
   }
-  return companionAct(nextTurn);
+  return nextTurn;
 }
 
 function checkVictory(state: CombatState, rng: Rng): CombatState {
@@ -347,8 +351,15 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       } else if (!state.modules.includes(recipe.id)) {
         return state;
       }
-      const target = action.target ?? 0;
       const effect = recipe.effect;
+      // Auto-ciblage comme pour l'attaque : cible morte -> première cible vivante.
+      let ti = action.target ?? 0;
+      if (!state.enemies[ti] || state.enemies[ti].hp <= 0) {
+        const firstAlive = state.enemies.findIndex((e) => e.hp > 0);
+        if (firstAlive < 0 && effect.kind !== 'shield' && effect.kind !== 'heal' && effect.kind !== 'purify') return state;
+        ti = Math.max(0, firstAlive);
+      }
+      const target = ti;
       let player = state.player;
       let enemies = state.enemies;
       if (effect.kind === 'damage' || effect.kind === 'aoe') {
@@ -427,6 +438,23 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       }
       log.push(`${recipe.name} créé (orbes consommées).`);
       return { ...state, orbs, modules: [...state.modules, recipe.id], log };
+    }
+    case 'USE_COMPANION_SKILL': {
+      // Le joueur déclenche une compétence du compagnon (gratuite, 1 fois par compétence et par tour).
+      const comp = state.companion;
+      if (!comp || comp.ko) return state;
+      const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === comp.defId);
+      const skill = def?.skills.find((sk) => sk.id === action.skillId);
+      if (!def || !skill) return state;
+      const level = comp.skills[skill.id] ?? 0;
+      if (level <= 0) return state;
+      if ((state.usedSkillsThisTurn ?? []).includes(skill.id)) return state;
+      let player = state.player;
+      if (skill.healPerLevel > 0) {
+        player = { ...player, hp: Math.min(player.maxHp, player.hp + skill.healPerLevel * level) };
+      }
+      log.push(`${comp.name} : ${skill.name} niv ${level}${skill.healPerLevel > 0 ? ` (+${skill.healPerLevel * level} PV)` : ''}.`);
+      return enemyTurn({ ...state, player, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] }, rng);
     }
     case 'FUSE_IN_COMBAT': {
       // En combat, la fusion coûte 1 tour (§SPEC-5.2) : on fusionne puis les ennemis jouent.

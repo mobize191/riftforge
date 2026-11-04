@@ -71,6 +71,28 @@ export default function App() {
     setState((prev) => (prev ? reduce(prev, { type: 'MOVE_PLAYER', to: pos }) : prev));
   }, []);
 
+  // Filet de sécurité : toute entrée en combat (contact carte, autel, sortie du boss via E)
+  // crée l'état de combat côté UI, sinon on retomberait sur l'écran titre.
+  useEffect(() => {
+    if (state?.mode === 'COMBAT' && state.run?.encounter && !combat) {
+      setCombat(
+        startCombat(
+          (state.run.seed ^ (state.run.floor * 7919)) >>> 0,
+          state.run.playerHp,
+          state.run.playerMaxHp,
+          state.run.playerAttack,
+          state.run.encounter,
+          state.run.orbs.map((o) => o.element).filter((e): e is NonNullable<typeof e> => e !== null),
+          state.forge.team[0] ? COMPANION_BY_MONSTER[state.forge.team[0]] ?? null : null,
+          state.run.companionSkills,
+          state.run.companionKo,
+          state.run.modules.map((m) => m.id),
+          state.run.challengeId ?? undefined,
+        ),
+      );
+    }
+  }, [state, combat]);
+
   const onEncounter = useCallback((enemies: string[]) => {
     setState((prev) => {
       if (!prev || !prev.run) return prev;
@@ -97,19 +119,21 @@ export default function App() {
     setCombat((prev) => (prev ? combatReduce(prev, a) : prev));
   }, []);
 
+  const combatHpRef = useRef(0);
   const onCombatEnd = useCallback(
     (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko = false) => {
+      if (combat) combatHpRef.current = combat.player.hp;
       setCombat(null);
       setState((prev) => {
         if (!prev) return prev;
         if (result === 'won')
-          return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined, companionKo: ko });
+          return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined, companionKo: ko, playerHp: combatHpRef.current });
         if (result === 'fled' || result === 'challenge-failed')
-          return reduce(prev, { type: 'EXIT_COMBAT', victory: false, companionKo: ko });
+          return reduce(prev, { type: 'EXIT_COMBAT', victory: false, companionKo: ko, playerHp: combatHpRef.current });
         return reduce(prev, { type: 'DIE' });
       });
     },
-    [],
+    [combat],
   );
 
   const onInteract = useCallback(() => {
@@ -255,8 +279,9 @@ export default function App() {
       <main className="flex min-h-screen flex-col items-center gap-3 bg-[#0a0e1a] py-4 text-slate-100">
         <div className="flex w-full max-w-5xl items-center justify-between px-4">
           <span className="font-semibold tracking-widest">
-            RIFTFORGE — Sol {state.run.floor} · Niv {state.run.playerLevel} · XP {state.run.xp} ·{' '}
-            {state.run.lootCredits} crédits
+            RIFTFORGE — Sol {state.run.floor} · Niv {state.run.playerLevel} · PV {run.playerHp}/{run.playerMaxHp} ·{' '}
+            Butin : {run.lootCredits} crédits · {run.lootEssence} essence · {run.lootMinerai} minerai ·{' '}
+            {run.lootSpores} spores
           </span>
           <button
             onClick={onQuit}

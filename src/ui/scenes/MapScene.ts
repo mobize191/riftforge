@@ -261,7 +261,17 @@ export class MapScene extends Phaser.Scene {
     }
     this.syncSprites();
 
-    const idx = monsterAt(this.level, this.pos);
+    // Combat automatique au contact : même case OU case adjacente (4 directions).
+    let idx = monsterAt(this.level, this.pos);
+    if (idx < 0) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const j = monsterAt(this.level, { x: this.pos.x + dx, y: this.pos.y + dy });
+        if (j >= 0) {
+          idx = j;
+          break;
+        }
+      }
+    }
     if (idx >= 0) {
       this.onEncounter?.(pickEncounter(this.seed, this.floor, idx, this.familyIds));
     }

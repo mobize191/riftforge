@@ -1,5 +1,10 @@
 # RIFTFORGE — QUESTIONS (à répondre par l'humain le matin)
 
+## Retours playtest (matin 3)
+- Q0-6 : le combat se déclenche maintenant aussi quand un monstre est sur une case ADJACENTE —
+  est-ce que ça ne rend pas les rencontres trop fréquentes / inescapables ?
+- Q0-7 : « Sélectionner » puis attaquer : le vocabulaire te convient-il mieux que « Cibler » ?
+
 ## Retours playtest (matin 2)
 - Q0-4 : les sprites sont des formes générées en code (pas d'assets externes autorisés) — est-ce que
   ce style « pictogrammes » convient, ou faut-il prioriser des packs Kenney CC0 pour les monstres ?

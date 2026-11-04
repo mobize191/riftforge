@@ -25,7 +25,7 @@ export { MAP_WIDTH, MAP_HEIGHT };
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
   | { type: 'ENTER_COMBAT'; enemies: string[]; challengeId?: string }
-  | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean }
+  | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean; playerHp?: number }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
   | { type: 'RETURN_FORGE' }
@@ -302,6 +302,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
         ...state.run,
         encounter: null,
         companionKo: action.companionKo ?? state.run.companionKo,
+        // Les PV restants du combat persistent entre les combats (pas de soin gratuit).
+        playerHp: Math.max(1, Math.min(state.run.playerMaxHp, action.playerHp ?? state.run.playerHp)),
+        lastEvent: null,
       };
       if (action.victory && action.loot) {
         run = {
@@ -321,7 +324,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
             })),
           ],
         };
-        // Montées de niveau de la run (perdues à la mort, §SPEC-3).
+        // Montées de niveau de la run (perdues à la mort, §SPEC-3) : soigne des PV du niveau gagné.
         while (
           run.playerLevel < BALANCE.LEVEL_XP_THRESHOLDS.length &&
           run.xp >= BALANCE.LEVEL_XP_THRESHOLDS[run.playerLevel]
@@ -331,9 +334,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
             playerLevel: run.playerLevel + 1,
             playerMaxHp: run.playerMaxHp + BALANCE.HP_PER_LEVEL,
             playerAttack: run.playerAttack + BALANCE.ATK_PER_LEVEL,
+            playerHp: Math.min(run.playerMaxHp + BALANCE.HP_PER_LEVEL, run.playerHp + BALANCE.HP_PER_LEVEL),
           };
         }
-        run = { ...run, playerHp: run.playerMaxHp };
       }
       // Victoire contre le boss -> fin du biome -> retour à la Forge.
       const wasBoss = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
@@ -443,6 +446,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (chestIdx >= 0) {
         const rng = createRng((seed ^ (floor * 31) ^ (chestIdx * 101)) >>> 0);
         const credits = BALANCE.CHEST_CREDITS_MIN + rng.int(BALANCE.CHEST_CREDITS_SPREAD);
+        const essence = 1 + rng.int(3); // TODO-BALANCE — les coffres donnent de l'essence
         const orb = rng.pick(PRIMORDIAL_ELEMENTS);
         return {
           ...state,
@@ -450,11 +454,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
             ...state.run,
             level: { ...level, chests: level.chests.filter((_, i) => i !== chestIdx) },
             lootCredits: state.run.lootCredits + credits,
+            lootEssence: state.run.lootEssence + essence,
             orbs: [
               ...state.run.orbs,
               { id: `coffre-${floor}-${chestIdx}`, kind: 'primordial' as const, element: orb, tier: 1 },
             ],
-            lastEvent: `Coffre ouvert : +${credits} crédits, orbe ${orb}.`,
+            lastEvent: `Coffre ouvert : +${credits} crédits, +${essence} essence, orbe ${orb}.`,
           },
         };
       }
