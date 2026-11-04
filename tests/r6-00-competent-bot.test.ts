@@ -282,7 +282,7 @@ function competentBiome1Run(seed: number, moduleUsage: Record<string, number>) {
 
 describe('R6-00 bot compétent — re-mesure du biome 1 (1000 runs)', () => {
   it('taux de victoire > 20 %, durée en tours et modules utilisés affichés', { timeout: 120000 }, () => {
-    const N = 1000;
+    const N = process.env.SIM_RUNS ? parseInt(process.env.SIM_RUNS, 10) : 1000; // SIM_RUNS réduit en CI (R9-06 perf)
     let wins = 0;
     let totalTurns = 0;
     const moduleUsage: Record<string, number> = {};

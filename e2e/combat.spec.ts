@@ -10,10 +10,16 @@ test('combat : bannière de tour + effets de modules affichés', async ({ page }
   // essaie les 4 directions en boucle jusqu'à tomber sur un monstre (contact -> combat)
   const dirs = ['Droite', 'Bas', 'Gauche', 'Haut'];
   let inCombat = false;
-  for (let i = 0; i < 24 && !inCombat; i++) {
+  for (let i = 0; i < 80 && !inCombat; i++) {
     await page.getByRole('button', { name: dirs[i % 4] }).click();
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(150);
     inCombat = await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false);
+    if (!inCombat && i % 5 === 4) {
+      // l'autel (E) déclenche aussi un combat
+      await page.getByRole('button', { name: 'Interagir' }).click();
+      await page.waitForTimeout(150);
+      inCombat = await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false);
+    }
   }
   expect(inCombat).toBe(true);
 

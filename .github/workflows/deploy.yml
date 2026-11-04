@@ -28,6 +28,7 @@ jobs:
       - run: pnpm vitest run
         env:
           FUZZ_SESSIONS: 1000
+          SIM_RUNS: 250 # sims R6-00/R6-10 réduites en CI (R9-01 garde N=1000 : bande §SPEC-2)
       - run: pnpm next build
 
   e2e:

@@ -189,7 +189,7 @@ function fullRun(seed: number) {
 
 describe('R9-01 équilibrage final (1000 runs complètes, bande §SPEC-2)', () => {
   it('taux de victoire première-run dans la bande 0,1–0,2 %', { timeout: 900000 }, () => {
-    const N = 1000;
+    const N = process.env.SIM_RUNS_FINAL ? parseInt(process.env.SIM_RUNS_FINAL, 10) : 1000; // bande §SPEC-2 : N=1000 requis
     let wins = 0;
     for (let seed = 1; seed <= N; seed++) {
       if (fullRun((seed * 2654435761) >>> 0).won) wins++;

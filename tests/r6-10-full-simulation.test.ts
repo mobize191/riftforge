@@ -199,7 +199,7 @@ function fullRun(seed: number) {
 
 describe('R6-10 simulation run complète (1000 runs, 4 biomes, bot compétent)', () => {
   it('taux de victoire, durée moyenne en tours, palier de mort dominant — affichés', { timeout: 900000 }, () => {
-    const N = 1000;
+    const N = process.env.SIM_RUNS ? parseInt(process.env.SIM_RUNS, 10) : 1000; // SIM_RUNS réduit en CI (R9-06 perf)
     let wins = 0;
     let totalTurns = 0;
     const deathBiomes = [0, 0, 0, 0];

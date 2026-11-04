@@ -10,7 +10,7 @@ test('écran Forge : toutes les sections sont présentes et lisibles', async ({ 
   await page.getByRole('button', { name: 'Quitter la Faille' }).click();
 
   // sections principales de la Forge
-  await expect(page.getByRole('heading', { name: 'LA FORGE' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'LA FORGE', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Maison du héros/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Liaiseuse/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Travailleurs par bâtiment/ })).toBeVisible();
