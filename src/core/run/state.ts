@@ -1,7 +1,7 @@
 import type { GameState, Position } from '../types';
 import { BALANCE } from '../../data/balance';
 import { MAP_WIDTH, MAP_HEIGHT } from './grid';
-import { generateLevel, type LevelMap } from './generate';
+import { generateLevel } from './generate';
 import type { CombatLoot } from '../combat/combat';
 import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';

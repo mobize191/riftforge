@@ -14,7 +14,7 @@ export default function CombatScreen({
   onEnd: (result: 'won' | 'lost' | 'fled', loot: CombatState['loot'], ko?: boolean) => void;
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
-  const [target, setTarget] = useState(0);
+  const [target] = useState(0);
   const soloModules = availableSoloModules(combat.orbs);
 
   const phase = combat.phase;

@@ -32,13 +32,13 @@ export function createModule(orbs: Orb[], recipeId: string): CreateResult {
   for (const [el, count] of required) {
     for (const orb of available.get(el)!.slice(0, count)) consumed.add(orb.id);
   }
-  const module: Module = {
+  const created: Module = {
     id: recipe.id,
     name: recipe.name,
     tier: recipe.tier,
     effect: recipe.effect,
   };
-  return { ok: true, module, orbs: orbs.filter((o) => !consumed.has(o.id)) };
+  return { ok: true, module: created, orbs: orbs.filter((o) => !consumed.has(o.id)) };
 }
 
 export function craftableRecipes(orbs: Orb[], discovered: string[]): RecipeDef[] {
