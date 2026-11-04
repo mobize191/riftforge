@@ -26,14 +26,14 @@ describe('R1-06 minimal forge + merchant', () => {
 
   it('equipment survives two runs and is worn on the next one', () => {
     let s = stateWithCredits(100);
-    s = reduce(s, { type: 'BUY_ITEM', defId: 'lame-rustique' }); // +2 ATK
+    s = reduce(s, { type: 'BUY_ITEM', defId: 'lame-rustique' }); // +1 ATK (R10-03 : jamais de one-shot)
     const baseAtk = 4;
     s = reduce(s, { type: 'START_RUN', seed: 1 });
-    expect(s.run!.playerAttack).toBe(baseAtk + 2);
+    expect(s.run!.playerAttack).toBe(baseAtk + 1);
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });
     expect(s.forge.equipment).toHaveLength(1);
     s = reduce(s, { type: 'START_RUN', seed: 2 });
-    expect(s.run!.playerAttack).toBe(baseAtk + 2);
+    expect(s.run!.playerAttack).toBe(baseAtk + 1);
   });
 });

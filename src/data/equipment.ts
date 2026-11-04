@@ -19,13 +19,13 @@ export const EQUIPMENT_SLOT_LIMITS: Record<EquipmentSlot, number> = {
 
 // Équipement achetable chez le Marchand (itération 1). TODO-BALANCE: coûts et stats de dev.
 export const MERCHANT_ITEMS: EquipmentDef[] = [
-  { id: 'lame-rustique', name: 'Lame rouillée', cost: 15, attackBonus: 2, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE
+  { id: 'lame-rustique', name: 'Lame rouillée', cost: 15, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE
   { id: 'cuirasse-fer', name: 'Cuirasse de fer', cost: 20, attackBonus: 0, hpBonus: 6 , slot: 'armure' }, // TODO-BALANCE
-  { id: 'bottes-faille', name: 'Bottes de Faille', cost: 25, attackBonus: 1, hpBonus: 4 , slot: 'accessoire' }, // TODO-BALANCE
+  { id: 'bottes-faille', name: 'Bottes de Faille', cost: 25, attackBonus: 0, hpBonus: 4 , slot: 'accessoire' }, // TODO-BALANCE
   // R6-06 / Q1-1 : le Marchand passe à 6 équipements achetables. TODO-BALANCE.
-  { id: 'dague-venin', name: 'Dague de venin', cost: 35, attackBonus: 4, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE
-  { id: 'egide-lapis', name: 'Égide de lapis', cost: 40, attackBonus: 1, hpBonus: 9 , slot: 'bouclier' }, // TODO-BALANCE
-  { id: 'greves-plomb', name: 'Grèves de plomb', cost: 30, attackBonus: 2, hpBonus: 5 , slot: 'armure' }, // TODO-BALANCE
+  { id: 'dague-venin', name: 'Dague de venin', cost: 35, attackBonus: 1, hpBonus: 0 , slot: 'arme' }, // TODO-BALANCE (R10-03 D2 : jamais de one-shot)
+  { id: 'egide-lapis', name: 'Égide de lapis', cost: 40, attackBonus: 0, hpBonus: 9 , slot: 'bouclier' }, // TODO-BALANCE
+  { id: 'greves-plomb', name: 'Grèves de plomb', cost: 30, attackBonus: 0, hpBonus: 5 , slot: 'armure' }, // TODO-BALANCE
 ];
 
 export const EQUIPMENT_BY_ID: Record<string, EquipmentDef> = Object.fromEntries(

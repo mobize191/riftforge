@@ -54,14 +54,16 @@ describe('R10-02 — énergie de combat (D1)', () => {
   });
 
   it('rotation forcée : Déflagration (tier 3) ne peut pas être lancée à chaque tour', () => {
-    let c = mkCombat({ modules: ['deflagration'], enemyIds: ['amas'] }); // amas (11 PV) survit au blast
+    // Boss biome 4 (270 PV) : assez tanké pour encaisser plusieurs Déflagrations.
+    let c = mkCombat({ modules: ['deflagration'], enemyIds: ['boss:noeud-final'] }); // 320 PV
+    expect(c.enemies[0].maxHp).toBeGreaterThanOrEqual(100);
     const cost = moduleEnergyCost(RECIPE_BY_ID['deflagration']);
     // Premier cast : OK (énergie suffisante).
     let s = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
     expect(s.log.some((l) => l.includes('Déflagration'))).toBe(true);
     // Boucle : le refus finit par tomber (cost > regen), avec message FR et sans avancer le tour.
     let refused = false;
-    for (let i = 0; i < 8 && !refused && s.phase === 'player'; i++) {
+    for (let i = 0; i < 10 && !refused && s.phase === 'player'; i++) {
       const before = s;
       const next = combatReduce(s, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
       if (next.log.some((l) => l.includes("Pas assez d'énergie"))) {

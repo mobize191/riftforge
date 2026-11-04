@@ -380,9 +380,19 @@ export default function CombatScreen({
       </div>
 
       <div className="w-full max-w-xl rounded bg-black/40 p-3 text-sm" style={{ maxHeight: '30vh', overflowY: 'auto' }}>
-        {combat.log.slice(-6).map((l, i) => (
-          <p key={i}>{l}</p>
-        ))}
+        {combat.log.slice(-6).map((l, i) => {
+          // R10-03 (D2) : « Faiblesse ! » accentué, « Résisté ! » atténué.
+          const m = l.match(/^(.*?)(Faiblesse !|Résisté !)(.*)$/);
+          if (!m) return <p key={i}>{l}</p>;
+          const accentue = m[2] === 'Faiblesse !';
+          return (
+            <p key={i}>
+              {m[1]}
+              <span className={accentue ? 'font-bold text-amber-300' : 'italic opacity-60'}>{m[2]}</span>
+              {m[3]}
+            </p>
+          );
+        })}
       </div>
     </main>
   );

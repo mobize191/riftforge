@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // B27 + R9 : HUD « Au tour de » (compagnon visible) + effets des modules affichés +
-// modules scalés avec l'attaque du joueur (BALANCE.MODULE_ATK_SCALING, en data).
+// modules scalés avec l'attaque du joueur (BALANCE.MODULE_ATK_SCALING_BY_TIER, en data).
 import { startCombat, combatReduce, actorLabel, moduleEffectLabel } from '../src/core/combat/combat';
 import { RECIPES } from '../src/data/recipes';
 import { BALANCE } from '../src/data/balance';
@@ -39,8 +39,8 @@ describe('HUD combat : acteur courant et effets de modules', () => {
     };
     const dLow = dmgOf(low);
     const dHigh = dmgOf(high);
-    expect(dLow).toBe(Math.round(5 + 4 * BALANCE.MODULE_ATK_SCALING)); // power + ATQ x scaling
-    expect(dHigh).toBe(Math.round(5 + 12 * BALANCE.MODULE_ATK_SCALING));
+    expect(dLow).toBe(Math.round(5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1])); // power + ATQ x scaling
+    expect(dHigh).toBe(Math.round(5 + 12 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]));
     expect(dHigh).toBeGreaterThan(dLow);
   });
 });

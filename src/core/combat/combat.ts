@@ -512,16 +512,38 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
           if (blurred) mult = BLURRED_AFFINITY_VALUES[Math.floor(rng.next() * BLURRED_AFFINITY_VALUES.length)];
           // R9 : les modules scalent avec l'attaque du joueur (valeur en data) pour rester
           // utiles quand l'attaque de base one-shotte.
-          const power = effect.power + state.player.attack * BALANCE.MODULE_ATK_SCALING;
+          const power = effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0);
           const dmg = Math.round(power * mult);
           return { ...e, hp: Math.max(0, e.hp - dmg) };
         };
         enemies = enemies.map(hit);
-        log.push(
-          effect.kind === 'damage'
-            ? `${recipe.name} sur ${enemies[target]?.name} : -${Math.round(effect.power * (MONSTER_BY_ID[enemies[target]?.id.split('-')[0] ?? ''] ? affinityMultiplier(element, MONSTER_BY_ID[enemies[target].id.split('-')[0]]) : 1))} PV.`
-            : `${recipe.name} : zone, -${effect.power} PV à tous.`,
-        );
+        // R10-03 (D2) : retour d'affinité explicite dans le log à chaque coup de module.
+        const affLog: string[] = [];
+        for (const [i, e] of enemies.entries()) {
+          if (e.hp <= 0 && state.enemies[i]?.hp > 0) {
+            // ennemi tué par ce coup — ignoré ici, le log de dégâts global suffit
+          }
+        }
+        if (effect.kind === 'damage') {
+          const before = state.enemies[target];
+          const after = enemies[target];
+          const dealt = before && after ? before.hp - after.hp : 0;
+          const def = MONSTER_BY_ID[before?.id.split('-')[0].replace(/^elite-/, '') ?? ''];
+          const mult = def ? affinityMultiplier(element, def) : 1;
+          const marque = mult > 1 ? ' Faiblesse !' : mult < 1 ? ' Résisté !' : '';
+          log.push(`${recipe.name} sur ${after?.name ?? '?'} : -${dealt} PV.${marque}`);
+          void affLog;
+        } else {
+          // AoE : marqueur selon la meilleure affinité touchée.
+          let best = 1;
+          for (const e of state.enemies) {
+            if (e.hp <= 0) continue;
+            const def = MONSTER_BY_ID[e.id.split('-')[0].replace(/^elite-/, '') ?? ''];
+            if (def) best = Math.max(best, affinityMultiplier(element, def));
+          }
+          const marque = best > 1 ? ' Faiblesse !' : '';
+          log.push(`${recipe.name} : zone, -${effect.power} PV à tous.${marque}`);
+        }
       } else if (effect.kind === 'shield') {
         player = { ...player, shield: player.shield + effect.power };
         log.push(`${recipe.name} : +${effect.power} bouclier.`);
@@ -536,7 +558,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       } else if (effect.kind === 'dot') {
         const enemy = enemies[target];
         if (!enemy || enemy.hp <= 0) return state;
-        const dotPower = Math.round(effect.power + state.player.attack * BALANCE.MODULE_ATK_SCALING);
+        const dotPower = Math.round(effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0));
         enemies = enemies.map((e, i) => (i === target ? { ...e, dot: dotPower } : e));
         log.push(`${recipe.name} sur ${enemy.name} : poison ${dotPower}/tour.`);
       } else if (effect.kind === 'slow') {

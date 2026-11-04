@@ -17,9 +17,9 @@ export const BALANCE = {
   // Cibles de simulation « première run gagnable » (§SPEC-2, §R4-08). TODO-BALANCE.
   FIRST_RUN_WIN_TARGET_MIN: 0.001, // TODO-BALANCE — 1/1000 au minimum
   FIRST_RUN_WIN_TARGET_MAX: 0.002, // TODO-BALANCE — 1/500 au maximum
-  // Scaling des modules avec l'attaque du joueur (R9) : dégâts module = power + ATQ x ce
-  // facteur, pour que les modules restent utiles quand l'attaque de base one-shote.
-  MODULE_ATK_SCALING: 0.2, // ajusté R9-01 // TODO-BALANCE
+  // R10-03 (décision D2) : les modules scalent avec l'attaque du joueur, ratio PAR
+  // PALIER (base + ATQ x ratio[tier]) — un module haut palier profite plus de l'ATQ.
+  MODULE_ATK_SCALING_BY_TIER: { 1: 0.2, 2: 0.5, 3: 0.9 } as Record<number, number>, // TODO-BALANCE
 
   // R10-02 (décision D1) : énergie de combat — régénérée à chaque nouveau round,
   // conservée au sein d'un même combat, remise au niveau de départ à chaque combat.
