@@ -247,7 +247,15 @@ export default function App() {
   }, []);
 
   if (view === 'game' && state?.mode === 'COMBAT' && combat) {
-    return <CombatScreen combat={combat} discovered={state.forge.discoveredRecipes} onAction={onCombatAction} onEnd={onCombatEnd} />;
+    return (
+      <CombatScreen
+        combat={combat}
+        discovered={state.forge.discoveredRecipes}
+        onAction={onCombatAction}
+        onEnd={onCombatEnd}
+        companionBondTier={state.forge.team[0] ? (state.forge.bondTier[state.forge.team[0]] ?? 1) : 1}
+      />
+    );
   }
 
   if (view === 'forge' && state?.mode === 'FORGE') {

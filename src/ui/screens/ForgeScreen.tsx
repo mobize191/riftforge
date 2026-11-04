@@ -6,7 +6,31 @@ import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
 import { canalizationSlots } from '../../core/forge/lab';
+import { portraitUrl } from '../portraits';
 import { useState } from 'react';
+
+// R9-07 : portrait de PNJ (assets/portraits/*.png) avec fallback icône code-gen si absent
+// (la liaiseuse.png arrive plus tard — jamais d'emplacement vide).
+function PnjPortrait({ id, label }: { id: string; label: string }) {
+  const png = portraitUrl(id);
+  const fallback = '/assets/forge.svg';
+  return (
+    <span className="flex flex-col items-center gap-1">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={png || fallback}
+        onError={(ev) => {
+          if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback;
+        }}
+        alt={label}
+        width={56}
+        height={56}
+        className="rounded-full border border-amber-200/40 object-cover"
+      />
+      <span className="text-xs opacity-80">{label}</span>
+    </span>
+  );
+}
 
 export default function ForgeScreen({
   state,
@@ -47,6 +71,11 @@ export default function ForgeScreen({
       <h1 className="font-bold tracking-widest" style={{ fontSize: 'clamp(1.6rem, 6vw, 2.6rem)' }}>
         LA FORGE
       </h1>
+      <div className="flex flex-wrap justify-center gap-4">
+        <PnjPortrait id="marchand" label="Marchand" />
+        <PnjPortrait id="constructeur" label="Constructeur" />
+        <PnjPortrait id="liaiseuse" label="Liaiseuse" />
+      </div>
       <div className="flex flex-wrap justify-center gap-3 text-sm">
         {(
           [

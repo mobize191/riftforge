@@ -5,6 +5,7 @@ import type { LevelMap, PlacedMonster } from '../../core/run/generate';
 import { monsterAt, patrolStep, pickEncounter } from '../../core/run/encounter';
 import { isWall } from '../../core/run/generate';
 import { TILE, LOGICAL_WIDTH, LOGICAL_HEIGHT } from './mapConfig';
+import { PORTRAIT_DIR, PORTRAIT_FILE, entityIdOf } from '../portraits';
 
 const ELEMENT_COLORS: Record<string, number> = {
   feu: 0xff5533,
@@ -152,6 +153,20 @@ export class MapScene extends Phaser.Scene {
 
   private keyOf = (p: Position) => `${p.x},${p.y}`;
 
+  // R9-07 : sprites de carte = portraits IA downscalés en 32 px quand le PNG est présent ;
+  // sinon le fallback code-gen (texture 'monster'/'player' générée en dessous) est utilisé.
+  preload(): void {
+    const ids = new Set<string>(['heros', ...this.level.monsters.map((m) => entityIdOf(m.id))]);
+    for (const id of ids) {
+      const file = PORTRAIT_FILE[id];
+      if (file) this.load.image(`p-${id}`, `${PORTRAIT_DIR}/${file}`);
+    }
+  }
+
+  private spriteFor(id: string, fallback: string): string {
+    return this.textures.exists(`p-${id}`) ? `p-${id}` : fallback;
+  }
+
   create(): void {
     makeTextures(this, this.palette);
     this.add.image(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, 'floor');
@@ -188,14 +203,18 @@ export class MapScene extends Phaser.Scene {
       this.altarSprites.set(this.keyOf(altar), spr);
     }
     this.level.monsters.forEach((m, i) => {
-      const spr = this.add.image(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2, 'monster');
+      const spr = this.add.image(
+        m.pos.x * TILE + TILE / 2,
+        m.pos.y * TILE + TILE / 2,
+        this.spriteFor(entityIdOf(m.id), 'monster'),
+      );
       this.monsterSprites.set(i, spr);
     });
 
     this.player = this.add.image(
       this.pos.x * TILE + TILE / 2,
       this.pos.y * TILE + TILE / 2,
-      'player',
+      this.spriteFor('heros', 'player'),
     );
 
     this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
@@ -255,8 +274,9 @@ export class MapScene extends Phaser.Scene {
       this.monsterSprites.delete(i);
     }
     alive.forEach((m: PlacedMonster, i: number) => {
-      const spr = this.monsterSprites.get(i) ?? this.add.image(0, 0, 'monster');
+      const spr = this.monsterSprites.get(i) ?? this.add.image(0, 0, this.spriteFor(entityIdOf(m.id), 'monster'));
       this.monsterSprites.set(i, spr);
+      spr.setTexture(this.spriteFor(entityIdOf(m.id), 'monster'));
       spr.setPosition(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2);
     });
   }

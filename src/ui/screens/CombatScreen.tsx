@@ -5,6 +5,8 @@ import { availableSoloModules, currentActorId, type CombatState, type CombatActi
 import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
+import { entityIdOf, isEliteId, portraitUrl, portraitFallbackUrl, bondTierTint, ELITE_TINT } from '../portraits';
+import { COMPANION_BY_MONSTER } from '../../data/companions';
 import type { Orb } from '../../core/types';
 
 export default function CombatScreen({
@@ -12,11 +14,13 @@ export default function CombatScreen({
   discovered,
   onAction,
   onEnd,
+  companionBondTier = 1,
 }: {
   combat: CombatState;
   discovered: string[];
   onAction: (a: CombatAction) => void;
   onEnd: (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko?: boolean) => void;
+  companionBondTier?: number; // R8-02 — teinte de lien par palier sur le portrait du compagnon
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack' | 'companions'>('root');
   const [target, setTarget] = useState(0);
@@ -68,7 +72,29 @@ export default function CombatScreen({
         <strong>{combat.player.name}</strong> — PV {combat.player.hp}/{combat.player.maxHp}
       </div>
       {combat.companion && (
-        <div className={`w-full max-w-xl rounded-lg border p-3 ${combat.companion.ko ? 'border-slate-600 opacity-50' : 'border-emerald-400/60'}`}>
+        <div className={`flex w-full max-w-xl items-center gap-3 rounded-lg border p-3 ${combat.companion.ko ? 'border-slate-600 opacity-50' : 'border-emerald-400/60'}`}>
+          {/* R9-07 : portrait du compagnon + teinte de lien par palier (R8-02) */}
+          {(() => {
+            const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === combat.companion!.defId);
+            const mid = def?.monsterId ?? 'mousse';
+            const png = portraitUrl(mid);
+            const fallback = portraitFallbackUrl(mid);
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={png || fallback}
+                onError={(ev) => {
+                  if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback;
+                }}
+                alt={combat.companion.name}
+                width={48}
+                height={48}
+                className="shrink-0 rounded"
+                style={{ filter: bondTierTint(companionBondTier) || undefined }}
+              />
+            );
+          })()}
+          <div>
           <strong>Compagnon : {combat.companion.name}</strong> — PV {combat.companion.hp}/{combat.companion.maxHp}
           {combat.companion.ko && ' — K.O. (hors combat jusqu’à la Forge)'}
           <ul className="mt-1 text-sm opacity-80">
@@ -80,22 +106,42 @@ export default function CombatScreen({
                 </li>
               ))}
           </ul>
+          </div>
         </div>
       )}
       <ul className="flex w-full max-w-xl flex-col gap-2">
         {combat.enemies.map((e, i) => {
-          // R6-09 : portrait ennemi (idle + télégraphie pour les boss, §SPEC-5.1)
-          const baseId = e.id.split('-')[0].replace(/^boss:/, '');
+          // R9-07 : portrait IA (assets/portraits/*.png) avec fallback code-gen SVG (R6-09)
+          // si le fichier est absent — jamais d'écran vide. Télégraphie = flash rouge
+          // superposé sur le portrait (pas d'animation dédiée en V1). Élite = teinte.
+          const baseId = entityIdOf(e.id);
           const telegraphing = e.id.startsWith('boss:') && combat.telegraph !== null;
-          const portrait = `/assets/portrait-${baseId}${telegraphing ? '-telegraph' : ''}.svg`;
+          const png = portraitUrl(baseId);
+          const fallback = portraitFallbackUrl(baseId, telegraphing);
+          const elite = isEliteId(e.id);
           return (
           <li
             key={e.id}
             className={`flex items-center gap-3 rounded border px-4 py-2 ${e.hp <= 0 ? 'border-slate-600 opacity-40 line-through' : i === aliveTarget ? 'border-amber-400 bg-amber-950/60 ring-2 ring-amber-300' : 'border-red-400/60 bg-red-950/40'}`}
             style={{ minHeight: '44px' }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={portrait} alt={e.name} width={48} height={48} className="shrink-0 rounded" />
+            <span className={`relative inline-block shrink-0 overflow-hidden rounded ${telegraphing ? 'animate-pulse' : ''}`} style={telegraphing ? { boxShadow: '0 0 12px 3px #ff2244' } : undefined}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={png || fallback}
+                onError={(ev) => {
+                  if (ev.currentTarget.src !== fallback && !ev.currentTarget.src.endsWith(fallback)) {
+                    ev.currentTarget.src = fallback;
+                  }
+                }}
+                alt={e.name}
+                width={48}
+                height={48}
+                className="rounded"
+                style={{ filter: elite ? ELITE_TINT : telegraphing ? 'saturate(1.6) hue-rotate(-25deg)' : undefined }}
+              />
+              {telegraphing && <span className="absolute inset-0 bg-red-500/30" />}
+            </span>
             <span>
             {e.name} — PV {e.hp}/{e.maxHp} · ATK {e.attack}
             {telegraphing && <span className="ml-2 text-red-400 font-semibold">prépare {combat.telegraph}…</span>}
