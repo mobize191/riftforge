@@ -81,6 +81,7 @@ export type CombatAction =
   | { type: 'USE_ITEM'; itemId: string; target?: number }
   | { type: 'CAST_MODULE'; moduleId: string; target?: number }
   | { type: 'CAPTURE'; target: number }
+  | { type: 'CRAFT_MODULE'; recipeId: string }
   | { type: 'FUSE_IN_COMBAT'; indices: number[] }
   | { type: 'FLEE' };
 
@@ -299,12 +300,17 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
 
   switch (action.type) {
     case 'ATTACK': {
-      const target = state.enemies[action.target];
-      if (!target) return state;
-      // Même une cible morte consomme le tour (sinon le combat stagne).
-      const dmg = target.hp > 0 ? Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)) : 0; // TODO-BALANCE variance
-      const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: Math.max(0, e.hp - dmg), stunned: false } : e));
-      log.push(target.hp > 0 ? `Vous attaquez ${target.name} : -${dmg} PV.` : `${target.name} est déjà à terre.`);
+      // Auto-ciblage : si la cible est morte, on frappe la première cible vivante.
+      let ti = action.target;
+      if (!state.enemies[ti] || state.enemies[ti].hp <= 0) {
+        const firstAlive = state.enemies.findIndex((e) => e.hp > 0);
+        if (firstAlive < 0) return state;
+        ti = firstAlive;
+      }
+      const target = state.enemies[ti];
+      const dmg = Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)); // TODO-BALANCE variance
+      const enemies = state.enemies.map((e, i) => (i === ti ? { ...e, hp: Math.max(0, e.hp - dmg), stunned: false } : e));
+      log.push(`Vous attaquez ${target.name} : -${dmg} PV.`);
       let next: CombatState = { ...state, enemies, log };
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;
@@ -406,6 +412,21 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       }
       log.push(`Échec de la capture sur ${target.name}.`);
       return enemyTurn({ ...state, log }, rng);
+    }
+    case 'CRAFT_MODULE': {
+      // Création d'un module en combat : consomme les orbes requises, le module est gardé.
+      const recipe = RECIPES.find((r) => r.id === action.recipeId);
+      if (!recipe) return state;
+      if (state.modules.includes(recipe.id)) return state;
+      const needed = [...recipe.inputs];
+      const orbs = [...state.orbs];
+      for (const el of needed) {
+        const i = orbs.indexOf(el);
+        if (i < 0) return state;
+        orbs.splice(i, 1);
+      }
+      log.push(`${recipe.name} créé (orbes consommées).`);
+      return { ...state, orbs, modules: [...state.modules, recipe.id], log };
     }
     case 'FUSE_IN_COMBAT': {
       // En combat, la fusion coûte 1 tour (§SPEC-5.2) : on fusionne puis les ennemis jouent.

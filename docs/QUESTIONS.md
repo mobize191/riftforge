@@ -1,5 +1,11 @@
 # RIFTFORGE — QUESTIONS (à répondre par l'humain le matin)
 
+## Retours playtest (matin 2)
+- Q0-4 : les sprites sont des formes générées en code (pas d'assets externes autorisés) — est-ce que
+  ce style « pictogrammes » convient, ou faut-il prioriser des packs Kenney CC0 pour les monstres ?
+- Q0-5 : le menu combat liste désormais les modules créés + les recettes découvertes réalisables
+  (bouton « Créer ») — le rythme reste-t-il OK avec beaucoup d'orbes ?
+
 ## Itération 0 (retour playtest téléphone)
 - Q0-2 [fix R0-07] : flashs noirs à intervalle régulier -> cause = recréation du jeu Phaser à chaque
   déplacement (deps du useEffect). Corrigé : création unique par sol. À re-vérifier sur téléphone.

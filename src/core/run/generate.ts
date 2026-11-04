@@ -5,6 +5,8 @@ import type { Position } from '../types';
 export interface PlacedMonster {
   id: string;
   pos: Position;
+  patrolAxis?: 'x' | 'y';
+  patrolDir?: number;
 }
 
 export interface PlacedOrb {

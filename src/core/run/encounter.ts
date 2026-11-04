@@ -37,7 +37,8 @@ export function attractMonsters(
   }
 }
 
-// Patrouille simple : va-et-vient horizontal ou vertical, en restant sur du sol libre.
+// Patrouille simple : va-et-vient sur un axe, en inversant la direction au mur.
+// Déterministe (direction stockée sur le monstre), ne se bloque jamais.
 export function patrolStep(
   map: LevelMap,
   index: number,
@@ -45,12 +46,17 @@ export function patrolStep(
 ): void {
   const m = map.monsters[index];
   if (!m) return;
-  const rng = createRng((index * 2654435761) >>> 0);
-  const axis = index % 2 === 0 ? 'x' : 'y';
-  const dir = rng.next() < 0.5 ? 1 : -1;
-  const nx = axis === 'x' ? m.pos.x + dir : m.pos.x;
-  const ny = axis === 'y' ? m.pos.y + dir : m.pos.y;
-  if (!walls(nx, ny) && nx >= 0 && ny >= 0 && nx < map.width && ny < map.height) {
-    m.pos = { x: nx, y: ny };
+  const axis = m.patrolAxis ?? (index % 2 === 0 ? 'x' : 'y');
+  m.patrolAxis = axis;
+  const dir = m.patrolDir ?? (index % 2 === 0 ? 1 : -1);
+  m.patrolDir = dir;
+  let nx = axis === 'x' ? m.pos.x + dir : m.pos.x;
+  let ny = axis === 'y' ? m.pos.y + dir : m.pos.y;
+  if (walls(nx, ny) || nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) {
+    m.patrolDir = -dir; // rebond
+    nx = axis === 'x' ? m.pos.x - dir : m.pos.x;
+    ny = axis === 'y' ? m.pos.y - dir : m.pos.y;
+    if (walls(nx, ny) || nx < 0 || ny < 0 || nx >= map.width || ny >= map.height) return;
   }
+  m.pos = { x: nx, y: ny };
 }

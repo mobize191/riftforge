@@ -133,15 +133,29 @@ export function reduce(state: GameState, action: GameAction): GameState {
           pendingMilestone: false,
           discoveredRecipes: [],
           journal: ['start', ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
+          lastEvent: 'Vous entrez dans la Faille.',
         },
       };
     }
     case 'ENTER_COMBAT': {
-      if (state.mode !== 'RUN' || !state.run) return state;
+      if (state.mode !== 'RUN' || !state.run || !state.run.level) return state;
+      // Le monstre affronté quitte la carte : on ne le re-affronte pas à l'infini.
+      const level = {
+        ...state.run.level,
+        monsters: state.run.level.monsters.filter(
+          (m) => !(m.pos.x === state.run!.playerPos.x && m.pos.y === state.run!.playerPos.y),
+        ),
+      };
       return {
         ...state,
         mode: 'COMBAT',
-        run: { ...state.run, encounter: action.enemies, challengeId: action.challengeId ?? null },
+        run: {
+          ...state.run,
+          level,
+          encounter: action.enemies,
+          challengeId: action.challengeId ?? null,
+          lastEvent: 'Un combat éclate !',
+        },
       };
     }
     case 'NEXT_FLOOR': {
@@ -392,6 +406,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
               tier: 1,
             },
           ],
+          lastEvent: `Orbe ${orb.element} ramassée.`,
         };
       }
       // Récolte d'un nœud de spores en marchant dessus : retire le nœud et attire les monstres voisins.
@@ -399,7 +414,13 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (sporeIdx >= 0) {
         const level2 = { ...level, sporeNodes: level.sporeNodes.filter((_, i) => i !== sporeIdx) };
         attractMonsters(level2, { x, y }, BIOME_1_STRUCTURE.attractRadius, (lx, ly) => isWall(level2, lx, ly));
-        run = { ...run, level: level2, lootSpores: run.lootSpores + 1, journal: [...run.journal, 'spore'] };
+        run = {
+          ...run,
+          level: level2,
+          lootSpores: run.lootSpores + 1,
+          journal: [...run.journal, 'spore'],
+          lastEvent: 'Spore récoltée (les monstres voisins sont attirés…).',
+        };
       }
       return { ...state, run };
     }
@@ -433,10 +454,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
               ...state.run.orbs,
               { id: `coffre-${floor}-${chestIdx}`, kind: 'primordial' as const, element: orb, tier: 1 },
             ],
+            lastEvent: `Coffre ouvert : +${credits} crédits, orbe ${orb}.`,
           },
         };
       }
-      return state;
+      return { ...state, run: { ...state.run, lastEvent: 'Rien ici.' } };
     }
     case 'BUY_ITEM': {
       return buyEquipment(state, action.defId);

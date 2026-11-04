@@ -114,6 +114,7 @@ export interface RunState {
   pendingMilestone: boolean;
   discoveredRecipes: string[];
   journal: string[];
+  lastEvent: string | null;
 }
 
 export interface GameState {

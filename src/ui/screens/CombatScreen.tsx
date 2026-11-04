@@ -2,20 +2,30 @@
 
 import { useState } from 'react';
 import { availableSoloModules, type CombatState, type CombatAction } from '../../core/combat/combat';
+import { craftableRecipes } from '../../core/combat/createModule';
 import { ELEMENTS } from '../../data/elements';
+import { RECIPES } from '../../data/recipes';
+import type { Orb } from '../../core/types';
 
 export default function CombatScreen({
   combat,
+  discovered,
   onAction,
   onEnd,
 }: {
   combat: CombatState;
+  discovered: string[];
   onAction: (a: CombatAction) => void;
   onEnd: (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko?: boolean) => void;
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
   const [target] = useState(0);
   const soloModules = availableSoloModules(combat.orbs);
+  const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
+  const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
+  const createdModules = combat.modules
+    .map((id) => RECIPES.find((r) => r.id === id))
+    .filter((r): r is NonNullable<typeof r> => !!r);
 
   const phase = combat.phase;
   if (phase === 'won' || phase === 'lost' || phase === 'fled' || phase === 'challenge-failed') {
@@ -110,7 +120,7 @@ export default function CombatScreen({
         </div>
       )}
 
-      {menu === 'attack' && soloModules.length > 0 && (
+      {menu === 'attack' && (
         <div className="flex w-full max-w-xl flex-col gap-2">
           {soloModules.map((m) => (
             <button
@@ -123,6 +133,32 @@ export default function CombatScreen({
               style={{ minHeight: '44px', borderColor: ELEMENTS[m.inputs[0]].color }}
             >
               {m.name} ({ELEMENTS[m.inputs[0]].name}) — gratuit
+            </button>
+          ))}
+          {createdModules.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => {
+                onAction({ type: 'CAST_MODULE', moduleId: m.id, target });
+                setMenu('root');
+              }}
+              className="rounded border border-red-300 px-4 py-2 text-left"
+              style={{ minHeight: '44px' }}
+            >
+              ▶ {m.name} (créé, lancement gratuit)
+            </button>
+          ))}
+          {craftable.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => {
+                onAction({ type: 'CRAFT_MODULE', recipeId: r.id });
+                setMenu('root');
+              }}
+              className="rounded border border-amber-300/80 px-4 py-2 text-left"
+              style={{ minHeight: '44px' }}
+            >
+              ✚ Créer {r.name} (palier {r.tier}) — consomme {r.inputs.map((e) => ELEMENTS[e].name).join(' + ')}
             </button>
           ))}
         </div>

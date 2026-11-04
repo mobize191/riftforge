@@ -196,7 +196,7 @@ export default function App() {
   }, []);
 
   if (view === 'game' && state?.mode === 'COMBAT' && combat) {
-    return <CombatScreen combat={combat} onAction={onCombatAction} onEnd={onCombatEnd} />;
+    return <CombatScreen combat={combat} discovered={state.forge.discoveredRecipes} onAction={onCombatAction} onEnd={onCombatEnd} />;
   }
 
   if (view === 'forge' && state?.mode === 'FORGE') {
@@ -288,6 +288,33 @@ export default function App() {
             <button aria-label="Droite" style={padBtn} onClick={() => touchMove(1, 0)}>▶</button>
           </div>
           <button aria-label="Bas" style={padBtn} onClick={() => touchMove(0, 1)}>▼</button>
+        </div>
+        {run.lastEvent && (
+          <p className="rounded bg-emerald-950/60 px-3 py-2 text-sm text-emerald-200" style={{ minHeight: '44px' }}>
+            {run.lastEvent}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+          <span className="opacity-70">Orbes :</span>
+          {run.orbs.length === 0 && <span className="opacity-50">aucune</span>}
+          {run.orbs.map((o) => (
+            <span
+              key={o.id}
+              title={o.kind === 'composite' ? 'Orbe composite' : `Orbe ${o.element}`}
+              className="inline-block h-4 w-4 rounded-full border border-white/40"
+              style={{
+                background:
+                  o.kind === 'composite'
+                    ? 'linear-gradient(135deg,#ff5533,#3399ff,#aa7744,#dddddd)'
+                    : { feu: '#ff5533', eau: '#3399ff', terre: '#aa7744', air: '#dddddd' }[o.element ?? 'air'],
+              }}
+            />
+          ))}
+          {run.companions.length > 0 && (
+            <span className="ml-2 rounded border border-violet-300/60 px-2 py-1">
+              Capturés : {run.companions.join(', ')}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           {state.forge.grimoire.map((slot, i) => (

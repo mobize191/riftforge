@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MAP_WIDTH, MAP_HEIGHT } from '../../core/run/grid';
 import type { Position } from '../../core/types';
-import type { LevelMap } from '../../core/run/generate';
+import type { LevelMap, PlacedMonster } from '../../core/run/generate';
 import { monsterAt, patrolStep, pickEncounter } from '../../core/run/encounter';
 import { isWall } from '../../core/run/generate';
 import { TILE, LOGICAL_WIDTH, LOGICAL_HEIGHT } from './mapConfig';
@@ -13,16 +13,107 @@ const ELEMENT_COLORS: Record<string, number> = {
   air: 0xdddddd,
 };
 
+// Textures générées en code (formes simples, aucun asset externe).
+function makeTextures(scene: Phaser.Scene): void {
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(0x101828, 1);
+  g.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+  g.lineStyle(1, 0x24304d, 1);
+  for (let x = 0; x <= MAP_WIDTH; x++) g.lineBetween(x * TILE, 0, x * TILE, LOGICAL_HEIGHT);
+  for (let y = 0; y <= MAP_HEIGHT; y++) g.lineBetween(0, y * TILE, LOGICAL_WIDTH, y * TILE);
+  g.generateTexture('floor', LOGICAL_WIDTH, LOGICAL_HEIGHT);
+  g.clear();
+  g.fillStyle(0x2a3a5f, 1);
+  g.fillRect(0, 0, TILE, TILE);
+  g.lineStyle(2, 0x3d5488, 1);
+  g.strokeRect(1, 1, TILE - 2, TILE - 2);
+  g.generateTexture('wall', TILE, TILE);
+  g.clear();
+  // racine (twist du biome 1)
+  g.fillStyle(0x4a3520, 1);
+  g.fillRect(0, 0, TILE, TILE);
+  g.lineStyle(3, 0x6b4f2a, 1);
+  g.beginPath();
+  g.moveTo(TILE / 2, 0);
+  g.lineTo(TILE / 2 - 4, TILE / 2);
+  g.lineTo(TILE / 2 + 5, TILE);
+  g.strokePath();
+  g.generateTexture('root', TILE, TILE);
+  g.clear();
+  // joueur : corps + visière
+  g.fillStyle(0x4f7cff, 1);
+  g.fillRoundedRect(2, 6, TILE - 10, TILE - 8, 5);
+  g.fillStyle(0x0a0e1a, 1);
+  g.fillRect(TILE / 2 - 1, 8, 8, 4);
+  g.fillStyle(0x9fc0ff, 1);
+  g.fillRect(TILE / 2, 9, 6, 2);
+  g.generateTexture('player', TILE - 4, TILE - 4);
+  g.clear();
+  // monstre : boule + yeux
+  g.fillStyle(0xdd3355, 1);
+  g.fillCircle(TILE / 2, TILE / 2 + 2, TILE / 2 - 4);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(TILE / 2 - 4, TILE / 2, 3);
+  g.fillCircle(TILE / 2 + 4, TILE / 2, 3);
+  g.fillStyle(0x220000, 1);
+  g.fillCircle(TILE / 2 - 4, TILE / 2, 1.5);
+  g.fillCircle(TILE / 2 + 4, TILE / 2, 1.5);
+  g.generateTexture('monster', TILE - 4, TILE - 4);
+  g.clear();
+  // orbe : sphère brillante
+  for (const [el, color] of Object.entries(ELEMENT_COLORS)) {
+    g.fillStyle(color, 1);
+    g.fillCircle(TILE / 2, TILE / 2, 7);
+    g.fillStyle(0xffffff, 0.7);
+    g.fillCircle(TILE / 2 - 2, TILE / 2 - 2, 2.5);
+    g.generateTexture(`orb-${el}`, 20, 20);
+    g.clear();
+  }
+  // coffre
+  g.fillStyle(0xc9a227, 1);
+  g.fillRoundedRect(3, 10, TILE - 6, TILE - 14, 2);
+  g.fillStyle(0x8a6d1a, 1);
+  g.fillRect(3, 8, TILE - 6, 5);
+  g.fillStyle(0xfff2b0, 1);
+  g.fillRect(TILE / 2 - 2, 8, 4, 6);
+  g.generateTexture('chest', TILE, TILE);
+  g.clear();
+  // spore : nœud vert
+  g.fillStyle(0x2f7a4d, 1);
+  g.fillCircle(TILE / 2, TILE / 2, 8);
+  g.fillStyle(0x66ff99, 1);
+  g.fillCircle(TILE / 2 - 2, TILE / 2 - 3, 3);
+  g.generateTexture('spore', 20, 20);
+  g.clear();
+  // autel
+  g.fillStyle(0x7a5cff, 1);
+  g.fillTriangle(TILE / 2, 4, 4, TILE - 4, TILE - 4, TILE - 4);
+  g.fillStyle(0xb9a6ff, 1);
+  g.fillCircle(TILE / 2, 10, 3);
+  g.generateTexture('altar', TILE, TILE);
+  g.clear();
+  // sortie : portail
+  g.lineStyle(4, 0x33dd77, 1);
+  g.strokeCircle(TILE / 2, TILE / 2, TILE / 2 - 4);
+  g.fillStyle(0x33dd77, 0.35);
+  g.fillCircle(TILE / 2, TILE / 2, TILE / 2 - 4);
+  g.generateTexture('exit', TILE - 4, TILE - 4);
+  g.destroy();
+}
+
 export class MapScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.GameObjects.Image;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private pos: Position;
   private levelRef: { current: LevelMap };
   private get level(): LevelMap {
     return this.levelRef.current;
   }
-  private monsterSprites: Phaser.GameObjects.Rectangle[] = [];
-  private orbSprites: Phaser.GameObjects.Arc[] = [];
+  private monsterSprites = new Map<number, Phaser.GameObjects.Image>();
+  private orbSprites = new Map<string, Phaser.GameObjects.Image>();
+  private chestSprites = new Map<string, Phaser.GameObjects.Image>();
+  private sporeSprites = new Map<string, Phaser.GameObjects.Image>();
+  private altarSprites = new Map<string, Phaser.GameObjects.Image>();
   private seed: number;
   private floor: number;
   private familyIds: string[];
@@ -51,87 +142,52 @@ export class MapScene extends Phaser.Scene {
     this.onInteract = onInteract;
   }
 
+  private keyOf = (p: Position) => `${p.x},${p.y}`;
+
   create(): void {
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    g.fillStyle(0x101828, 1);
-    g.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-    g.lineStyle(1, 0x24304d, 1);
-    for (let x = 0; x <= MAP_WIDTH; x++) g.lineBetween(x * TILE, 0, x * TILE, LOGICAL_HEIGHT);
-    for (let y = 0; y <= MAP_HEIGHT; y++) g.lineBetween(0, y * TILE, LOGICAL_WIDTH, y * TILE);
-    g.generateTexture('floor', LOGICAL_WIDTH, LOGICAL_HEIGHT);
-    g.destroy();
+    makeTextures(this);
     this.add.image(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, 'floor');
 
-    const wg = this.make.graphics({ x: 0, y: 0 }, false);
-    wg.fillStyle(0x2a3a5f, 1);
     for (let y = 0; y < this.level.height; y++) {
       for (let x = 0; x < this.level.width; x++) {
         if (this.level.walls[y * this.level.width + x]) {
-          wg.fillRect(x * TILE, y * TILE, TILE, TILE);
-        }
-      }
-    }
-    wg.generateTexture('wall', TILE, TILE);
-    wg.destroy();
-    for (let y = 0; y < this.level.height; y++) {
-      for (let x = 0; x < this.level.width; x++) {
-        if (this.level.walls[y * this.level.width + x]) {
-          this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, 'wall');
+          const isRoot = this.level.roots.some((r) => r.x === x && r.y === y);
+          this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, isRoot ? 'root' : 'wall');
         }
       }
     }
 
-    this.add.rectangle(
-      this.level.exit.x * TILE + TILE / 2,
-      this.level.exit.y * TILE + TILE / 2,
-      TILE - 6,
-      TILE - 6,
-      0x33dd77,
-    );
+    this.add.image(this.level.exit.x * TILE + TILE / 2, this.level.exit.y * TILE + TILE / 2, 'exit');
 
     for (const orb of this.level.orbs) {
-      this.orbSprites.push(
-        this.add.circle(
-          orb.pos.x * TILE + TILE / 2,
-          orb.pos.y * TILE + TILE / 2,
-          6,
-          ELEMENT_COLORS[orb.element] ?? 0xffffff,
-        ),
+      const spr = this.add.image(
+        orb.pos.x * TILE + TILE / 2,
+        orb.pos.y * TILE + TILE / 2,
+        `orb-${orb.element}`,
       );
-    }
-    for (const spore of this.level.sporeNodes) {
-      this.add.circle(
-        spore.x * TILE + TILE / 2,
-        spore.y * TILE + TILE / 2,
-        7,
-        0x66ff99,
-      );
+      this.orbSprites.set(this.keyOf(orb.pos), spr);
     }
     for (const chest of this.level.chests) {
-      this.add.rectangle(
-        chest.x * TILE + TILE / 2,
-        chest.y * TILE + TILE / 2,
-        TILE - 10,
-        TILE - 10,
-        0xc9a227,
-      );
+      const spr = this.add.image(chest.x * TILE + TILE / 2, chest.y * TILE + TILE / 2, 'chest');
+      this.chestSprites.set(this.keyOf(chest), spr);
     }
-    this.monsterSprites = this.level.monsters.map((m) =>
-      this.add.rectangle(
-        m.pos.x * TILE + TILE / 2,
-        m.pos.y * TILE + TILE / 2,
-        TILE - 8,
-        TILE - 8,
-        0xdd3355,
-      ),
-    );
+    for (const spore of this.level.sporeNodes) {
+      const spr = this.add.image(spore.x * TILE + TILE / 2, spore.y * TILE + TILE / 2, 'spore');
+      this.sporeSprites.set(this.keyOf(spore), spr);
+    }
+    for (const altar of this.level.altars) {
+      const spr = this.add.image(altar.x * TILE + TILE / 2, altar.y * TILE + TILE / 2, 'altar');
+      this.altarSprites.set(this.keyOf(altar), spr);
+    }
+    this.level.monsters.forEach((m, i) => {
+      const spr = this.add.image(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2, 'monster');
+      this.monsterSprites.set(i, spr);
+    });
 
-    this.player = this.add.rectangle(
+    this.player = this.add.image(
       this.pos.x * TILE + TILE / 2,
       this.pos.y * TILE + TILE / 2,
-      TILE - 8,
-      TILE - 8,
-      0x4f7cff,
+      'player',
     );
 
     this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
@@ -153,6 +209,43 @@ export class MapScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>;
   }
 
+  // Synchronise les sprites avec le niveau du core (objets ramassés, monstres retirés).
+  private syncSprites(): void {
+    const seenOrbs = new Set(this.level.orbs.map((o) => this.keyOf(o.pos)));
+    for (const [k, spr] of this.orbSprites) {
+      if (!seenOrbs.has(k)) {
+        spr.destroy();
+        this.orbSprites.delete(k);
+      }
+    }
+    const seenChests = new Set(this.level.chests.map((c) => this.keyOf(c)));
+    for (const [k, spr] of this.chestSprites) {
+      if (!seenChests.has(k)) {
+        spr.destroy();
+        this.chestSprites.delete(k);
+      }
+    }
+    const seenSpores = new Set(this.level.sporeNodes.map((p) => this.keyOf(p)));
+    for (const [k, spr] of this.sporeSprites) {
+      if (!seenSpores.has(k)) {
+        spr.destroy();
+        this.sporeSprites.delete(k);
+      }
+    }
+    // monstres : rapproche les sprites des monstres restants (index -> position courante)
+    const alive = this.level.monsters;
+    const sprites = [...this.monsterSprites.values()];
+    for (let i = sprites.length - 1; i >= alive.length; i--) {
+      sprites[i]?.destroy();
+      this.monsterSprites.delete(i);
+    }
+    alive.forEach((m: PlacedMonster, i: number) => {
+      const spr = this.monsterSprites.get(i) ?? this.add.image(0, 0, 'monster');
+      this.monsterSprites.set(i, spr);
+      spr.setPosition(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2);
+    });
+  }
+
   // Un pas de déplacement (clavier OU tactile) : la scène reste la source de vérité de la position.
   tryMove(dx: number, dy: number): void {
     const nx = Phaser.Math.Clamp(this.pos.x + dx, 0, MAP_WIDTH - 1);
@@ -165,9 +258,8 @@ export class MapScene extends Phaser.Scene {
     const walls = (x: number, y: number) => isWall(this.level, x, y);
     for (let i = 0; i < this.level.monsters.length; i++) {
       patrolStep(this.level, i, walls);
-      const m = this.level.monsters[i];
-      this.monsterSprites[i]?.setPosition(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2);
     }
+    this.syncSprites();
 
     const idx = monsterAt(this.level, this.pos);
     if (idx >= 0) {
@@ -189,5 +281,6 @@ export class MapScene extends Phaser.Scene {
     else if (K(this.keys.left) || K(this.keys.q) || K(this.keys.a)) dx = -1;
     else if (K(this.keys.right) || K(this.keys.d)) dx = 1;
     if (dx !== 0 || dy !== 0) this.tryMove(dx, dy);
+    this.syncSprites();
   }
 }
