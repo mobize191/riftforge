@@ -58,3 +58,7 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 - Q6-4 (choix R6-00) : la simulation du bot compétent est mono-run sans compagnon (la
   capture n'a d'effet que sur la run suivante via la Forge) — le taux 65.90 % est mesuré
   sur le biome 1 seul, kit de départ.
+
+## Itération 7-9 (session R6-00 → R9-06)
+- Q7-1 (choix R7-04) : la « ressource spéciale exclusive » des modificateurs de Faille
+  est l'optifibre (biome 4) + bonus crédits/essence — plutôt qu'une 9e ressource. OK ?

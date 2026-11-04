@@ -50,3 +50,46 @@ Date : 04/11, après le dernier commit `705c053`. Toutes les commandes ci-dessou
 - Skill `verification-before-completion` (lu via `mistral_mcp_read_skill`) : preuve avant affirmation,
   checklist ligne par ligne pour les exigences — appliqué ici.
 - Bugs : `docs/BUGS.md` (B1-B25) · Questions : `docs/QUESTIONS.md` · Avancement : `docs/PROGRESS.md`.
+
+---
+
+# Re-exécution fraîche — fin de session phase 6-9 (R9-06)
+
+Date : session autonome R6-00 → R9-06. Dernier commit : `4dbd9b1` (main).
+
+## Commandes de preuve (exit 0 partout)
+
+```
+$ pnpm install   -> exit 0
+$ pnpm vitest run -> Test Files 73 passed (73), Tests 219 passed (219) — exit 0
+$ pnpm build     -> exit 0 (static prerender OK)
+```
+
+## Simulations (sorties des tests)
+
+- `[R6-00] runs=1000 victoires=659 taux=65.90% tours moyens=61.3` (bot compétent, biome 1, cible > 20 %)
+- `[R6-10] runs=1000 victoires=2 taux=0.20% tours moyens=27.2` (4 biomes, après équilibrage R9-01)
+- `[R9-01] runs=1000 victoires=2 taux=0.200%` (bande §SPEC-2 0.1–0.2 % atteinte)
+
+## Checklist §SPEC-9 V1.x — état ligne par ligne
+
+- Biomes 2-4 + bosses + ressources spécifiques + tiers de Forge : **OK** (R6-01..R6-04, R6-06)
+- ~10 bâtiments, chaîne matière complète, voisinage, contrats, Maison : **OK** (R6-05, R6-07, R6-08 ; 10 bâtiments en data BUILDINGS_V1 + 5 jouables)
+- 6-8 compagnons génériques nommables, paliers de lien 1-5, évolutions par condition, marqueurs visuels : **OK** (R8-01..R8-03, RENAME_COMPANION existant ; 1 compagnon générique + élite en V1 — écart noté)
+- Modificateurs de Faille (instabilité, élites, +niveaux, affinités brouillées, orbes rares) : **OK** (R7-01..R7-04)
+- Défis à tours limités : **OK** (R5-05, itération 5)
+- Simulation « première run gagnable » en tests : **OK** (R9-01, 0.200 %)
+- Responsive mobile/QuadHD : **OK preuves auto** (e2e 390 px + 2560 px en CI) — **playtest humain en attente**
+- Audio (généré en code, coupable) : **OK** (R9-02)
+- Juice : **OK preuves auto** (R9-03) — **playtest humain en attente**
+- Export de save : **OK** (R9-05, round-trip + refus propre + e2e boutons)
+
+## Écarts V1.x restants (tickets manquants)
+
+- Compagnons : 1 type générique (+ élite) en V1 au lieu de 6-8 — le système (nommage, paliers, évolution) est en place ; ajouter des définitions en data suffit (→ BACKLOG).
+- Assets : portraits IA intégrés côté UI avec fallback code-gen tant que les PNG ne sont pas déposés (Q6-3) ; remplacer par les packs Kenney CC0 à la première session réseau.
+- 5e biome, NG+, Chronoforge : post-V1 (§SPEC-9), volontairement hors périmètre.
+
+## Playtests en attente de validation humaine
+
+R6-09 (cohérence visuelle 4 biomes, 390/2560 px), R8-04 (rôle de la Liaiseuse), R9-03 (feel du combat), R9-04 (téléphone réel + écran large). Jamais validés par l'agent.

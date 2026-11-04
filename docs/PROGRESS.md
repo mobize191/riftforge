@@ -83,3 +83,64 @@ Voir `docs/QUESTIONS.md` (Q0-1 … Q6-2, classées par itération). Aucune bloqu
 
 ## Blocages
 Aucun — `docs/BLOCKED.md` n'existe pas.
+
+---
+
+# Phase 6-9 (session autonome R6-00 → R9-06) — ARRÊT DE SESSION
+
+- **Dernier commit publié** : `4dbd9b1` sur `main` (poussé sur GitHub).
+- **Preuves** : `pnpm install && pnpm vitest run && pnpm build` -> exit 0 — **73 fichiers / 219 tests**.
+- **Site en ligne** : https://mobize191.github.io/riftforge/ (Pages, repo public).
+
+## État par ticket (phase 6-9)
+
+| Ticket | État | Notes |
+|---|---|---|
+| R6-00 | done | bot compétent, biome 1 = **65.90 %** (> 20 %), aucun ajustement de balance nécessaire |
+| R6-01 | done | biome 2 Datacathédrales : gremlins, données, circuits (connexité BFS 2^n états) |
+| R6-02 | done | biome 3 Hauts-Fourneaux : élémentaires, mercurium, sol brûlant (dégâts exacts/tour) |
+| R6-03 | done | biome 4 Fibration : vermine, optifibre, zones de vitesse (2 camps), runCompleted |
+| R6-04 | done | une seule run traverse les 4 biomes, retour Forge à la mort avec 100 % du butin |
+| R6-05 | done | Purificateur + Nanolathe jouables, voisinage réel (bonus retiré si bâtiment retiré) |
+| R6-06 | done | 6 équipements Marchand, tiers 2+ (lingots/mercurium/optifibre), save v2→…→v5 + migrations |
+| R6-07 | done | Maison du héros : rangements, repos, trophées dérivés de l'état |
+| R6-08 | done | 8 contrats multi-biomes, primes une seule fois, ressources de biomes |
+| R6-09 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | assets code-gen (fallback Kenney, Q6-3), palettes par biome, portraits combat idle/télégraphie |
+| R6-10 | done | simu 1000 runs complètes : **0.20 %** de victoires (après R9-01), 27.2 tours moyens |
+| R7-01 | done | modificateurs débloqués si allBiomesCleared, activation par biome persistante |
+| R7-02 | done | jauge d'instabilité monotone seedée, seuils danger/élite, purge sanctuaire |
+| R7-03 | done | +niveaux, élites visibles, affinités brouillées seedées, orbes rares — combinables |
+| R7-04 | done | bonus de fin de run si modificateurs actifs, élites capturables (compagnons x2) |
+| R8-01 | done | sources de lien : victoires partagées, cadeaux, moments Forge — XP persistante |
+| R8-02 | done | paliers 1-5 (seuils data), marqueurs, bonus en run si compagnon en équipe, signature palier 5 |
+| R8-03 | done | évolution palier 4 (kills même race), irréversible |
+| R8-04 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | Liaiseuse : 3 quêtes, dialogues 2-3 lignes FR, états locked/available/done |
+| R9-01 | done | équilibrage final : **0.200 %** de victoires première run complète (bande 0.1-0.2 % §SPEC-2) |
+| R9-02 | done | audio WebAudio généré en code, 15 sons, mute persisté, zéro streaming |
+| R9-03 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | juice : flashs par élément, shake gros dégâts, fondus |
+| R9-04 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | e2e 390 px + 2560 px (CI) ; hit-zones >= 44 px |
+| R9-05 | done | export/import de save (boutons titre, JSON versionné, refus propre) |
+| R9-06 | done | cette passe : checklist §SPEC-9 V1.x, VERIFICATION.md re-exécuté |
+| R9-07 | done | intégration UI des portraits IA (docs/ASSETS.md), fallback code-gen si PNG absent |
+
+## Simulations (résultats affichés dans les tests)
+
+- **R6-00** : 1000 runs biome 1, bot compétent -> **65.90 %**, 61.3 tours moyens.
+- **R6-10** : 1000 runs 4 biomes -> **0.20 %** victoires, 27.2 tours, morts: biome1=445, biome2=400, biome3=148, biome4=5.
+- **R9-01** : 1000 runs complètes, kit de départ -> **0.200 %** (bande §SPEC-2 0.1-0.2 % atteinte, ajustements uniquement en src/data/).
+
+## Choix faits (documentés)
+
+- R6-00 : simu mono-run sans compagnon (capture effective à la run suivante) — Q6-4.
+- R6-09 : assets générés en code, substitution Kenney CC0 — Q6-3 (kenney.nl inaccessible depuis l'env de build).
+- R7-04 : la « ressource spéciale exclusive » = optifibre (biome 4), pas de nouvelle ressource — Q7-1.
+- R9-07 : portraits IA intégrés côté UI uniquement (mapping ASSETS.md), fallback code-gen si PNG absent ; liaiseuse.png à venir.
+- Sauvegarde passée en v5 (migrations v1→v5 testées).
+
+## Questions ouvertes
+
+Voir docs/QUESTIONS.md — Q6-3 (substitution assets), Q6-4 (simu mono-run), Q7-1 (ressource exclusive). Aucune bloquante.
+
+## Blocages
+
+Aucun — `docs/BLOCKED.md` n'existe pas. Aucun échec répété 3x sur un ticket.
