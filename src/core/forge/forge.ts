@@ -1,6 +1,19 @@
 import type { GameState } from '../types';
 import { CRAFTABLE_EQUIPMENT, EQUIPMENT_BY_ID, type EquipmentDef } from '../../data/equipment';
 import { UPGRADE_COSTS } from '../../data/buildings';
+import { EQUIPMENT_SLOT_LIMITS, type EquipmentSlot } from '../../data/equipment';
+
+// Nombre d'objets d'un emplacement possédés (portés + rangés à la Maison) — B28.
+export function ownedCount(state: GameState, slot: EquipmentSlot): number {
+  const all = [...Object.values(EQUIPMENT_BY_ID), ...CRAFTABLE_EQUIPMENT];
+  const owned = [...state.forge.equipment, ...state.forge.homeEquipment];
+  return owned.filter((e) => all.find((d) => d.id === e.defId)?.slot === slot).length;
+}
+
+// B28 : un achat/craft est refusé si l'emplacement est plein (limite en data).
+export function slotFull(state: GameState, slot: EquipmentSlot): boolean {
+  return ownedCount(state, slot) >= (EQUIPMENT_SLOT_LIMITS[slot] ?? 99);
+}
 
 export interface Purse {
   credits?: number;
@@ -36,6 +49,8 @@ export function buyEquipment(state: GameState, defId: string): GameState {
   if (!def) return state;
   if (state.forge.credits < def.cost) return state;
   if (state.forge.equipment.some((e) => e.defId === defId)) return state; // pas de doublon
+  if (state.forge.homeEquipment.some((e) => e.defId === defId)) return state; // déjà possédé (rangé)
+  if (slotFull(state, def.slot)) return state; // B28 — limite par emplacement
   return {
     ...state,
     forge: {
@@ -72,6 +87,8 @@ export function craftEquipment(state: GameState, defId: string): GameState {
   const def = CRAFTABLE_EQUIPMENT.find((e) => e.id === defId);
   if (!def) return state;
   if (state.forge.equipment.some((e) => e.defId === defId)) return state; // pas de doublon
+  if (state.forge.homeEquipment.some((e) => e.defId === defId)) return state; // déjà possédé (rangé)
+  if (slotFull(state, def.slot)) return state; // B28 — limite par emplacement
   const next = spendResources(state, def.craftCost);
   if (next === state) return next;
   return {

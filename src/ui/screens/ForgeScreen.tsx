@@ -1,7 +1,8 @@
 'use client';
 
 import type { GameState } from '../../core/types';
-import { CRAFTABLE_EQUIPMENT, MERCHANT_ITEMS } from '../../data/equipment';
+import { CRAFTABLE_EQUIPMENT, MERCHANT_ITEMS, EQUIPMENT_SLOT_LIMITS } from '../../data/equipment';
+import { ownedCount, slotFull } from '../../core/forge/forge';
 import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
@@ -128,58 +129,86 @@ export default function ForgeScreen({
       </section>
 
       <section className="w-full max-w-xl">
-        <h2 className="mb-2 font-semibold">Labo — recettes tier 1 (communs uniquement)</h2>
+        <h2 className="mb-2 font-semibold">Labo — débloquer des recettes de modules</h2>
+        <p className="mb-2 text-sm opacity-70">
+          Les modules de palier 1 (un seul élément) se lancent gratuitement dès que vous tenez
+          l’orbe correspondante. Le Labo sert à <strong>débloquer les recettes de paliers
+          supérieurs</strong> (2+ orbes), contre un coût croissant : communs (palier 1), puis
+          lingots (palier 2), puis ressources de biomes profonds (palier 3).
+        </p>
         <div className="flex flex-col gap-2">
-          {tier1.map((r) => (
-            <button
-              key={r.id}
-              className={`${btn} border-sky-300/70`}
-              style={btnStyle}
-              disabled={f.unlockedRecipes.includes(r.id) || f.essence < 1 || f.mineraiBrut < 1}
-              onClick={() => onCraftRecipe(r.id)}
-            >
-              {f.unlockedRecipes.includes(r.id) ? '✓ ' : ''}
-              {r.name} ({LAB.tier1RecipeCost.essence} essence, {LAB.tier1RecipeCost.mineraiBrut} minerai)
-            </button>
-          ))}
+          {RECIPES.map((r) => {
+            const cost = r.tier === 1 ? LAB.tier1RecipeCost : r.tier === 2 ? LAB.tier2RecipeCost : LAB.tier3RecipeCost;
+            const unlocked = f.unlockedRecipes.includes(r.id);
+            const affordable = Object.entries(cost).every(([k, v]) => (f as unknown as Record<string, number>)[k] >= (v ?? 0));
+            return (
+              <button
+                key={r.id}
+                className={`${btn} border-sky-300/70 disabled:opacity-40`}
+                style={btnStyle}
+                disabled={unlocked || !affordable}
+                onClick={() => onCraftRecipe(r.id)}
+              >
+                {unlocked ? '✓ ' : ''}
+                {r.name} — palier {r.tier}
+                {!unlocked && ` (${Object.entries(cost).map(([k, v]) => `${v} ${k}`).join(', ')})`}
+                {unlocked ? ' — débloquée' : ''}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="w-full max-w-xl">
         <h2 className="mb-2 font-semibold">Forge Arcane — craft d’équipement</h2>
         <div className="flex flex-col gap-2">
-          {CRAFTABLE_EQUIPMENT.map((item) => (
-            <button
-              key={item.id}
-              className={`${btn} border-violet-300/70`}
-              style={btnStyle}
-              onClick={() => onCraft(item.id)}
-            >
-              {item.name} —{' '}
-              {Object.entries(item.craftCost)
-                .map(([k, v]) => `${v} ${k}`)
-                .join(', ')}
-            </button>
-          ))}
+          {CRAFTABLE_EQUIPMENT.map((item) => {
+            const owned =
+              f.equipment.some((e) => e.defId === item.id) || f.homeEquipment.some((e) => e.defId === item.id);
+            const full = slotFull(state, item.slot);
+            const affordable = Object.entries(item.craftCost).every(
+              ([k, v]) => (f as unknown as Record<string, number>)[k] >= (v ?? 0),
+            );
+            return (
+              <button
+                key={item.id}
+                className={`${btn} border-violet-300/70 disabled:opacity-40`}
+                style={btnStyle}
+                disabled={owned || full || !affordable}
+                onClick={() => onCraft(item.id)}
+              >
+                {item.name} [{item.slot}] —{' '}
+                {Object.entries(item.craftCost).map(([k, v]) => `${v} ${k}`).join(', ')}
+                {owned ? ' · possédé' : full ? ` · ${item.slot} plein` : ''}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="w-full max-w-xl">
         <h2 className="mb-2 font-semibold">Le Marchand</h2>
         <div className="flex flex-col gap-2">
-          {MERCHANT_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              disabled={f.credits < item.cost}
-              onClick={() => onBuy(item.id)}
-              className={`${btn} border-amber-400/70 bg-amber-900/40`}
-              style={btnStyle}
-            >
-              {item.name} — {item.cost} crédits
-              {item.attackBonus > 0 && ` · +${item.attackBonus} ATK`}
-              {item.hpBonus > 0 && ` · +${item.hpBonus} PV`}
-            </button>
-          ))}
+          {MERCHANT_ITEMS.map((item) => {
+            const owned =
+              f.equipment.some((e) => e.defId === item.id) || f.homeEquipment.some((e) => e.defId === item.id);
+            const full = slotFull(state, item.slot);
+            const disabled = f.credits < item.cost || owned || full;
+            return (
+              <button
+                key={item.id}
+                disabled={disabled}
+                onClick={() => onBuy(item.id)}
+                className={`${btn} border-amber-400/70 bg-amber-900/40 disabled:opacity-40`}
+                style={btnStyle}
+              >
+                {item.name} [{item.slot}] — {item.cost} crédits
+                {item.attackBonus > 0 && ` · +${item.attackBonus} ATK`}
+                {item.hpBonus > 0 && ` · +${item.hpBonus} PV`}
+                {owned ? ' · possédé' : full ? ` · ${item.slot} plein (${ownedCount(state, item.slot)}/${EQUIPMENT_SLOT_LIMITS[item.slot]})` : ''}
+              </button>
+            );
+          })}
         </div>
       </section>
 

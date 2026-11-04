@@ -63,3 +63,12 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   `actorLabel()` (core, testé). Les effets des modules sont aussi affichés en FR
   (`moduleEffectLabel`) et scalent avec l'attaque du joueur (BALANCE.MODULE_ATK_SCALING).
 - **Tests** : `tests/r9-08-combat-hud.test.ts` (3 tests).
+
+## B28 — Doublons d'équipement et aucune limite par emplacement (fix)
+- **Vu** : on pouvait acheter/crafter plusieurs armes/armures identiques ou redondantes.
+- **Fix** : chaque équipement a un `slot` (arme/bouclier/armure/accessoire), limites en
+  data (EQUIPMENT_SLOT_LIMITS), refus si possédé (même rangé à la Maison) ou slot plein ;
+  boutons grisés avec mention « possédé » / « arme plein (1/1) » côté UI. Le Labo affiche
+  désormais toutes les recettes par palier avec leur coût + l'explication que les modules
+  palier 1 sont gratuits avec l'orbe.
+- **Tests** : `tests/r9-09-equipment-slots.test.ts` (3 tests).
