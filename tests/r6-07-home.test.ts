@@ -52,7 +52,7 @@ describe('R6-07 Maison du héros', () => {
     s = reduce(reduce(s, { type: 'DIE' }), { type: 'RETURN_FORGE' });
     t = trophiesOf(s);
     expect(t.bosses).toContain('racine-mere');
-    expect(SAVE_VERSION).toBe(3);
+    expect(SAVE_VERSION).toBe(4); // v4 depuis R7-01
     // migration v2 -> v3 : champs Maison remplis
     const v2 = JSON.parse(serialize(s));
     v2.version = 2;

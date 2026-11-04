@@ -78,6 +78,7 @@ export interface ForgeState {
   homeEquipment: EquipmentInstance[]; // R6-07 — rangements de la Maison du héros
   defeatedBosses: string[]; // R6-07 — trophées : boss vaincus (persistants)
   lastHomeEvent: string | null; // R6-07 — texte léger du repos à la Maison
+  riftModifiers: Record<string, string[]>; // R7-01 — modificateurs actifs par biome (débloqués si allBiomesCleared)
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];
@@ -116,6 +117,9 @@ export interface RunState {
   lootSpores: number;
   lootBiome: Record<string, number>; // R6-01+ — ressources des biomes 2-4 (donnees, mercurium, optifibre)
   moveCount: number; // R6-03 — parité pour les zones ralenties
+  activeModifiers: string[]; // R7-01 — modificateurs de Faille actifs pour le biome courant
+  instability: number; // R7-02 — jauge d'instabilité (0 si modificateur inactif)
+  elitePending: boolean; // R7-02 — une élite traque le joueur (prochain combat de carte)
   elapsedTicks: number;
   orbs: Orb[];
   modules: Module[];

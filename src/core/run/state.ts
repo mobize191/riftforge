@@ -18,6 +18,7 @@ import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
 import { MONSTERS_BY_FAMILY } from '../../data/monsters';
+import { RIFT_MODIFIER_BY_ID, INSTABILITY } from '../../data/riftModifiers';
 import { attractMonsters } from './encounter';
 import { settleContracts } from '../forge/contracts';
 
@@ -29,7 +30,7 @@ export function biomeStructureOf(biomeIndex: number): { id: string; def: BiomeSt
   return { id, def: BIOME_STRUCTURES[id] };
 }
 
-function levelOpts(def: BiomeStructure, floor: number) {
+function levelOpts(def: BiomeStructure, floor: number, activeModifiers: string[] = []) {
   return {
     roots: def.rootsEnabled,
     monsterCount: def.monsterCountBase + (floor - 1) * def.monsterCountPerFloor,
@@ -39,6 +40,8 @@ function levelOpts(def: BiomeStructure, floor: number) {
     circuits: def.circuits,
     burnZones: def.burnZonesPerFloor ? { count: def.burnZonesPerFloor, damage: def.burnDamage ?? 3 } : undefined,
     speedZones: def.speedZonesPerFloor ? { count: def.speedZonesPerFloor } : undefined,
+    // R7-02 : sanctuaires sur la carte uniquement si le modificateur « instabilite » est actif
+    sanctuaries: activeModifiers.includes('instabilite') ? INSTABILITY.sanctuariesPerFloor : 0,
   };
 }
 
@@ -70,7 +73,8 @@ export type GameAction =
   | { type: 'NEXT_FLOOR' }
   | { type: 'EQUIP_ITEM'; instanceId: string } // R6-07 — Maison : équiper un objet rangé
   | { type: 'UNEQUIP_ITEM'; instanceId: string } // R6-07 — Maison : ranger l'objet porté
-  | { type: 'REST_AT_HOME' }; // R6-07 — repos à la Maison (texte léger)
+  | { type: 'REST_AT_HOME' } // R6-07 — repos à la Maison (texte léger)
+  | { type: 'SET_RIFT_MODIFIERS'; biomeId: string; modifiers: string[] }; // R7-01 — activation par biome (si allBiomesCleared)
 
 export function initialState(): GameState {
   return {
@@ -89,6 +93,7 @@ export function initialState(): GameState {
       homeEquipment: [],
       defeatedBosses: [],
       lastHomeEvent: null,
+      riftModifiers: {},
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -141,8 +146,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
           orbs: [...startOrbs, ...state.forge.orbStock],
           seed: action.seed,
           biomeIndex,
+          activeModifiers: state.forge.riftModifiers[biomeId] ?? [],
+          instability: 0,
+          elitePending: false,
           floor: BALANCE.START_FLOOR,
-          level: generateLevel(action.seed, BALANCE.START_FLOOR, familyIds, levelOpts(biomeDef, BALANCE.START_FLOOR)),
+          level: generateLevel(action.seed, BALANCE.START_FLOOR, familyIds, levelOpts(biomeDef, BALANCE.START_FLOOR, state.forge.riftModifiers[biomeId] ?? [])),
           encounter: null,
           challengeId: null,
           playerPos: { x: 1, y: 1 },
@@ -210,7 +218,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run: {
           ...state.run,
           floor,
-          level: generateLevel(state.run.seed, floor, familyIds, levelOpts(biomeDef, floor)),
+          level: generateLevel(state.run.seed, floor, familyIds, levelOpts(biomeDef, floor, state.run.activeModifiers)),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
           journal: [...state.run.journal, `floor-${floor}`],
@@ -414,14 +422,16 @@ export function reduce(state: GameState, action: GameAction): GameState {
         const nextBiomeIndex = state.run.biomeIndex + 1;
         const { id: nextBiomeId, def: nextDef } = biomeStructureOf(nextBiomeIndex);
         const nextFamily = MONSTERS_BY_FAMILY[nextDef.family].map((m) => m.id);
+        const nextModifiers = state.forge.riftModifiers[nextBiomeId] ?? [];
         return {
           ...state,
           mode: 'RUN',
           run: {
             ...run,
             biomeIndex: nextBiomeIndex,
+            activeModifiers: nextModifiers, // R7-01 : modificateurs du nouveau biome
             floor: 1,
-            level: generateLevel(run.seed, 1, nextFamily, levelOpts(nextDef, 1)),
+            level: generateLevel(run.seed, 1, nextFamily, levelOpts(nextDef, 1, nextModifiers)),
             playerPos: { x: 1, y: 1 },
             pendingMilestone: false, // 1 jalon par biome
             journal: [...run.journal, `biome-${nextBiomeId}`],
@@ -681,6 +691,18 @@ export function reduce(state: GameState, action: GameAction): GameState {
           equipment: state.forge.equipment.filter((e) => e.id !== action.instanceId),
           homeEquipment: [...state.forge.homeEquipment, inst],
         },
+      };
+    }
+    case 'SET_RIFT_MODIFIERS': {
+      // R7-01 : activation par biome, UNIQUEMENT si allBiomesCleared (déblocage §SPEC-4.4).
+      // Sans le flag, le jeu de base reste strictement identique (aucune jauge visible).
+      if (state.mode !== 'FORGE') return state;
+      if (!state.forge.allBiomesCleared) return state;
+      if (!BIOME_BY_ID[action.biomeId]) return state;
+      const modifiers = [...new Set(action.modifiers)].filter((m) => RIFT_MODIFIER_BY_ID[m]);
+      return {
+        ...state,
+        forge: { ...state.forge, riftModifiers: { ...state.forge.riftModifiers, [action.biomeId]: modifiers } },
       };
     }
     case 'REST_AT_HOME': {

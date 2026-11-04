@@ -37,6 +37,7 @@ export interface LevelMap {
   burnZones: Zone[]; // R6-02 : twist biome 3 — sol brûlant télégraphié
   speedZones: Zone[]; // R6-03 : twist biome 4 — zones accélérées/ralenties
   altars: Position[];
+  sanctuaries: Position[]; // R7-02 — nœuds de purge de l'instabilité (si modificateur actif)
   entrance: Position;
   exit: Position;
   monsters: PlacedMonster[];
@@ -116,6 +117,7 @@ export interface GenerateOpts {
   circuits?: { triggers: number; doorsPerTrigger: number };
   burnZones?: { count: number; damage: number };
   speedZones?: { count: number };
+  sanctuaries?: number; // R7-02
 }
 
 export function generateLevel(
@@ -138,6 +140,7 @@ export function generateLevel(
       burnZones: [],
       speedZones: [],
       altars: [],
+      sanctuaries: [],
       entrance: { x: 1, y: 1 },
       exit: { x: MAP_WIDTH - 2, y: MAP_HEIGHT - 2 },
       monsters: [],
@@ -240,6 +243,11 @@ export function generateLevel(
         const p = take();
         map.speedZones.push({ pos: p, speed: i % 2 === 0 ? 2 : 0 });
       }
+    }
+    // R7-02 : sanctuaires (purge de la jauge d'instabilité), uniquement si demandé.
+    const sanct = Math.min(opts.sanctuaries ?? 0, Math.max(0, spots.length - cursor));
+    for (let i = 0; i < sanct; i++) {
+      map.sanctuaries.push(take());
     }
     return map;
   }

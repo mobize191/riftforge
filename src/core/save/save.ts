@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_KEY = 'riftforge-save';
 
 export interface SaveFile {
@@ -19,6 +19,12 @@ export class UnknownSaveVersionError extends Error {
 export function migrate(save: SaveFile): SaveFile {
   // v1 -> v2 (R6-01/R6-03) : nouvelles ressources de Forge (donnees, mercurium,
   // optifibre), flags runCompleted/allBiomesCleared, et champs de run multi-biomes.
+  // v3 -> v4 (R7-01) : modificateurs de Faille (forge.riftModifiers).
+  if (save.version === 3) {
+    const prevForge = save.state.forge as Partial<typeof save.state.forge>;
+    const forge = { ...prevForge, riftModifiers: prevForge.riftModifiers ?? {} } as typeof save.state.forge;
+    return { version: 4, state: { ...save.state, forge } };
+  }
   // v2 -> v3 (R6-07) : Maison du héros (homeEquipment, defeatedBosses, lastHomeEvent).
   if (save.version === 1 || save.version === 2) {
     if (save.version === 2) {
@@ -49,10 +55,13 @@ export function migrate(save: SaveFile): SaveFile {
           lootBiome: prevRun.lootBiome ?? {},
           moveCount: prevRun.moveCount ?? 0,
           runCompleted: prevRun.runCompleted ?? false,
+          activeModifiers: prevRun.activeModifiers ?? [], // R7-01
+          instability: prevRun.instability ?? 0, // R7-02
+          elitePending: prevRun.elitePending ?? false, // R7-02
         } as NonNullable<typeof save.state.run>)
       : save.state.run;
     return {
-      version: 3,
+      version: 4,
       state: {
         ...save.state,
         forge: {
@@ -60,6 +69,7 @@ export function migrate(save: SaveFile): SaveFile {
           homeEquipment: (forge as Partial<typeof forge>).homeEquipment ?? [],
           defeatedBosses: (forge as Partial<typeof forge>).defeatedBosses ?? [],
           lastHomeEvent: (forge as Partial<typeof forge>).lastHomeEvent ?? null,
+          riftModifiers: (forge as Partial<typeof forge>).riftModifiers ?? {},
         },
         run,
       },
