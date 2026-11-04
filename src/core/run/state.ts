@@ -1,7 +1,7 @@
 import type { GameState, Position } from '../types';
 import { BALANCE } from '../../data/balance';
 import { MAP_WIDTH, MAP_HEIGHT } from './grid';
-import { generateLevel } from './generate';
+import { generateLevel, isWall } from './generate';
 import type { CombatLoot } from '../combat/combat';
 import { createRng } from '../rng';
 import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
@@ -17,6 +17,7 @@ import { applyFusion } from '../combat/fuse';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE } from '../../data/biomes';
+import { attractMonsters } from './encounter';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -55,6 +56,7 @@ export function initialState(): GameState {
       essence: 0,
       mineraiBrut: 0,
       lingots: 0,
+      spores: 0,
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -106,6 +108,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           level: generateLevel(action.seed, BALANCE.START_FLOOR, undefined, {
             roots: BIOME_1_STRUCTURE.rootsEnabled,
             monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (BALANCE.START_FLOOR - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
+            sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
           }),
           encounter: null,
           playerPos: { x: 1, y: 1 },
@@ -117,6 +120,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lootCredits: 0,
           lootEssence: 0,
           lootMinerai: 0,
+          lootSpores: 0,
           elapsedTicks: 0,
           modules: [],
           companions: [],
@@ -146,6 +150,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           level: generateLevel(state.run.seed, floor, undefined, {
             roots: BIOME_1_STRUCTURE.rootsEnabled,
             monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (floor - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
+            sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
           }),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
@@ -330,7 +335,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const keptComposites = (run?.orbs ?? []).filter((o) => o.kind === 'composite');
       const withProduction = run
         ? advanceProduction(
-            { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai } },
+            { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai, spores: state.forge.spores + run.lootSpores } },
             run.elapsedTicks,
           )
         : state;
@@ -371,6 +376,13 @@ export function reduce(state: GameState, action: GameAction): GameState {
             },
           ],
         };
+      }
+      // Récolte d'un nœud de spores en marchant dessus : retire le nœud et attire les monstres voisins.
+      const sporeIdx = level.sporeNodes.findIndex((p) => p.x === x && p.y === y);
+      if (sporeIdx >= 0) {
+        const level2 = { ...level, sporeNodes: level.sporeNodes.filter((_, i) => i !== sporeIdx) };
+        attractMonsters(level2, { x, y }, BIOME_1_STRUCTURE.attractRadius, (lx, ly) => isWall(level2, lx, ly));
+        run = { ...run, level: level2, lootSpores: run.lootSpores + 1 };
       }
       return { ...state, run };
     }

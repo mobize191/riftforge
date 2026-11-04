@@ -17,6 +17,26 @@ export function pickEncounter(seed: number, floor: number, monsterIndex: number,
   return enemies;
 }
 
+// Récolte de ressource : les monstres dans le rayon d'attraction avancent d'une case vers le joueur.
+export function attractMonsters(
+  map: LevelMap,
+  playerPos: Position,
+  radius: number,
+  walls: (x: number, y: number) => boolean,
+): void {
+  for (const m of map.monsters) {
+    const dist = Math.max(Math.abs(m.pos.x - playerPos.x), Math.abs(m.pos.y - playerPos.y));
+    if (dist > radius || dist === 0) continue;
+    const dx = Math.sign(playerPos.x - m.pos.x);
+    const dy = Math.sign(playerPos.y - m.pos.y);
+    const nx = m.pos.x + (Math.abs(playerPos.x - m.pos.x) >= Math.abs(playerPos.y - m.pos.y) ? dx : 0);
+    const ny = m.pos.y + (Math.abs(playerPos.y - m.pos.y) > Math.abs(playerPos.x - m.pos.x) ? dy : 0);
+    if (!walls(nx, ny) && nx >= 0 && ny >= 0 && nx < map.width && ny < map.height) {
+      m.pos = { x: nx, y: ny };
+    }
+  }
+}
+
 // Patrouille simple : va-et-vient horizontal ou vertical, en restant sur du sol libre.
 export function patrolStep(
   map: LevelMap,

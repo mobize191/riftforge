@@ -7,6 +7,7 @@ export interface Purse {
   essence?: number;
   mineraiBrut?: number;
   lingots?: number;
+  spores?: number;
 }
 
 // Dépense atomique : jamais de solde négatif, tout ou rien.
@@ -16,7 +17,8 @@ export function spendResources(state: GameState, cost: Purse): GameState {
   const essence = cost.essence ?? 0;
   const mineraiBrut = cost.mineraiBrut ?? 0;
   const lingots = cost.lingots ?? 0;
-  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut || f.lingots < lingots)
+  const spores = cost.spores ?? 0;
+  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut || f.lingots < lingots || f.spores < spores)
     return state;
   return {
     ...state,
@@ -26,6 +28,7 @@ export function spendResources(state: GameState, cost: Purse): GameState {
       essence: f.essence - essence,
       mineraiBrut: f.mineraiBrut - mineraiBrut,
       lingots: f.lingots - lingots,
+      spores: f.spores - spores,
     },
   };
 }

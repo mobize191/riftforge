@@ -69,6 +69,7 @@ export interface ForgeState {
   essence: number;
   mineraiBrut: number;
   lingots: number;
+  spores: number;
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];
@@ -101,6 +102,7 @@ export interface RunState {
   lootCredits: number;
   lootEssence: number;
   lootMinerai: number;
+  lootSpores: number;
   elapsedTicks: number;
   orbs: Orb[];
   modules: Module[];

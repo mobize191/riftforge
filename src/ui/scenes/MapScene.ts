@@ -96,6 +96,14 @@ export class MapScene extends Phaser.Scene {
         ),
       );
     }
+    for (const spore of this.level.sporeNodes) {
+      this.add.circle(
+        spore.x * TILE + TILE / 2,
+        spore.y * TILE + TILE / 2,
+        7,
+        0x66ff99,
+      );
+    }
     for (const chest of this.level.chests) {
       this.add.rectangle(
         chest.x * TILE + TILE / 2,

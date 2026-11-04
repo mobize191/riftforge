@@ -18,7 +18,8 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         (forge.credits >= (input.credits ?? 0)) &&
         (forge.essence >= (input.essence ?? 0)) &&
         (forge.mineraiBrut >= (input.mineraiBrut ?? 0)) &&
-        (forge.lingots >= (input.lingots ?? 0));
+        (forge.lingots >= (input.lingots ?? 0)) &&
+        (forge.spores >= (input.spores ?? 0));
       if (!hasInput) {
         pending = 0; // machine à l'arrêt sans intrants : pas de backlog accumulé
         break;
@@ -37,6 +38,7 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         essence: forge.essence - (input.essence ?? 0),
         mineraiBrut: forge.mineraiBrut - (input.mineraiBrut ?? 0),
         lingots: forge.lingots - (input.lingots ?? 0),
+        spores: forge.spores - (input.spores ?? 0),
       };
       // Worker assigné au bâtiment : petit bonus de production (données TODO-BALANCE).
       const workerBonus = state.forge.workers[buildingId] ? (WORKER_BONUS[buildingId] ?? 0) : 0;
@@ -46,6 +48,7 @@ export function advanceProduction(state: GameState, ticks: number): GameState {
         essence: forge.essence + (output.essence ?? 0),
         mineraiBrut: forge.mineraiBrut + (output.mineraiBrut ?? 0) + (buildingId === 'extracteur' ? workerBonus : 0),
         lingots: forge.lingots + (output.lingots ?? 0) + (buildingId !== 'extracteur' ? workerBonus : 0),
+        spores: forge.spores + (output.spores ?? 0),
       };
       pending -= def.cadenceTicks;
     }

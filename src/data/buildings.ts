@@ -34,12 +34,13 @@ export const STARTING_BUILDINGS: Record<string, number> = {
 };
 
 // Caps de stockage par ressource (§SPEC-6.4). TODO-BALANCE.
-export type ResourceKey = 'credits' | 'essence' | 'mineraiBrut' | 'lingots';
+export type ResourceKey = 'credits' | 'essence' | 'mineraiBrut' | 'lingots' | 'spores';
 export const STORAGE_CAPS: Record<ResourceKey, number> = {
   credits: 500, // TODO-BALANCE
   essence: 50, // TODO-BALANCE
   mineraiBrut: 50, // TODO-BALANCE
   lingots: 25, // TODO-BALANCE
+  spores: 20, // TODO-BALANCE
 };
 
 // L'Entrepôt augmente tous les caps : cap effectif = base * multiplicateur(level).
