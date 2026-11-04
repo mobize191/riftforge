@@ -16,14 +16,34 @@ import { createModule } from '../combat/createModule';
 import { applyFusion } from '../combat/fuse';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
-import { BIOME_1_STRUCTURE } from '../../data/biomes';
+import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
+import { MONSTERS_BY_FAMILY } from '../../data/monsters';
 import { attractMonsters } from './encounter';
 import { settleContracts } from '../forge/contracts';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
+// Biome courant d'une run + options de génération de niveau associées.
+export function biomeStructureOf(biomeIndex: number): { id: string; def: BiomeStructure } {
+  const id = BIOME_ORDER[Math.min(biomeIndex, BIOME_ORDER.length - 1)];
+  return { id, def: BIOME_STRUCTURES[id] };
+}
+
+function levelOpts(def: BiomeStructure, floor: number) {
+  return {
+    roots: def.rootsEnabled,
+    monsterCount: def.monsterCountBase + (floor - 1) * def.monsterCountPerFloor,
+    sporeNodes: def.resourceId === 'spores' ? def.resourceNodesPerFloor : 0,
+    resourceNodes: def.resourceId === 'spores' ? 0 : def.resourceNodesPerFloor,
+    altars: def.altarsPerFloor,
+    circuits: def.circuits,
+    burnZones: def.burnZonesPerFloor ? { count: def.burnZonesPerFloor, damage: def.burnDamage ?? 3 } : undefined,
+    speedZones: def.speedZonesPerFloor ? { count: def.speedZonesPerFloor } : undefined,
+  };
+}
+
 export type GameAction =
-  | { type: 'START_RUN'; seed: number }
+  | { type: 'START_RUN'; seed: number; biomeIndex?: number }
   | { type: 'ENTER_COMBAT'; enemies: string[]; challengeId?: string; fromMap?: boolean }
   | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean; playerHp?: number }
   | { type: 'DIE' }
@@ -58,6 +78,11 @@ export function initialState(): GameState {
       mineraiBrut: 0,
       lingots: 0,
       spores: 0,
+      donnees: 0,
+      mercurium: 0,
+      optifibre: 0,
+      runCompleted: false,
+      allBiomesCleared: false,
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -79,6 +104,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_RUN': {
       if (state.mode !== 'FORGE' && state.mode !== 'RETOUR') return state;
+      const biomeIndex = Math.max(0, Math.min(BIOME_ORDER.length - 1, action.biomeIndex ?? 0));
+      const { id: biomeId, def: biomeDef } = biomeStructureOf(biomeIndex);
+      const familyIds = MONSTERS_BY_FAMILY[biomeDef.family].map((m) => m.id);
       // 3-4 orbes aléatoires offertes en entrant dans la Faille (§SPEC-5.2), tirage seedé.
       const rng = createRng((action.seed ^ 0x9e3779b9) >>> 0);
       const startOrbs = Array.from({ length: 3 + rng.int(2) }, (_, i) => ({
@@ -106,13 +134,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
           // Les orbes composites de la Forge se portent en run ; le reste repart de zéro (§SPEC-2).
           orbs: [...startOrbs, ...state.forge.orbStock],
           seed: action.seed,
+          biomeIndex,
           floor: BALANCE.START_FLOOR,
-          level: generateLevel(action.seed, BALANCE.START_FLOOR, undefined, {
-            roots: BIOME_1_STRUCTURE.rootsEnabled,
-            monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (BALANCE.START_FLOOR - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
-            sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
-            altars: BIOME_1_STRUCTURE.altarsPerFloor,
-          }),
+          level: generateLevel(action.seed, BALANCE.START_FLOOR, familyIds, levelOpts(biomeDef, BALANCE.START_FLOOR)),
           encounter: null,
           challengeId: null,
           playerPos: { x: 1, y: 1 },
@@ -125,6 +149,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lootEssence: 0,
           lootMinerai: 0,
           lootSpores: 0,
+          lootBiome: {},
+          moveCount: 0,
           elapsedTicks: 0,
           modules: [],
           companions: [],
@@ -132,8 +158,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           companionKo: false,
           pendingMilestone: false,
           discoveredRecipes: [],
-          journal: ['start', ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
-          lastEvent: 'Vous entrez dans la Faille.',
+          journal: ['start', `biome-${biomeId}`, ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
+          lastEvent: `Vous entrez dans la Faille — ${BIOME_BY_ID[biomeId]?.name ?? biomeId}.`,
         },
       };
     }
@@ -166,6 +192,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'NEXT_FLOOR': {
       if (state.mode !== 'RUN' || !state.run) return state;
       const floor = state.run.floor + 1;
+      const { def: biomeDef } = biomeStructureOf(state.run.biomeIndex);
+      const familyIds = MONSTERS_BY_FAMILY[biomeDef.family].map((m) => m.id);
       // 1 jalon par biome, vers le milieu (après le 2e niveau, §SPEC-7.2).
       const teamMonster = state.forge.team[0];
       const hasCompanion = teamMonster ? !!COMPANION_BY_MONSTER[teamMonster] : false;
@@ -175,12 +203,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run: {
           ...state.run,
           floor,
-          level: generateLevel(state.run.seed, floor, undefined, {
-            roots: BIOME_1_STRUCTURE.rootsEnabled,
-            monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (floor - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
-            sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
-            altars: BIOME_1_STRUCTURE.altarsPerFloor,
-          }),
+          level: generateLevel(state.run.seed, floor, familyIds, levelOpts(biomeDef, floor)),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
           journal: [...state.run.journal, `floor-${floor}`],
@@ -391,7 +414,21 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const keptComposites = (run?.orbs ?? []).filter((o) => o.kind === 'composite');
       const withProduction = run
         ? advanceProduction(
-            { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai, spores: state.forge.spores + run.lootSpores } },
+            {
+              ...state,
+              forge: {
+                ...state.forge,
+                credits: state.forge.credits + run.lootCredits,
+                essence: state.forge.essence + run.lootEssence,
+                mineraiBrut: state.forge.mineraiBrut + run.lootMinerai,
+                spores: state.forge.spores + run.lootSpores,
+                // R6-01+ : les ressources des biomes 2-4 (données, mercurium, optifibre)
+                // sont transférées à la Forge à 100 % au retour de run.
+                donnees: state.forge.donnees + (run.lootBiome['donnees'] ?? 0),
+                mercurium: state.forge.mercurium + (run.lootBiome['mercurium'] ?? 0),
+                optifibre: state.forge.optifibre + (run.lootBiome['optifibre'] ?? 0),
+              },
+            },
             run.elapsedTicks,
           )
         : state;
@@ -419,9 +456,44 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) return state;
       const level = state.run.level;
       if (isWall(level, x, y)) return state; // un mur bloque, même au tactile
-      let run = { ...state.run, playerPos: { x, y } };
+      // R6-03 twist biome 4 : zone ralentie (speed 0) -> un déplacement sur deux est ignoré
+      // ("saute un tour"), parité déterministe sur moveCount.
+      const cur = state.run;
+      const originZone = level.speedZones.find((z) => z.pos.x === cur.playerPos.x && z.pos.y === cur.playerPos.y);
+      const moveCount = cur.moveCount + 1;
+      if (originZone && originZone.speed === 0 && moveCount % 2 === 0) {
+        return {
+          ...state,
+          run: { ...state.run, moveCount, lastEvent: 'Zone ralentie : vous sautez un tour.' },
+        };
+      }
+      // R6-03 twist biome 4 : zone accélérée (speed 2) -> le déplacement se poursuit d'une
+      // case dans la même direction si elle est libre.
+      let dest = { x, y };
+      const destZone = level.speedZones.find((z) => z.pos.x === x && z.pos.y === y);
+      if (destZone && destZone.speed === 2) {
+        const dx = x - cur.playerPos.x;
+        const dy = y - cur.playerPos.y;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < MAP_WIDTH && ny < MAP_HEIGHT && !isWall(level, nx, ny)) dest = { x: nx, y: ny };
+      }
+      let run = { ...state.run, playerPos: dest, moveCount };
+      // R6-02 twist biome 3 : sol brûlant — dégâts exacts par tour sur la case d'arrivée.
+      const burn = level.burnZones.find((z) => z.pos.x === dest.x && z.pos.y === dest.y);
+      if (burn && (burn.damage ?? 0) > 0) {
+        run = {
+          ...run,
+          playerHp: run.playerHp - (burn.damage ?? 0),
+          journal: [...run.journal, 'brulure'],
+          lastEvent: `Sol brûlant : -${burn.damage} PV.`,
+        };
+        if (run.playerHp <= 0) {
+          return { ...state, mode: 'RETOUR', run: { ...run, playerHp: 0 } };
+        }
+      }
       // Ramassage automatique des orbes au sol en marchant dessus.
-      const orbIdx = level.orbs.findIndex((o) => o.pos.x === x && o.pos.y === y);
+      const orbIdx = level.orbs.findIndex((o) => o.pos.x === dest.x && o.pos.y === dest.y);
       if (orbIdx >= 0) {
         const orb = level.orbs[orbIdx];
         run = {
@@ -430,7 +502,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           orbs: [
             ...run.orbs,
             {
-              id: `sol-${run.floor}-${x}-${y}`,
+              id: `sol-${run.floor}-${dest.x}-${dest.y}`,
               kind: 'primordial' as const,
               element: orb.element,
               tier: 1,
@@ -440,10 +512,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
         };
       }
       // Récolte d'un nœud de spores en marchant dessus : retire le nœud et attire les monstres voisins.
-      const sporeIdx = level.sporeNodes.findIndex((p) => p.x === x && p.y === y);
+      const sporeIdx = level.sporeNodes.findIndex((p) => p.x === dest.x && p.y === dest.y);
       if (sporeIdx >= 0) {
         const level2 = { ...level, sporeNodes: level.sporeNodes.filter((_, i) => i !== sporeIdx) };
-        attractMonsters(level2, { x, y }, BIOME_1_STRUCTURE.attractRadius, (lx, ly) => isWall(level2, lx, ly));
+        attractMonsters(level2, dest, BIOME_1_STRUCTURE.attractRadius, (lx, ly) => isWall(level2, lx, ly));
         run = {
           ...run,
           level: level2,
@@ -452,17 +524,48 @@ export function reduce(state: GameState, action: GameAction): GameState {
           lastEvent: 'Spore récoltée (les monstres voisins sont attirés…).',
         };
       }
+      // R6-01+ : nœud de la ressource du biome courant (données / mercurium / optifibre).
+      const resIdx = level.resourceNodes.findIndex((p) => p.x === dest.x && p.y === dest.y);
+      if (resIdx >= 0) {
+        const { def: biomeDef } = biomeStructureOf(run.biomeIndex);
+        run = {
+          ...run,
+          level: { ...run.level!, resourceNodes: run.level!.resourceNodes.filter((_, i) => i !== resIdx) },
+          lootBiome: { ...run.lootBiome, [biomeDef.resourceId]: (run.lootBiome[biomeDef.resourceId] ?? 0) + 1 },
+          journal: [...run.journal, `resource-${biomeDef.resourceId}`],
+          lastEvent: `${biomeDef.resourceId} récoltée.`,
+        };
+      }
       return { ...state, run };
     }
     case 'INTERACT': {
       if (state.mode !== 'RUN' || !state.run || !state.run.level) return state;
       const { playerPos: pos, level, seed, floor } = state.run;
-      // Sortie du niveau -> niveau suivant, ou combat de boss au dernier sol (§SPEC-4.1).
+      // Sortie du niveau -> niveau suivant, ou combat de boss au dernier sol du biome (§SPEC-4.1).
       if (pos.x === level.exit.x && pos.y === level.exit.y) {
-        if (floor >= BIOME_1_STRUCTURE.floors) {
-          return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${BIOME_1_STRUCTURE.bossId}`], fromMap: false });
+        const { def: biomeDef } = biomeStructureOf(state.run.biomeIndex);
+        if (floor >= biomeDef.floors) {
+          return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${biomeDef.bossId}`], fromMap: false });
         }
         return reduce(state, { type: 'NEXT_FLOOR' });
+      }
+      // R6-01 twist biome 2 : déclencheur de circuit -> bascule les portes associées
+      // (connexité BFS garantie dans les deux états, §R6-01).
+      const circuitIdx = level.circuits.findIndex((c) => c.trigger.x === pos.x && c.trigger.y === pos.y);
+      if (circuitIdx >= 0) {
+        const circuit = level.circuits[circuitIdx];
+        const walls = [...level.walls];
+        for (const d of circuit.doors) walls[d.y * level.width + d.x] = !walls[d.y * level.width + d.x];
+        const level2 = { ...level, walls };
+        return {
+          ...state,
+          run: {
+            ...state.run,
+            level: level2,
+            journal: [...state.run.journal, 'circuit'],
+            lastEvent: 'Un circuit bascule : des portes s’ouvrent ou se ferment.',
+          },
+        };
       }
       // Autel de défi à tours limités : usage unique, l'autel disparaît du niveau (§SPEC-4.3).
       const altarIdx = level.altars.findIndex((a) => a.x === pos.x && a.y === pos.y);

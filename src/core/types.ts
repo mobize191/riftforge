@@ -70,6 +70,11 @@ export interface ForgeState {
   mineraiBrut: number;
   lingots: number;
   spores: number;
+  donnees: number; // R6-01 — ressource du biome 2
+  mercurium: number; // R6-02 — ressource du biome 3
+  optifibre: number; // R6-03 — ressource du biome 4
+  runCompleted: boolean; // R6-03 — victoire de run (boss du biome 4 vaincu)
+  allBiomesCleared: boolean; // R7-01 — débloque les modificateurs de Faille
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];
@@ -91,6 +96,7 @@ export interface Position {
 
 export interface RunState {
   seed: number;
+  biomeIndex: number; // R6-01+ — index dans BIOME_ORDER (0 = Failles Vertes)
   floor: number;
   level: import('./run/generate').LevelMap | null;
   encounter: string[] | null;
@@ -105,6 +111,8 @@ export interface RunState {
   lootEssence: number;
   lootMinerai: number;
   lootSpores: number;
+  lootBiome: Record<string, number>; // R6-01+ — ressources des biomes 2-4 (donnees, mercurium, optifibre)
+  moveCount: number; // R6-03 — parité pour les zones ralenties
   elapsedTicks: number;
   orbs: Orb[];
   modules: Module[];

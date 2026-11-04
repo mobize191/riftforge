@@ -44,3 +44,64 @@ export const BOSS_BIOME_1: BossDef = {
 };
 
 export const BOSS_BY_ID: Record<string, BossDef> = { [BOSS_BIOME_1.id]: BOSS_BIOME_1 };
+
+// --- R6-01..R6-03 : boss des biomes 2-4 (télégraphiés, faiblesses explicites). TODO-BALANCE ---
+
+// Biome 2 — Les Datacathédrales.
+export const BOSS_BIOME_2: BossDef = {
+  id: 'grand-index',
+  name: 'Le Grand Index',
+  hp: 40, // TODO-BALANCE
+  weaknesses: ['eau'], // TODO-BALANCE
+  resistances: ['air'], // TODO-BALANCE
+  attacks: [
+    { id: 'frappe-index', name: 'Frappe d’index', damage: 5 }, // TODO-BALANCE
+    { id: 'requete', name: 'Requête vorace', damage: 3 }, // TODO-BALANCE
+    { id: 'surcharge', name: 'Surcharge de données', damage: 4 }, // TODO-BALANCE
+  ],
+  phases: [
+    { atHpRatioBelow: 1.01, pattern: ['frappe-index', 'requete', 'requete'] }, // TODO-BALANCE
+    { atHpRatioBelow: 0.5, pattern: ['surcharge', 'frappe-index', 'requete'] }, // TODO-BALANCE
+  ],
+};
+
+// Biome 3 — Les Hauts-Fourneaux.
+export const BOSS_BIOME_3: BossDef = {
+  id: 'coeur-fournaise',
+  name: 'Cœur de Fournaise',
+  hp: 50, // TODO-BALANCE
+  weaknesses: ['eau'], // TODO-BALANCE
+  resistances: ['feu'], // TODO-BALANCE
+  attacks: [
+    { id: 'jet-magma', name: 'Jet de magma', damage: 6 }, // TODO-BALANCE
+    { id: 'explosion', name: 'Explosion thermique', damage: 4 }, // TODO-BALANCE
+    { id: 'brasier', name: 'Brasier', damage: 3 }, // TODO-BALANCE (AoE compagnon)
+  ],
+  phases: [
+    { atHpRatioBelow: 1.01, pattern: ['jet-magma', 'explosion', 'brasier'] }, // TODO-BALANCE
+    { atHpRatioBelow: 0.5, pattern: ['jet-magma', 'jet-magma', 'explosion'] }, // TODO-BALANCE
+  ],
+};
+
+// Biome 4 — La Fibration (sa victoire = victoire de run, R6-03).
+export const BOSS_BIOME_4: BossDef = {
+  id: 'noeud-final',
+  name: 'Le Nœud Final',
+  hp: 60, // TODO-BALANCE
+  weaknesses: ['feu', 'air'], // TODO-BALANCE
+  resistances: ['terre'], // TODO-BALANCE
+  attacks: [
+    { id: 'lame-fibre', name: 'Lame de fibre', damage: 6 }, // TODO-BALANCE
+    { id: 'siphon', name: 'Siphon de données', damage: 4 }, // TODO-BALANCE
+    { id: 'surcharge-reseau', name: 'Surcharge du réseau', damage: 5 }, // TODO-BALANCE
+  ],
+  phases: [
+    { atHpRatioBelow: 1.01, pattern: ['lame-fibre', 'siphon', 'siphon'] }, // TODO-BALANCE
+    { atHpRatioBelow: 0.66, pattern: ['surcharge-reseau', 'lame-fibre', 'siphon'] }, // TODO-BALANCE
+    { atHpRatioBelow: 0.33, pattern: ['lame-fibre', 'surcharge-reseau', 'surcharge-reseau'] }, // TODO-BALANCE
+  ],
+};
+
+BOSS_BY_ID[BOSS_BIOME_2.id] = BOSS_BIOME_2;
+BOSS_BY_ID[BOSS_BIOME_3.id] = BOSS_BIOME_3;
+BOSS_BY_ID[BOSS_BIOME_4.id] = BOSS_BIOME_4;

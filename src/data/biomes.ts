@@ -56,3 +56,81 @@ export const BIOME_SKELETONS: BiomeDef[] = [
     family: 'vermine',
   },
 ];
+
+// --- R6-01..R6-04 : les 4 biomes jouables (structures chiffrées TODO-BALANCE) ---
+
+export interface BiomeStructure {
+  floors: number;
+  bossId: string;
+  family: MonsterFamily;
+  resourceId: string;
+  monsterCountBase: number;
+  monsterCountPerFloor: number;
+  resourceNodesPerFloor: number;
+  altarsPerFloor: number;
+  rootsEnabled?: boolean;
+  attractRadius?: number;
+  // Twist biome 2 : circuits — déclencheurs qui ouvrent/ferment des portes.
+  circuits?: { triggers: number; doorsPerTrigger: number };
+  // Twist biome 3 : sol brûlant — zones de dégâts par tour, télégraphiées.
+  burnZonesPerFloor?: number;
+  burnDamage?: number;
+  // Twist biome 4 : zones de vitesse (2 = accéléré, 0 = ralenti/saute un tour).
+  speedZonesPerFloor?: number;
+}
+
+export const BIOME_STRUCTURES: Record<string, BiomeStructure> = {
+  'failles-vertes': {
+    floors: BIOME_1_STRUCTURE.floors,
+    bossId: BIOME_1_STRUCTURE.bossId,
+    family: 'spore',
+    resourceId: 'spores',
+    monsterCountBase: BIOME_1_STRUCTURE.monsterCountBase,
+    monsterCountPerFloor: BIOME_1_STRUCTURE.monsterCountPerFloor,
+    resourceNodesPerFloor: BIOME_1_STRUCTURE.sporeNodesPerFloor,
+    altarsPerFloor: BIOME_1_STRUCTURE.altarsPerFloor,
+    rootsEnabled: BIOME_1_STRUCTURE.rootsEnabled,
+    attractRadius: BIOME_1_STRUCTURE.attractRadius,
+  },
+  datacathedrales: {
+    floors: 4, // TODO-BALANCE
+    bossId: 'grand-index', // TODO-BALANCE
+    family: 'gremlin',
+    resourceId: 'donnees',
+    monsterCountBase: 5, // TODO-BALANCE
+    monsterCountPerFloor: 1, // TODO-BALANCE
+    resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de données
+    altarsPerFloor: 1, // TODO-BALANCE
+    circuits: { triggers: 2, doorsPerTrigger: 2 }, // TODO-BALANCE — twist circuits
+  },
+  'hauts-fourneaux': {
+    floors: 4, // TODO-BALANCE
+    bossId: 'coeur-fournaise', // TODO-BALANCE
+    family: 'elementaire',
+    resourceId: 'mercurium',
+    monsterCountBase: 5, // TODO-BALANCE
+    monsterCountPerFloor: 1, // TODO-BALANCE
+    resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de mercurium
+    altarsPerFloor: 1, // TODO-BALANCE
+    burnZonesPerFloor: 4, // TODO-BALANCE — twist sol brûlant
+    burnDamage: 3, // TODO-BALANCE — dégâts exacts par tour sur une case brûlante
+  },
+  fibration: {
+    floors: 4, // TODO-BALANCE
+    bossId: 'noeud-final', // TODO-BALANCE
+    family: 'vermine',
+    resourceId: 'optifibre',
+    monsterCountBase: 6, // TODO-BALANCE
+    monsterCountPerFloor: 1, // TODO-BALANCE
+    resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds d'optifibre
+    altarsPerFloor: 1, // TODO-BALANCE
+    speedZonesPerFloor: 5, // TODO-BALANCE — twist zones de vitesse
+  },
+};
+
+// Les 4 biomes dans l'ordre de la run (§SPEC-4.1).
+export const BIOME_ORDER = ['failles-vertes', 'datacathedrales', 'hauts-fourneaux', 'fibration'] as const;
+
+export const BIOME_BY_ID: Record<string, BiomeDef> = Object.fromEntries(
+  [BIOME_1, ...BIOME_SKELETONS].map((b) => [b.id, b]),
+);
