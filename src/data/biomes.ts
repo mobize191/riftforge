@@ -30,3 +30,29 @@ export const BIOME_1_STRUCTURE = {
   attractRadius: 5, // TODO-BALANCE — la récolte attire les monstres voisins dans ce rayon
   altarsPerFloor: 1, // TODO-BALANCE — 1 défi à tours limités par niveau (§SPEC-4.3)
 } as const;
+
+// --- P6-A : squelettes des biomes 2-4 (données descriptives uniquement, aucune logique) ---
+
+export const BIOME_SKELETONS: BiomeDef[] = [
+  {
+    id: 'datacathedrales',
+    name: 'Les Datacathédrales',
+    resourceId: 'donnees',
+    twist: 'circuits qui modifient la carte',
+    family: 'gremlin',
+  },
+  {
+    id: 'hauts-fourneaux',
+    name: 'Les Hauts-Fourneaux',
+    resourceId: 'mercurium',
+    twist: 'sol brûlant, zones de dégâts',
+    family: 'elementaire',
+  },
+  {
+    id: 'fibration',
+    name: 'La Fibration',
+    resourceId: 'optifibre',
+    twist: 'zones accélérées / ralenties',
+    family: 'vermine',
+  },
+];
