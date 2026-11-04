@@ -56,3 +56,13 @@ test('sauvegarde : recharger la page restaure la position', async ({ page }) => 
   await expect(page.locator('canvas').first()).toBeVisible();
   expect(await page.locator('text=/Position :/').textContent()).toBe(pos);
 });
+
+// R9-05 — parcours e2e des boutons export/import de l'écran titre.
+test('écran titre : boutons Télécharger la save / Charger un fichier présents', async ({ page }) => {
+  await page.goto('/riftforge/');
+  await page.getByRole('button', { name: 'Nouvelle descente' }).click();
+  await page.goBack();
+  await expect(page.getByRole('button', { name: 'Télécharger la save' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Charger un fichier' })).toBeVisible();
+  await expect(page.getByLabel('Fichier de sauvegarde')).toBeAttached();
+});

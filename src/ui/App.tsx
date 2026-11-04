@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState, Position } from '../core/types';
 import type { LevelMap } from '../core/run/generate';
 import { initialState, reduce } from '../core/run/state';
-import { serialize, deserialize, SAVE_KEY } from '../core/save/save';
+import { serialize, deserialize, importSave, SAVE_KEY } from '../core/save/save';
 import { loadFromPort, saveToPort } from '../core/save/storage';
 import { createLocalStoragePort } from './storage';
 import TitleScreen from './screens/TitleScreen';
@@ -75,6 +75,32 @@ export default function App() {
   }, [persist]);
 
   const onContinue = useCallback(() => setView('game'), []);
+
+  // R9-05 : export/import de la save (JSON versionné) depuis l'écran titre.
+  const [importError, setImportError] = useState<string | null>(null);
+  const onExportSave = useCallback(() => {
+    if (!state) return;
+    const blob = new Blob([serialize(state)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'riftforge-save.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    playSound('ui-buy');
+  }, [state]);
+  const onImportSave = useCallback((file: File) => {
+    void file.text().then((text) => {
+      try {
+        const next = importSave(text); // validation + migration + refus propre des versions inconnues
+        setImportError(null);
+        persist(next);
+        playSound('ui-buy');
+      } catch {
+        setImportError('Fichier de sauvegarde invalide ou version inconnue — import refusé.');
+      }
+    });
+  }, [persist]);
 
   const onMove = useCallback((pos: Position) => {
     playSound('step'); // R9-02
@@ -454,6 +480,9 @@ export default function App() {
       hasSave={state?.run !== null && state?.run !== undefined}
       onNewRun={onNewRun}
       onContinue={onContinue}
+      onExportSave={state ? onExportSave : undefined}
+      onImportSave={onImportSave}
+      importError={importError}
     />
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { GameState } from '../../core/types';
 import { soundEngine, playSound } from '../audio';
 
@@ -9,12 +9,19 @@ export default function TitleScreen({
   hasSave,
   onNewRun,
   onContinue,
+  onExportSave,
+  onImportSave,
+  importError,
 }: {
   state: GameState | null;
   hasSave: boolean;
   onNewRun: () => void;
   onContinue: () => void;
+  onExportSave?: () => void; // R9-05 — télécharger la save (JSON versionné)
+  onImportSave?: (file: File) => void; // R9-05 — charger un fichier (validation core)
+  importError?: string | null;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   // R9-02 : bouton couper le son (persisté), testé sans AudioContext.
   const [muted, setMuted] = useState(soundEngine.muted);
   return (
@@ -62,6 +69,44 @@ export default function TitleScreen({
         >
           Son : {muted ? 'coupé' : 'activé'}
         </button>
+        {/* R9-05 : export / import de la sauvegarde */}
+        {onExportSave && (
+          <button
+            onClick={onExportSave}
+            className="rounded-lg border border-emerald-400/70 bg-emerald-900/60"
+            style={{ minHeight: '44px', fontSize: '0.95rem', padding: '0.5rem 1rem' }}
+          >
+            Télécharger la save
+          </button>
+        )}
+        {onImportSave && (
+          <>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="rounded-lg border border-emerald-400/70 bg-emerald-900/60"
+              style={{ minHeight: '44px', fontSize: '0.95rem', padding: '0.5rem 1rem' }}
+            >
+              Charger un fichier
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              aria-label="Fichier de sauvegarde"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImportSave(f);
+                e.target.value = '';
+              }}
+            />
+          </>
+        )}
+        {importError && (
+          <p role="alert" style={{ color: '#ff8899', fontSize: '0.9rem' }}>
+            {importError}
+          </p>
+        )}
       </div>
       {state && (
         <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>
