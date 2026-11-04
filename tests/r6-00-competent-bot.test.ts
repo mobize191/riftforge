@@ -227,7 +227,8 @@ function competentBiome1Run(seed: number, moduleUsage: Record<string, number>) {
         companionKo: c.companion?.ko,
         playerHp: c.player.hp,
       });
-      if (s.mode === 'RETOUR') return { won: true, turns, deathFloor: 0 }; // boss vaincu
+      // R6-04 : vaincre le boss du biome 1 ouvre le biome 2 dans la même run = biome 1 gagné
+      if (s.mode === 'RUN' && s.run!.biomeIndex === 1) return { won: true, turns, deathFloor: 0 };
       s = craftAll(s);
       continue;
     }

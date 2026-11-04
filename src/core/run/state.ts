@@ -389,10 +389,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
           };
         }
       }
-      // Victoire contre le boss -> fin du biome -> retour à la Forge.
+      // Victoire contre le boss -> fin du biome (R6-04 : la run continue dans le biome
+      // suivant sans retour à la Forge ; seul le boss final termine la run).
       const wasBoss = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
       if (action.victory && wasBoss) {
-        // R6-03 : vaincre le boss du biome 4 (dernier biome) = victoire de run.
         const bossId = (state.run.encounter ?? []).find((id) => id.startsWith('boss:'))!.slice(5);
         const isFinalBoss = bossId === biomeStructureOf(BIOME_ORDER.length - 1).def.bossId;
         run = {
@@ -400,7 +400,28 @@ export function reduce(state: GameState, action: GameAction): GameState {
           runCompleted: isFinalBoss ? true : run.runCompleted,
           journal: [...run.journal, 'boss-killed', ...(isFinalBoss ? ['boss-final'] : [])],
         };
-        return { ...state, mode: 'RETOUR', run };
+        if (isFinalBoss) {
+          // R6-03 : victoire de run -> retour à la Forge avec le butin.
+          return { ...state, mode: 'RETOUR', run };
+        }
+        // R6-04 : boss intermédiaire vaincu -> biome suivant, même run, nouveau niveau.
+        const nextBiomeIndex = state.run.biomeIndex + 1;
+        const { id: nextBiomeId, def: nextDef } = biomeStructureOf(nextBiomeIndex);
+        const nextFamily = MONSTERS_BY_FAMILY[nextDef.family].map((m) => m.id);
+        return {
+          ...state,
+          mode: 'RUN',
+          run: {
+            ...run,
+            biomeIndex: nextBiomeIndex,
+            floor: 1,
+            level: generateLevel(run.seed, 1, nextFamily, levelOpts(nextDef, 1)),
+            playerPos: { x: 1, y: 1 },
+            pendingMilestone: false, // 1 jalon par biome
+            journal: [...run.journal, `biome-${nextBiomeId}`],
+            lastEvent: `Vous pénétrez dans ${BIOME_BY_ID[nextBiomeId]?.name ?? nextBiomeId}.`,
+          },
+        };
       }
       return { ...state, mode: 'RUN', run };
     }

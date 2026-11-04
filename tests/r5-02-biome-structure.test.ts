@@ -50,6 +50,8 @@ describe('R5-02 structure de biome (4 niveaux + boss, racines)', () => {
     expect(s.mode).toBe('COMBAT');
     expect(s.run!.encounter![0]).toBe('boss:racine-mere');
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 50, orbs: [], kills: 1, essence: 2, minerai: 2, captured: [] } });
-    expect(s.mode).toBe('RETOUR');
+    // R6-04 : la victoire du boss ouvre le biome suivant dans la même run (plus de RETOUR ici)
+    expect(s.mode).toBe('RUN');
+    expect(s.run!.biomeIndex).toBe(1);
   });
 });

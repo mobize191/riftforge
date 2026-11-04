@@ -12,8 +12,10 @@ describe('R5-04 contrats du Marchand', () => {
     // simule une victoire de boss
     s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['boss:racine-mere'] });
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 50, orbs: [], kills: 1, essence: 0, minerai: 0, captured: [] } });
-    expect(s.mode).toBe('RETOUR');
-    s = reduce(s, { type: 'RETURN_FORGE' });
+    // R6-04 : victoire du boss du biome 1 -> biome 2 ouvert dans la même run
+    expect(s.mode).toBe('RUN');
+    expect(s.run!.biomeIndex).toBe(1);
+    s = reduce(reduce(s, { type: 'DIE' }), { type: 'RETURN_FORGE' });
     expect(s.forge.claimedContracts).toContain('boss-solo');
     expect(s.forge.credits).toBe(50 + (bossSolo.reward.credits ?? 0));
   });
@@ -24,7 +26,7 @@ describe('R5-04 contrats du Marchand', () => {
     s = reduce(s, { type: 'START_RUN', seed: 3 });
     s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['boss:racine-mere'] });
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 50, orbs: [], kills: 1, essence: 0, minerai: 0, captured: [] } });
-    s = reduce(s, { type: 'RETURN_FORGE' });
+    s = reduce(reduce(s, { type: 'DIE' }), { type: 'RETURN_FORGE' });
     expect(s.forge.claimedContracts).not.toContain('boss-solo');
   });
 

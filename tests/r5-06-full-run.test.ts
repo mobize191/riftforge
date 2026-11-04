@@ -86,20 +86,22 @@ function fullBiome1Run(seed: number) {
     }
     s = reduce(s, { type: 'NEXT_FLOOR' });
   }
-  return { s, combats, won: s.mode === 'RETOUR' };
+  // R6-04 : vaincre le boss du biome 1 ouvre le biome 2 dans la même run.
+  return { s, combats, won: s.mode === 'RUN' && s.run!.biomeIndex === 1 };
 }
 
 describe('R5-06 run complète du biome 1 (bout en bout)', () => {
-  it('descente -> 4 niveaux -> boss -> retour Forge avec 100 % du butin, déterministe', () => {
+  it('descente -> 4 niveaux -> boss -> biome 2 ouvert, retour Forge avec 100 % du butin, déterministe', () => {
     const a = fullBiome1Run(4242);
     const b = fullBiome1Run(4242);
     expect(a.s).toEqual(b.s);
     if (a.won) {
-      expect(a.s.mode).toBe('RETOUR');
-      const back = reduce(a.s, { type: 'RETURN_FORGE' });
+      expect(a.s.mode).toBe('RUN');
+      expect(a.s.run!.biomeIndex).toBe(1); // biome 2 atteint sans retour à la Forge (R6-04)
+      const back = reduce(reduce(a.s, { type: 'DIE' }), { type: 'RETURN_FORGE' });
       expect(back.mode).toBe('FORGE');
       expect(back.forge.credits).toBeGreaterThan(0); // 100 % du butin conservé
-      console.log(`[R5-06] run seed 4242 : ${a.combats} combats, retour Forge, crédits=${back.forge.credits}, essence=${back.forge.essence}, spores=${back.forge.spores}`);
+      console.log(`[R5-06] run seed 4242 : ${a.combats} combats, biome 2 atteint, crédits=${back.forge.credits}, essence=${back.forge.essence}, spores=${back.forge.spores}`);
     } else {
       console.log(`[R5-06] run seed 4242 : mort après ${a.combats} combats (butin quand même conservé au retour)`);
       const back = reduce(reduce(a.s, { type: 'DIE' }), { type: 'RETURN_FORGE' });

@@ -126,7 +126,10 @@ describe('R6-03 biome 4 — La Fibration', () => {
     expect(c.phase).toBe('won');
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: c.loot ?? undefined, playerHp: c.player.hp });
     expect(s.run!.runCompleted).toBe(false);
-    s = reduce(s, { type: 'RETURN_FORGE' });
+    // R6-04 : le boss du biome 1 ouvre le biome 2 (pas de victoire de run)
+    expect(s.mode).toBe('RUN');
+    expect(s.run!.biomeIndex).toBe(1);
+    s = reduce(reduce(s, { type: 'DIE' }), { type: 'RETURN_FORGE' });
     expect(s.forge.allBiomesCleared).toBe(false);
   });
 
