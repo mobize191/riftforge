@@ -94,6 +94,7 @@ export interface RunState {
   floor: number;
   level: import('./run/generate').LevelMap | null;
   encounter: string[] | null;
+  challengeId: string | null;
   playerPos: Position;
   playerLevel: number;
   playerHp: number;

@@ -28,4 +28,5 @@ export const BIOME_1_STRUCTURE = {
   sporeNodesPerFloor: 3, // TODO-BALANCE — nœuds de spores visibles (§SPEC-4.2)
   sporeHealPower: 8, // TODO-BALANCE — usage soin de la ressource du biome 1
   attractRadius: 5, // TODO-BALANCE — la récolte attire les monstres voisins dans ce rayon
+  altarsPerFloor: 1, // TODO-BALANCE — 1 défi à tours limités par niveau (§SPEC-4.3)
 } as const;

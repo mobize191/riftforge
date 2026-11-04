@@ -78,6 +78,8 @@ export default function App() {
           prev.forge.team[0] ? COMPANION_BY_MONSTER[prev.forge.team[0]] ?? null : null,
           prev.run.companionSkills,
           prev.run.companionKo,
+          prev.run.modules.map((m) => m.id),
+          prev.run.challengeId ?? undefined,
         ),
       );
       return reduce(prev, { type: 'ENTER_COMBAT', enemies });
@@ -89,13 +91,14 @@ export default function App() {
   }, []);
 
   const onCombatEnd = useCallback(
-    (result: 'won' | 'lost' | 'fled', loot: CombatState['loot'], ko = false) => {
+    (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko = false) => {
       setCombat(null);
       setState((prev) => {
         if (!prev) return prev;
         if (result === 'won')
           return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined, companionKo: ko });
-        if (result === 'fled') return reduce(prev, { type: 'EXIT_COMBAT', victory: false, companionKo: ko });
+        if (result === 'fled' || result === 'challenge-failed')
+          return reduce(prev, { type: 'EXIT_COMBAT', victory: false, companionKo: ko });
         return reduce(prev, { type: 'DIE' });
       });
     },

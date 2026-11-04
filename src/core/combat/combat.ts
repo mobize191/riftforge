@@ -7,6 +7,7 @@ import { applyFusion } from './fuse';
 import { affinityMultiplier } from '../../data/affinities';
 import { BOSS_BY_ID } from '../../data/bosses';
 import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
+import { CHALLENGE_BY_ID, type ChallengeDef } from '../../data/challenges';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import type { ElementId } from '../types';
 
@@ -38,7 +39,12 @@ export interface CombatItem {
   usesLeft: number;
 }
 
-export type CombatPhase = 'player' | 'won' | 'lost' | 'fled';
+export type CombatPhase = 'player' | 'won' | 'lost' | 'fled' | 'challenge-failed';
+
+export interface ChallengeState {
+  def: ChallengeDef;
+  turnsLeft: number;
+}
 
 export interface CombatLoot {
   credits: number;
@@ -63,6 +69,7 @@ export interface CombatState {
   companion: CompanionState | null;
   modules: string[];
   telegraph: string | null;
+  challenge: ChallengeState | null;
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -101,7 +108,9 @@ export function startCombat(
   companionSkills: Record<string, number> = {},
   companionKo = false,
   modules: string[] = [],
+  challengeId?: string,
 ): CombatState {
+  const challenge = challengeId ? CHALLENGE_BY_ID[challengeId] : undefined;
   const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false });
   const companion: CompanionState | null = companionDef
     ? {
@@ -155,6 +164,7 @@ export function startCombat(
     companion,
     modules,
     telegraph: null,
+    challenge: challenge ? { def: challenge, turnsLeft: challenge.turns } : null,
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -240,8 +250,21 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
   if (player.hp <= 0) {
     return { ...state, player, companion, log, phase: 'lost' };
   }
-  const afterComp = companionAct({ ...state, player, companion, log, phase: 'player', turn: state.turn + 1 });
-  return afterComp;
+  const nextTurn = { ...state, player, companion, log, phase: 'player' as const, turn: state.turn + 1 };
+  if (nextTurn.challenge) {
+    const turnsLeft = nextTurn.challenge.turnsLeft - 1;
+    if (turnsLeft <= 0 && nextTurn.enemies.some((e) => e.hp > 0)) {
+      // Échec du défi : pas de mort, juste pas de récompense (§SPEC-4.3).
+      return {
+        ...nextTurn,
+        challenge: { ...nextTurn.challenge, turnsLeft: 0 },
+        phase: 'challenge-failed',
+        log: [...log, `Échec du défi ${nextTurn.challenge.def.name} : plus de tours.`],
+      };
+    }
+    nextTurn.challenge = { ...nextTurn.challenge, turnsLeft };
+  }
+  return companionAct(nextTurn);
 }
 
 function checkVictory(state: CombatState, rng: Rng): CombatState {
@@ -255,7 +278,14 @@ function checkVictory(state: CombatState, rng: Rng): CombatState {
     return {
       ...state,
       phase: 'won',
-      loot: { credits, orbs, kills: state.enemies.length, essence, minerai, captured: state.captured },
+      loot: {
+        credits: credits + (state.challenge?.def.reward.credits ?? 0),
+        orbs,
+        kills: state.enemies.length,
+        essence: essence + (state.challenge?.def.reward.essence ?? 0),
+        minerai,
+        captured: state.captured,
+      },
       log: [...state.log, `Victoire ! Butin : ${credits} crédits, ${essence} essence, ${minerai} minerai, ${orbs.length} orbe(s).`],
     };
   }
@@ -270,10 +300,11 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
   switch (action.type) {
     case 'ATTACK': {
       const target = state.enemies[action.target];
-      if (!target || target.hp <= 0) return state;
-      const dmg = Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)); // TODO-BALANCE variance
+      if (!target) return state;
+      // Même une cible morte consomme le tour (sinon le combat stagne).
+      const dmg = target.hp > 0 ? Math.max(1, state.player.attack + (rng.next() < 0.25 ? 1 : 0)) : 0; // TODO-BALANCE variance
       const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: Math.max(0, e.hp - dmg), stunned: false } : e));
-      log.push(`Vous attaquez ${target.name} : -${dmg} PV.`);
+      log.push(target.hp > 0 ? `Vous attaquez ${target.name} : -${dmg} PV.` : `${target.name} est déjà à terre.`);
       let next: CombatState = { ...state, enemies, log };
       next = checkVictory(next, rng);
       if (next.phase === 'won') return next;

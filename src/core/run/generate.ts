@@ -18,6 +18,7 @@ export interface LevelMap {
   walls: boolean[];
   roots: Position[];
   sporeNodes: Position[];
+  altars: Position[];
   entrance: Position;
   exit: Position;
   monsters: PlacedMonster[];
@@ -92,7 +93,7 @@ export function generateLevel(
   seed: number,
   floor: number,
   monsterIds: string[] = ['mousse'],
-  opts: { roots?: boolean; monsterCount?: number; sporeNodes?: number } = {},
+  opts: { roots?: boolean; monsterCount?: number; sporeNodes?: number; altars?: number } = {},
 ): LevelMap {
   // Retry déterministe : on change la dérive de seed jusqu'à obtenir un niveau connexe.
   for (let attempt = 0; attempt < 50; attempt++) {
@@ -103,6 +104,7 @@ export function generateLevel(
       walls: new Array<boolean>(MAP_WIDTH * MAP_HEIGHT).fill(false),
       roots: [],
       sporeNodes: [],
+      altars: [],
       entrance: { x: 1, y: 1 },
       exit: { x: MAP_WIDTH - 2, y: MAP_HEIGHT - 2 },
       monsters: [],
@@ -144,6 +146,10 @@ export function generateLevel(
     const sporeCount = Math.min((opts.sporeNodes ?? 0), Math.max(0, spots.length - cursor));
     for (let i = 0; i < sporeCount; i++) {
       map.sporeNodes.push(take());
+    }
+    const altarCount = Math.min(opts.altars ?? 0, Math.max(0, spots.length - cursor));
+    for (let i = 0; i < altarCount; i++) {
+      map.altars.push(take());
     }
     return map;
   }

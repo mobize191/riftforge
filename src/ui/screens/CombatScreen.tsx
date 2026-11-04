@@ -11,21 +11,21 @@ export default function CombatScreen({
 }: {
   combat: CombatState;
   onAction: (a: CombatAction) => void;
-  onEnd: (result: 'won' | 'lost' | 'fled', loot: CombatState['loot'], ko?: boolean) => void;
+  onEnd: (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko?: boolean) => void;
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
   const [target] = useState(0);
   const soloModules = availableSoloModules(combat.orbs);
 
   const phase = combat.phase;
-  if (phase === 'won' || phase === 'lost' || phase === 'fled') {
+  if (phase === 'won' || phase === 'lost' || phase === 'fled' || phase === 'challenge-failed') {
     return (
       <main
         className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center"
         style={{ background: '#140a12', color: '#f8e8ec' }}
       >
         <h2 className="font-bold" style={{ fontSize: 'clamp(1.5rem, 6vw, 2.5rem)' }}>
-          {phase === 'won' ? 'VICTOIRE' : phase === 'fled' ? 'FUITE' : 'RUN TERMINÉE'}
+          {phase === 'won' ? 'VICTOIRE' : phase === 'fled' ? 'FUITE' : phase === 'challenge-failed' ? 'DÉFI ÉCHOUÉ (pas de récompense)' : 'RUN TERMINÉE'}
         </h2>
         <button
           onClick={() => onEnd(phase, combat.loot, combat.companion?.ko)}
@@ -47,6 +47,7 @@ export default function CombatScreen({
     >
       <h2 className="font-bold tracking-widest" style={{ fontSize: 'clamp(1.2rem, 5vw, 2rem)' }}>
         COMBAT — Tour {combat.turn}
+        {combat.challenge && ` · Défi « ${combat.challenge.def.name} » : ${combat.challenge.turnsLeft} tours restants`}
       </h2>
       <div className="w-full max-w-xl rounded-lg border border-slate-500 p-3">
         <strong>{combat.player.name}</strong> — PV {combat.player.hp}/{combat.player.maxHp}

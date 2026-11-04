@@ -24,7 +24,7 @@ export { MAP_WIDTH, MAP_HEIGHT };
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
-  | { type: 'ENTER_COMBAT'; enemies: string[] }
+  | { type: 'ENTER_COMBAT'; enemies: string[]; challengeId?: string }
   | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
@@ -111,8 +111,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
             roots: BIOME_1_STRUCTURE.rootsEnabled,
             monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (BALANCE.START_FLOOR - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
             sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
+            altars: BIOME_1_STRUCTURE.altarsPerFloor,
           }),
           encounter: null,
+          challengeId: null,
           playerPos: { x: 1, y: 1 },
           playerLevel: BALANCE.START_PLAYER_LEVEL,
           playerHp: maxHp,
@@ -136,7 +138,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'ENTER_COMBAT': {
       if (state.mode !== 'RUN' || !state.run) return state;
-      return { ...state, mode: 'COMBAT', run: { ...state.run, encounter: action.enemies } };
+      return {
+        ...state,
+        mode: 'COMBAT',
+        run: { ...state.run, encounter: action.enemies, challengeId: action.challengeId ?? null },
+      };
     }
     case 'NEXT_FLOOR': {
       if (state.mode !== 'RUN' || !state.run) return state;
@@ -154,6 +160,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
             roots: BIOME_1_STRUCTURE.rootsEnabled,
             monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (floor - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
             sporeNodes: BIOME_1_STRUCTURE.sporeNodesPerFloor,
+            altars: BIOME_1_STRUCTURE.altarsPerFloor,
           }),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
@@ -404,6 +411,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
           return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${BIOME_1_STRUCTURE.bossId}`] });
         }
         return reduce(state, { type: 'NEXT_FLOOR' });
+      }
+      // Autel de défi à tours limités : combat spécial avec compteur (§SPEC-4.3).
+      if (level.altars.some((a) => a.x === pos.x && a.y === pos.y)) {
+        const enemies = ['mousse', 'sporeling']; // TODO-BALANCE — garde de l'autel
+        return reduce(state, { type: 'ENTER_COMBAT', enemies, challengeId: 'autel-garde' });
       }
       const chestIdx = level.chests.findIndex((c) => c.x === pos.x && c.y === pos.y);
       if (chestIdx >= 0) {
