@@ -8,7 +8,7 @@ import { serialize, deserialize, SAVE_KEY } from '../core/save/save';
 import { loadFromPort, saveToPort } from '../core/save/storage';
 import { createLocalStoragePort } from './storage';
 import TitleScreen from './screens/TitleScreen';
-import GameCanvas from './GameCanvas';
+import GameCanvas, { type GameCanvasApi } from './GameCanvas';
 import CombatScreen from './screens/CombatScreen';
 import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
@@ -22,6 +22,7 @@ export default function App() {
   const [view, setView] = useState<View>('title');
   const [combat, setCombat] = useState<CombatState | null>(null);
   const levelRef = useRef<LevelMap | null>(null);
+  const canvasApiRef = useRef<GameCanvasApi>(null);
   const familyIds = useMemo(
     () => MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id),
     [],
@@ -237,15 +238,9 @@ export default function App() {
   if (view === 'game' && state?.mode === 'RUN' && state.run && state.run.level) {
     levelRef.current = state.run.level;
     const run = state.run;
-    const touchMove = (dx: number, dy: number) => {
-      setState((prev) => {
-        if (!prev?.run) return prev;
-        return reduce(prev, {
-          type: 'MOVE_PLAYER',
-          to: { x: prev.run.playerPos.x + dx, y: prev.run.playerPos.y + dy },
-        });
-      });
-    };
+    // Le pavé tactile pilote la scène Phaser (qui met à jour l'état via onMove).
+    const touchMove = (dx: number, dy: number) => canvasApiRef.current?.move(dx, dy);
+    const touchInteract = () => canvasApiRef.current?.interact();
     const padBtn: React.CSSProperties = {
       minWidth: '56px',
       minHeight: '56px',
@@ -272,6 +267,7 @@ export default function App() {
           </button>
         </div>
         <GameCanvas
+          ref={canvasApiRef}
           key={`${run.seed}-${run.floor}`}
           gameKey={`${run.seed}-${run.floor}`}
           levelRef={levelRef as React.MutableRefObject<LevelMap>}
@@ -288,7 +284,7 @@ export default function App() {
           <button aria-label="Haut" style={padBtn} onClick={() => touchMove(0, -1)}>▲</button>
           <div className="flex gap-2">
             <button aria-label="Gauche" style={padBtn} onClick={() => touchMove(-1, 0)}>◀</button>
-            <button aria-label="Interagir" style={{ ...padBtn, borderColor: 'rgba(52,211,153,0.8)' }} onClick={onInteract}>E</button>
+            <button aria-label="Interagir" style={{ ...padBtn, borderColor: 'rgba(52,211,153,0.8)' }} onClick={touchInteract}>E</button>
             <button aria-label="Droite" style={padBtn} onClick={() => touchMove(1, 0)}>▶</button>
           </div>
           <button aria-label="Bas" style={padBtn} onClick={() => touchMove(0, 1)}>▼</button>

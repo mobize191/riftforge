@@ -1,34 +1,37 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type Phaser from 'phaser';
 import type { Position } from '../core/types';
 import type { LevelMap } from '../core/run/generate';
 import { LOGICAL_WIDTH, LOGICAL_HEIGHT } from './scenes/mapConfig';
+import type { MapScene } from './scenes/MapScene';
 
-export default function GameCanvas({
-  gameKey,
-  levelRef,
-  initialPos,
-  seed,
-  floor,
-  familyIds,
-  onMove,
-  onEncounter,
-  onInteract,
-}: {
-  gameKey: string;
-  levelRef: React.MutableRefObject<LevelMap>;
-  initialPos: Position;
-  seed: number;
-  floor: number;
-  familyIds: string[];
-  onMove: (pos: Position) => void;
-  onEncounter: (enemies: string[]) => void;
-  onInteract: () => void;
-}) {
+export interface GameCanvasApi {
+  move: (dx: number, dy: number) => void;
+  interact: () => void;
+}
+
+const GameCanvas = forwardRef<
+  GameCanvasApi,
+  {
+    gameKey: string;
+    levelRef: React.MutableRefObject<LevelMap>;
+    initialPos: Position;
+    seed: number;
+    floor: number;
+    familyIds: string[];
+    onMove: (pos: Position) => void;
+    onEncounter: (enemies: string[]) => void;
+    onInteract: () => void;
+  }
+>(function GameCanvas(
+  { gameKey, levelRef, initialPos, seed, floor, familyIds, onMove, onEncounter, onInteract },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const sceneRef = useRef<MapScene | null>(null);
   const onMoveRef = useRef(onMove);
   const onEncounterRef = useRef(onEncounter);
   const onInteractRef = useRef(onInteract);
@@ -38,6 +41,12 @@ export default function GameCanvas({
   onInteractRef.current = onInteract;
   familyIdsRef.current = familyIds;
 
+  // API tactile : on pilote la scène (source de vérité de la position), pas l'état React directement.
+  useImperativeHandle(ref, () => ({
+    move: (dx, dy) => sceneRef.current?.tryMove(dx, dy),
+    interact: () => sceneRef.current?.interact(),
+  }));
+
   // Le jeu Phaser n'est créé/détruit QUE quand on change de sol (gameKey) :
   // jamais à chaque déplacement, sinon flash noir à chaque pas.
   useEffect(() => {
@@ -45,6 +54,16 @@ export default function GameCanvas({
     void import('phaser').then((PhaserNS) => {
       return import('./scenes/MapScene').then(({ MapScene }) => {
         if (disposed || gameRef.current || !containerRef.current) return;
+        const scene = new MapScene(
+          levelRef,
+          initialPos,
+          seed,
+          floor,
+          familyIdsRef.current,
+          (p) => onMoveRef.current(p),
+          (e) => onEncounterRef.current(e),
+          () => onInteractRef.current(),
+        );
         const game = new PhaserNS.Game({
           type: PhaserNS.AUTO,
           parent: containerRef.current,
@@ -56,24 +75,15 @@ export default function GameCanvas({
             height: LOGICAL_HEIGHT,
           },
           render: { pixelArt: true, antialias: false },
-          scene: [
-            new MapScene(
-              levelRef,
-              initialPos,
-              seed,
-              floor,
-              familyIdsRef.current,
-              (p) => onMoveRef.current(p),
-              (e) => onEncounterRef.current(e),
-              () => onInteractRef.current(),
-            ),
-          ],
+          scene: [scene],
         });
+        sceneRef.current = scene;
         gameRef.current = game;
       });
     });
     return () => {
       disposed = true;
+      sceneRef.current = null;
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
@@ -86,4 +96,6 @@ export default function GameCanvas({
       style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
     />
   );
-}
+});
+
+export default GameCanvas;

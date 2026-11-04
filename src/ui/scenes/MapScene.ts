@@ -153,16 +153,8 @@ export class MapScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>;
   }
 
-  update(): void {
-    if (Phaser.Input.Keyboard.JustDown(this.keys.e)) this.onInteract?.();
-    let dx = 0;
-    let dy = 0;
-    const K = Phaser.Input.Keyboard.JustDown;
-    if (K(this.keys.up) || K(this.keys.z) || K(this.keys.w)) dy = -1;
-    else if (K(this.keys.down) || K(this.keys.s)) dy = 1;
-    else if (K(this.keys.left) || K(this.keys.q) || K(this.keys.a)) dx = -1;
-    else if (K(this.keys.right) || K(this.keys.d)) dx = 1;
-    if (dx === 0 && dy === 0) return;
+  // Un pas de déplacement (clavier OU tactile) : la scène reste la source de vérité de la position.
+  tryMove(dx: number, dy: number): void {
     const nx = Phaser.Math.Clamp(this.pos.x + dx, 0, MAP_WIDTH - 1);
     const ny = Phaser.Math.Clamp(this.pos.y + dy, 0, MAP_HEIGHT - 1);
     if ((nx === this.pos.x && ny === this.pos.y) || isWall(this.level, nx, ny)) return;
@@ -181,5 +173,21 @@ export class MapScene extends Phaser.Scene {
     if (idx >= 0) {
       this.onEncounter?.(pickEncounter(this.seed, this.floor, idx, this.familyIds));
     }
+  }
+
+  interact(): void {
+    this.onInteract?.();
+  }
+
+  update(): void {
+    if (Phaser.Input.Keyboard.JustDown(this.keys.e)) this.interact();
+    let dx = 0;
+    let dy = 0;
+    const K = Phaser.Input.Keyboard.JustDown;
+    if (K(this.keys.up) || K(this.keys.z) || K(this.keys.w)) dy = -1;
+    else if (K(this.keys.down) || K(this.keys.s)) dy = 1;
+    else if (K(this.keys.left) || K(this.keys.q) || K(this.keys.a)) dx = -1;
+    else if (K(this.keys.right) || K(this.keys.d)) dx = 1;
+    if (dx !== 0 || dy !== 0) this.tryMove(dx, dy);
   }
 }
