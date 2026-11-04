@@ -58,7 +58,7 @@
 - **Contenu** : vérifier l'ensemble en conditions réelles : jauge d'énergie + coûts sur les boutons, retours Résisté/Faiblesse partout (joueur, modules, compagnon), bannière de tour, HUD lisible à 390 px. Mettre à jour `docs/SPEC.md` avec les amendements D1-D4, puis `docs/VERIFICATION.md` re-exécuté (format existant, phase R10).
 - **Critères** : e2e vert 390 px + 2560 px ; `pnpm install && pnpm vitest run && pnpm build` → exit 0 ; CI verte ; **playtest humain** : un combat se comprend sans doc (énergie, coûts, affinités).
 
-### R10-08 — Suite IHM locale exhaustive *(dépend de tout — la grande.preuve que la version web ne pouvait pas produire)*
+### R10-08 — Suite IHM locale exhaustive *(dépend de tout — la grande preuve que la version web ne pouvait pas produire)*
 - **Contexte** : en session web, les specs e2e ont été écrites mais jamais exécutées par l'agent (pas de navigateur) — seule la CI les jouait, et aucun screenshot n'a jamais été produit. En local, tout devient possible : ce ticket en profite au maximum.
 - **Contenu** :
   1. **Exécuter localement** la suite e2e existante (smoke, forge, combat, responsive 390/2560) : `pnpm test:e2e` → exit 0. Toute spec qui échoue = bug (`docs/BUGS.md`) à corriger avant la suite.
@@ -69,7 +69,7 @@
 
 ## 4. Règles d'exécution de session
 
-1. **Ordre strict** R10-01 → R10-07 ; R10-01 passe avant tout.
+1. **Ordre strict** R10-01 → R10-08 ; R10-01 passe avant tout.
 2. **Un ticket = un commit** (`R10-xx: …`) avec les sorties des commandes de preuve dans le corps du commit ; amendement SPEC dans le ticket concerné.
 3. **Coupe-circuit** : 3 échecs consécutifs → `docs/BLOCKED.md` + ticket non dépendant suivant ; jamais affaiblir un test pour passer.
 4. Toute régression d'un test existant = bug (test de régression + entrée `docs/BUGS.md`).
