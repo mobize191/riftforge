@@ -46,7 +46,10 @@ export function fuseOrbs(orbs: Orb[], indices: number[]): FuseResult {
 }
 
 // Retire les orbes consommées et ajoute le résultat.
-export function applyFusion(orbs: Orb[], indices: number[]): { ok: true; orbs: Orb[] } | FuseResult {
+export function applyFusion(
+  orbs: Orb[],
+  indices: number[],
+): { ok: true; orbs: Orb[] } | { ok: false; reason: 'opposition' | 'invalid' } {
   const result = fuseOrbs(orbs, indices);
   if (!result.ok) return result;
   const consumed = new Set(indices);

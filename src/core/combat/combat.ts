@@ -3,6 +3,7 @@ import { MONSTER_BY_ID } from '../../data/monsters';
 import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
 import { RECIPES, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
+import { applyFusion } from './fuse';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import type { ElementId } from '../types';
 
@@ -69,6 +70,7 @@ export type CombatAction =
   | { type: 'USE_ITEM'; itemId: string; target?: number }
   | { type: 'CAST_MODULE'; moduleId: string; target?: number }
   | { type: 'CAPTURE'; target: number }
+  | { type: 'FUSE_IN_COMBAT'; indices: number[] }
   | { type: 'FLEE' };
 
 // Probabilité de capture : augmente quand les PV restants baissent (monotone, §R3-01).
@@ -329,6 +331,24 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       }
       log.push(`Échec de la capture sur ${target.name}.`);
       return enemyTurn({ ...state, log }, rng);
+    }
+    case 'FUSE_IN_COMBAT': {
+      // En combat, la fusion coûte 1 tour (§SPEC-5.2) : on fusionne puis les ennemis jouent.
+      const res = applyFusion(
+        state.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial' as const, element: el, tier: 1 })),
+        action.indices,
+      );
+      if (!res.ok) return state;
+      const compositeElement = res.orbs.find((o) => o.kind === 'composite');
+      log.push(
+        compositeElement
+          ? `Fusion en combat : orbe composite obtenue (coûte le tour).`
+          : 'Fusion en combat (coûte le tour).',
+      );
+      const newOrbs = res.orbs
+        .filter((o) => o.kind === 'primordial')
+        .map((o) => o.element as ElementId);
+      return enemyTurn({ ...state, orbs: newOrbs, log }, rng);
     }
     case 'FLEE': {
       if (rng.next() < FLEE_CHANCE) {

@@ -13,6 +13,7 @@ import { advanceProduction } from '../forge/production';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
 import { createModule } from '../combat/createModule';
+import { applyFusion } from '../combat/fuse';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 
 export { MAP_WIDTH, MAP_HEIGHT };
@@ -36,6 +37,7 @@ export type GameAction =
   | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
   | { type: 'UPGRADE_SKILL'; skillId: string }
   | { type: 'CREATE_MODULE'; recipeId: string }
+  | { type: 'FUSE_ORBS'; indices: number[] }
   | { type: 'RENAME_COMPANION'; monsterId: string; name: string }
   | { type: 'SET_TEAM'; monsterIds: string[] }
   | { type: 'ASSIGN_WORKER'; buildingId: string; monsterId: string | null }
@@ -159,6 +161,13 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (action.monsterId === null) delete workers[action.buildingId];
       else workers[action.buildingId] = action.monsterId;
       return { ...state, forge: { ...state.forge, workers } };
+    }
+    case 'FUSE_ORBS': {
+      // Hors combat : fusion libre, gratuite et illimitée (§SPEC-5.2).
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const res = applyFusion(state.run.orbs, action.indices);
+      if (!res.ok) return state;
+      return { ...state, run: { ...state.run, orbs: res.orbs } };
     }
     case 'CREATE_MODULE': {
       if (state.mode !== 'RUN' || !state.run) return state;
