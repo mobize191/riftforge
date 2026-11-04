@@ -93,3 +93,32 @@ $ pnpm build     -> exit 0 (static prerender OK)
 ## Playtests en attente de validation humaine
 
 R6-09 (cohérence visuelle 4 biomes, 390/2560 px), R8-04 (rôle de la Liaiseuse), R9-03 (feel du combat), R9-04 (téléphone réel + écran large). Jamais validés par l'agent.
+
+---
+
+# Phase R10 (refonte combat V1.1, vague 1) — re-exécutée fraîchement
+
+Date : session locale R10, dernier commit `121e8b7`. Commandes rejouées pour ce rapport.
+
+## Commandes de preuve (sorties constatées, session locale)
+
+- `pnpm install` -> `Done` (exit 0)
+- `pnpm vitest run` -> **Test Files 84 passed (84), Tests 261 passed (261)** (exit 0)
+- `pnpm test:e2e` -> **10 passed** (Playwright Chromium headless, 390 px, exécuté EN LOCAL — plus délégué à la CI) (exit 0)
+- `pnpm build` -> `○ (Static) prerendered as static content` (exit 0)
+
+## Simulations (sorties des tests)
+
+- `[R10-06] runs=1000 victoires=2 taux=0.200% tours moyens=1077.5 morts=998 par biome: biome1=303 biome2=571 biome3=117 biome4=7` — bande §SPEC-2 tenue (0,1-0,2 %), morts étalées (30,3 % au biome 1 ≤ 50 %), 4 biomes visités.
+- `[R9-01] runs=1000 victoires=2 taux=0.200%` — bande conservée après D1-D4.
+
+## Lisibilité combat (R10-07, preuves auto exécutées en local)
+
+- Jauge d'énergie + coûts sur chaque bouton + refus FR « Pas assez d'énergie — +X/tour » : `e2e/energy.spec.ts` (2 tests, 390 px) + capture `docs/SCREENSHOTS-R10/09-refus-energie.png`.
+- Retours « Faiblesse ! » / « Résisté ! » dans le log réel : `e2e/affinity.spec.ts` + capture `docs/SCREENSHOTS-R10/10-affinites-log.png`.
+- Bannière de tour + compagnon en combat : `e2e/companion-journey.spec.ts` + captures `docs/SCREENSHOTS-R10/01..08`.
+- HUD lisible à 390 px et 2560 px : `e2e/smoke.spec.ts`, `e2e/responsive.spec.ts` (2560 px).
+
+## Playtest humain en attente (R10-07)
+
+Un combat se comprend sans doc (énergie, coûts, affinités) : **EN ATTENTE DE VALIDATION HUMAINE** — jamais validé par l'agent.

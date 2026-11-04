@@ -196,6 +196,8 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
 
 ## 7. Compagnons & système de lien
 
+> **Amendement D5 (R10) — compagnon = bug, pas redesign** : le système prévu était bon ; la cassure venait du flux UI/état (R10-01 : parcours complet capture → écurie → équipe → combat → compétence prouvé en unitaire, e2e local 390 px et captures d'écran commitées). Aucune reconception.
+
 > L'évolution ne repose **pas sur les niveaux de run** (qui reset), mais sur le **lien** — méta, persistant, nourri dans les runs ET à la Forge.
 
 ### 7.1 Roster
