@@ -428,8 +428,9 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       const item = state.items[idx];
       const items = state.items.map((it, i) => (i === idx ? { ...it, usesLeft: it.usesLeft - 1 } : it));
       if (item.def.kind === 'heal') {
-        const player = { ...state.player, hp: Math.min(state.player.maxHp, state.player.hp + item.def.power) };
-        log.push(`${item.def.name} : +${item.def.power} PV.`);
+        const healed = Math.min(state.player.maxHp, state.player.hp + item.def.power) - state.player.hp; // B33
+        const player = { ...state.player, hp: state.player.hp + healed };
+        log.push(healed > 0 ? `${item.def.name} : +${healed} PV.` : `${item.def.name} : PV déjà au maximum.`);
         return afterActor({ ...state, player, items, log });
       }
       const target = action.target ?? 0;
@@ -490,8 +491,10 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         player = { ...player, shield: player.shield + effect.power };
         log.push(`${recipe.name} : +${effect.power} bouclier.`);
       } else if (effect.kind === 'heal' || effect.kind === 'purify') {
-        player = { ...player, hp: Math.min(player.maxHp, player.hp + effect.power) };
-        log.push(`${recipe.name} : +${effect.power} PV.`);
+        // B33 : on soigne jusqu'au max, et le log affiche le montant EFFECTIF (capé)
+        const healed = Math.min(player.maxHp, player.hp + effect.power) - player.hp;
+        player = { ...player, hp: player.hp + healed };
+        log.push(healed > 0 ? `${recipe.name} : +${healed} PV.` : `${recipe.name} : PV déjà au maximum.`);
       } else if (effect.kind === 'push') {
         enemies = enemies.map((e, i) => (effect.power >= 2 || i === target ? { ...e, stunned: e.hp > 0 } : e));
         log.push(`${recipe.name} : projection${effect.power >= 2 ? ' de tous les ennemis' : ''} !`);
@@ -560,10 +563,12 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       if (level <= 0) return state;
       if ((state.usedSkillsThisTurn ?? []).includes(skill.id)) return state;
       let player = state.player;
+      let healed = 0; // B33
       if (skill.healPerLevel > 0) {
-        player = { ...player, hp: Math.min(player.maxHp, player.hp + skill.healPerLevel * level) };
+        healed = Math.min(player.maxHp, player.hp + skill.healPerLevel * level) - player.hp;
+        player = { ...player, hp: player.hp + healed };
       }
-      log.push(`${comp.name} : ${skill.name} niv ${level}${skill.healPerLevel > 0 ? ` (+${skill.healPerLevel * level} PV)` : ''}.`);
+      log.push(`${comp.name} : ${skill.name} niv ${level}${skill.healPerLevel > 0 ? (healed > 0 ? ` (+${healed} PV)` : ' (PV déjà au max)') : ''}.`);
       return afterActor({ ...state, player, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] });
     }
     case 'FUSE_IN_COMBAT': {

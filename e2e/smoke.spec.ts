@@ -61,7 +61,7 @@ test('sauvegarde : recharger la page restaure la position', async ({ page }) => 
 test('écran titre : boutons Télécharger la save / Charger un fichier présents', async ({ page }) => {
   await page.goto('/riftforge/');
   await page.getByRole('button', { name: 'Nouvelle descente' }).click();
-  await page.goBack();
+  await page.reload(); // retour à l'écran titre avec la save chargée (localStorage)
   await expect(page.getByRole('button', { name: 'Télécharger la save' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Charger un fichier' })).toBeVisible();
   await expect(page.getByLabel('Fichier de sauvegarde')).toBeAttached();

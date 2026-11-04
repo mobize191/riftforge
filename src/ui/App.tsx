@@ -27,6 +27,7 @@ export default function App() {
   const [view, setView] = useState<View>('title');
   const [combat, setCombat] = useState<CombatState | null>(null);
   const [showModules, setShowModules] = useState(false);
+  const [fuseSel, setFuseSel] = useState<number[]>([]); // B32 — fusion d'orbes hors combat
   const levelRef = useRef<LevelMap | null>(null);
   const canvasApiRef = useRef<GameCanvasApi>(null);
   // R6-09 : la famille de monstres et la palette suivent le biome courant de la run.
@@ -435,11 +436,17 @@ export default function App() {
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
           <span className="opacity-70">Orbes :</span>
           {run.orbs.length === 0 && <span className="opacity-50">aucune</span>}
-          {run.orbs.map((o) => (
-            <span
+          {run.orbs.map((o, i) => (
+            <button
               key={o.id}
-              title={o.kind === 'composite' ? 'Orbe composite' : `Orbe ${o.element}`}
-              className="inline-block h-4 w-4 rounded-full border border-white/40"
+              onClick={() =>
+                setFuseSel((sel) =>
+                  sel.includes(i) ? sel.filter((x) => x !== i) : sel.length < 2 ? [...sel, i] : [sel[1], i],
+                )
+              }
+              aria-pressed={fuseSel.includes(i)}
+              title={o.kind === 'composite' ? 'Orbe composite (non re-fusionnable)' : `Orbe ${o.element} — sélectionner pour fusionner`}
+              className={`inline-block h-6 w-6 rounded-full border ${fuseSel.includes(i) ? 'border-amber-300 ring-2 ring-amber-300' : 'border-white/40'}`}
               style={{
                 background:
                   o.kind === 'composite'
@@ -448,6 +455,21 @@ export default function App() {
               }}
             />
           ))}
+          {/* B32 : fusion hors combat, gratuite et illimitée (§SPEC-5.2) */}
+          {run.orbs.filter((o) => o.kind === 'primordial').length >= 2 && (
+            <button
+              className="rounded border border-fuchsia-300/70 px-3 py-1 disabled:opacity-40"
+              style={{ minHeight: '44px' }}
+              disabled={fuseSel.length !== 2}
+              onClick={() => {
+                persist(reduce(state!, { type: 'FUSE_ORBS', indices: fuseSel }));
+                setFuseSel([]);
+                playSound('ui-click');
+              }}
+            >
+              ✦ Fusionner 2 orbes (gratuit, hors combat)
+            </button>
+          )}
           {run.companions.length > 0 && (
             <span className="ml-2 rounded border border-violet-300/60 px-2 py-1">
               Capturés : {run.companions.join(', ')}

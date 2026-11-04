@@ -94,3 +94,23 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
 - **Fix** : e2e/forge.spec.ts (sections Forge : Maison, Liaiseuse, Travailleurs, Plan,
   Labo, slots d'équipement) + e2e/combat.spec.ts (bannière « Au tour de », effets de
   modules en FR) + e2e/responsive.spec.ts (2560 px). Tournent en CI (job e2e Playwright).
+
+## B32 — Fusion d'orbes impossible hors combat dans l'UI (fix)
+- **Vu** : le core permet FUSE_ORBS en mode RUN (gratuit, illimité, testé) mais aucun
+  bouton n'existait sur l'écran carte.
+- **Fix** : orbes cliquables (sélection de 2) + bouton « ✦ Fusionner 2 orbes (gratuit,
+  hors combat) » dans la vue run (App.tsx).
+- **Tests** : tests/r9-11-fixes.test.ts (FUSE_ORBS hors combat + opposition refusée +
+  présence du panneau UI).
+
+## B33 — Log de soin trompeur quand le soin dépasse les PV manquants (fix)
+- **Vu** : « Sève synthétique : +12 PV » s'affichait même quand les PV étaient presque
+  pleins (soin capé au max) -> on croit que le sort ne soigne pas.
+- **Fix** : le log affiche le montant EFFECTIF soigné (capé), « PV déjà au maximum »
+  sinon — pour les modules, les objets et les compétences de compagnon.
+- **Tests** : tests/r9-11-fixes.test.ts (3 tests de cap + log effectif).
+
+## B34 — e2e « boutons save » échouait en CI (goBack recharge la page) (fix)
+- **Vu** : run CI e2e en failure sur smoke.spec.ts (page.goBack() = rechargement complet,
+  état null, boutons absents).
+- **Fix** : page.reload() à la place (la save localStorage est rechargée, état non null).
