@@ -283,6 +283,7 @@ export class MapScene extends Phaser.Scene {
 
   // Un pas de déplacement (clavier OU tactile) : la scène reste la source de vérité de la position.
   tryMove(dx: number, dy: number): void {
+    if (!this.player) return; // B36 : create() pas encore terminé (redémarrage de scène) -> on ignore le pas
     const nx = Phaser.Math.Clamp(this.pos.x + dx, 0, MAP_WIDTH - 1);
     const ny = Phaser.Math.Clamp(this.pos.y + dy, 0, MAP_HEIGHT - 1);
     if ((nx === this.pos.x && ny === this.pos.y) || isWall(this.level, nx, ny)) return;

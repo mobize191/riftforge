@@ -114,3 +114,25 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
 - **Vu** : run CI e2e en failure sur smoke.spec.ts (page.goBack() = rechargement complet,
   état null, boutons absents).
 - **Fix** : page.reload() à la place (la save localStorage est rechargée, état non null).
+
+## B35 — e2e exécutés en local (session R10) : serveur statique cross-platform + hydratation
+
+- **Vu** : la config Playwright lançait `mkdir -p /tmp/... && ln -sfn ... && python3` (Git Bash
+  uniquement, échoue sur Windows) ; boot WebGL headless > 5 s -> attentes `expect` trop courtes.
+  Fix : `scripts/serve-e2e.mjs` (node, cross-platform) + `expect.timeout: 15000`.
+- **Vu** : rechargement avec `muted=true` en localStorage -> erreur d'hydratation React #418
+  (label « Son : » rendu au SSR ≠ client). Fix : lecture du mute dans `useEffect` (TitleScreen).
+- **Tests** : `e2e/ihm.spec.ts` (export/import save par vrai fichier, persistance reload,
+  clavier + focus, touch 390 px + hit-zones, audio sans exception + mute persisté,
+  matrice 390/768/1440/2560).
+
+## B36 — headed (R10-08) : crash « setPosition of undefined » à la 2e descente (fix)
+
+- **Vu** : parcours headed `pnpm dev` — après « Redescendre », un clic pavé précoce tombait
+  avant la fin du `create()` de la nouvelle scène : `this.player` encore undefined ->
+  `pageerror: Cannot read properties of undefined (reading 'setPosition')` (5x), et la 2e
+  carte ne répondait plus.
+- **Fix** : garde `if (!this.player) return;` dans `MapScene.tryMove` (le pas est ignoré
+  tant que la scène n'est pas prête). Les 404 restants sont les portraits PNG absents
+  (fallback code-gen prévu R9-07) — consignés dans docs/QUESTIONS.md.
+- **Test** : parcours headed rejoué (`scripts/headed-final.mjs`) -> 0 pageerror.

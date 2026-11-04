@@ -62,3 +62,10 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 ## Itération 7-9 (session R6-00 → R9-06)
 - Q7-1 (choix R7-04) : la « ressource spéciale exclusive » des modificateurs de Faille
   est l'optifibre (biome 4) + bonus crédits/essence — plutôt qu'une 9e ressource. OK ?
+
+## Q10-1 — 404 sur assets/portraits/*.png en headed (session R10-08)
+
+Les portraits IA ne sont pas encore déposés dans public/assets/portraits/ ; le fallback
+code-gen (R9-07) prend le relais, mais chaque chargement logue un 404 console. Décision :
+laisser le fallback (aucun écran vide), déposer les vrais PNG à la prochaine session
+réseau (Q6-3). Non bloquant.

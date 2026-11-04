@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '../../core/types';
 import { soundEngine, playSound } from '../audio';
 
@@ -23,7 +23,10 @@ export default function TitleScreen({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   // R9-02 : bouton couper le son (persisté), testé sans AudioContext.
-  const [muted, setMuted] = useState(soundEngine.muted);
+  // B35 : lu dans un useEffect (pas au premier rendu) pour éviter l'erreur d'hydratation
+  // React #418 quand localStorage contient déjà muted=true (SSR « activé » vs client « coupé »).
+  const [muted, setMuted] = useState(false);
+  useEffect(() => setMuted(soundEngine.muted), []);
   return (
     <main
       className="flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center"
