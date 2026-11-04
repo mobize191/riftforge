@@ -49,11 +49,11 @@ Dernier commit publié : à compléter à chaque ticket.
 | R5-04 | done | 3 contrats à conditions depuis le journal de run |
 | R5-05 | done | autel de garde : défi 15 tours, échec sans mort |
 | R5-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : une run complète de bout en bout (~10-15 min), noter durée et frictions |
-| R5-07 | pending | |
+| R5-07 | done | simu 1000 runs biome 1 : taux victoire 0.00%, 3.9 tours moyens, top modules trait-incandescent/jet-pression — équilibrage à arbitrer (TODO-BALANCE) |
 | P6-A..P6-D | pending | |
 
 ## Simulations
 - R1-07 : 1000 runs, taux de victoire sol 3 (kit départ) = **38.6%**, sol moyen clearé = 1.23
 - R2-08 : 24 h simulées (86400 ticks) -> minerai 100/100 (cap), essence 0/100, lingots 20/50, crédits 0 : aucun enrichissement infini
 - R4-08 : 1000 runs, kit de départ seul, taux de victoire sol 3 = **0.10%** (1/1000) — dans la bande cible §SPEC-2 (0.1%-0.2%) ; cibles en balance.ts TODO-BALANCE
-- R5-07 : —
+- R5-07 : 1000 runs complètes du biome 1 -> taux de victoire **0.00%**, durée moyenne **3.9 tours**, modules les plus utilisés : trait-incandescent (118166), jet-pression (49561). Le bot naïf meurt vite : équilibrage à affiner à la main (valeurs TODO-BALANCE).
