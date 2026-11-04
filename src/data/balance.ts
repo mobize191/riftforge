@@ -14,4 +14,7 @@ export const BALANCE = {
   CHEST_CREDITS_SPREAD: 8, // TODO-BALANCE
   // Entretien léger de la Forge, prélevé au retour de run (§SPEC-6.4). TODO-BALANCE.
   MAINTENANCE_PER_100_TICKS: 1, // TODO-BALANCE (crédits)
+  // Cibles de simulation « première run gagnable » (§SPEC-2, §R4-08). TODO-BALANCE.
+  FIRST_RUN_WIN_TARGET_MIN: 0.001, // TODO-BALANCE — 1/1000 au minimum
+  FIRST_RUN_WIN_TARGET_MAX: 0.002, // TODO-BALANCE — 1/500 au maximum
 } as const;
