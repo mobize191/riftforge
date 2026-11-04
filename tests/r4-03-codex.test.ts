@@ -34,9 +34,9 @@ describe('R4-03 codex permanent', () => {
   });
 
   it('en run, seules les recettes découvertes ET réalisables sont listées', () => {
-    const orbs = [orb('feu', 'a'), orb('feu', 'b')];
+    const orbs = [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c'), orb('terre', 'd')];
     const all = craftableRecipes(orbs, RECIPES.map((r) => r.id)).map((r) => r.id);
-    const onlyDiscovered = craftableRecipes(orbs, ['combustion']).map((r) => r.id);
+    const onlyDiscovered = craftableRecipes(orbs, ['combustion', 'trait-incandescent']).map((r) => r.id);
     expect([...onlyDiscovered].sort()).toEqual(['combustion', 'trait-incandescent']);
     expect(all.length).toBeGreaterThan(onlyDiscovered.length);
   });
