@@ -25,6 +25,21 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     input: { essence: 1, mineraiBrut: 2 }, // TODO-BALANCE
     output: { lingots: 1 }, // TODO-BALANCE
   },
+  // R6-05 : chaîne matière complète — Extracteur -> Purificateur -> Nanolathe.
+  purificateur: {
+    id: 'purificateur',
+    name: 'Purificateur',
+    cadenceTicks: 15, // TODO-BALANCE
+    input: { mineraiBrut: 3 }, // TODO-BALANCE
+    output: { essence: 1 }, // TODO-BALANCE — purifie le minerai brut en essence
+  },
+  nanolathe: {
+    id: 'nanolathe',
+    name: 'Nanolathe',
+    cadenceTicks: 30, // TODO-BALANCE
+    input: { essence: 2, mineraiBrut: 1 }, // TODO-BALANCE
+    output: { lingots: 1 }, // TODO-BALANCE — plus efficace que la Forge Arcane seule
+  },
 };
 
 export const STARTING_BUILDINGS: Record<string, number> = {
@@ -59,6 +74,8 @@ export const UPGRADE_COSTS: Record<string, Record<string, number>> = {
   entrepot: { credits: 30 }, // TODO-BALANCE
   extracteur: { credits: 20 }, // TODO-BALANCE
   'forge-arcane': { credits: 20 }, // TODO-BALANCE
+  purificateur: { credits: 40, mineraiBrut: 10 }, // TODO-BALANCE — coût de construction (R6-05)
+  nanolathe: { credits: 120, lingots: 5 }, // TODO-BALANCE — coût de construction (R6-05)
 };
 
 // Bonus de production d'un worker assigné à un bâtiment (§R3-06). TODO-BALANCE.
@@ -92,6 +109,19 @@ export const BUILDINGS_V1: BuildingSkeleton[] = [
 
 // Bonus de voisinage décrits en data (ex. four à côté de la mine). TODO-BALANCE.
 export const NEIGHBOR_BONUSES: Record<string, string> = {
-  'forge-arcane+extracteur': 'La Forge Arcane à côté de l’Extracteur produit plus vite.', // TODO-BALANCE
-  'labo+forge-arcane': 'Le Labo à côté de la Forge réduit encore les coûts de fusion.', // TODO-BALANCE
+  'extracteur+forge-arcane': 'La Forge Arcane à côté de l’Extracteur produit un lingot de plus.', // TODO-BALANCE
+  'extracteur+purificateur': 'Le Purificateur à côté de l’Extracteur produit une essence de plus.', // TODO-BALANCE
+  'purificateur+nanolathe': 'La Nanolathe à côté du Purificateur produit un lingot de plus.', // TODO-BALANCE
+};
+
+// R6-05 : effets réels des bonus de voisinage, appliqués quand les deux bâtiments
+// du binôme sont construits (niveau >= 1) ; retirer l'un retire le bonus. TODO-BALANCE.
+export interface NeighborBonusEffect {
+  buildingId: string; // bâtiment qui reçoit le bonus
+  outputBonus: Partial<Record<ResourceKey, number>>;
+}
+export const NEIGHBOR_BONUS_EFFECTS: Record<string, NeighborBonusEffect> = {
+  'extracteur+forge-arcane': { buildingId: 'forge-arcane', outputBonus: { lingots: 1 } }, // TODO-BALANCE
+  'extracteur+purificateur': { buildingId: 'purificateur', outputBonus: { essence: 1 } }, // TODO-BALANCE
+  'purificateur+nanolathe': { buildingId: 'nanolathe', outputBonus: { lingots: 1 } }, // TODO-BALANCE
 };

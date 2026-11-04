@@ -8,29 +8,25 @@ export interface Purse {
   mineraiBrut?: number;
   lingots?: number;
   spores?: number;
+  donnees?: number; // R6-06 — ressources de biomes profonds
+  mercurium?: number;
+  optifibre?: number;
 }
+
+const PURSE_KEYS = ['credits', 'essence', 'mineraiBrut', 'lingots', 'spores', 'donnees', 'mercurium', 'optifibre'] as const;
 
 // Dépense atomique : jamais de solde négatif, tout ou rien.
 export function spendResources(state: GameState, cost: Purse): GameState {
   const f = state.forge;
-  const credits = cost.credits ?? 0;
-  const essence = cost.essence ?? 0;
-  const mineraiBrut = cost.mineraiBrut ?? 0;
-  const lingots = cost.lingots ?? 0;
-  const spores = cost.spores ?? 0;
-  if (f.credits < credits || f.essence < essence || f.mineraiBrut < mineraiBrut || f.lingots < lingots || f.spores < spores)
-    return state;
-  return {
-    ...state,
-    forge: {
-      ...f,
-      credits: f.credits - credits,
-      essence: f.essence - essence,
-      mineraiBrut: f.mineraiBrut - mineraiBrut,
-      lingots: f.lingots - lingots,
-      spores: f.spores - spores,
-    },
-  };
+  for (const k of PURSE_KEYS) {
+    if (f[k] < (cost[k] ?? 0)) return state;
+  }
+  const forge = { ...f };
+  for (const k of PURSE_KEYS) {
+    const n = cost[k] ?? 0;
+    if (n > 0) forge[k] = forge[k] - n;
+  }
+  return { ...state, forge };
 }
 
 // Achat chez le Marchand : débite les crédits, l'équipement persiste entre les runs (§SPEC-2).

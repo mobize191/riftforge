@@ -23,7 +23,8 @@ describe('R2-02 extracteur -> forge arcane (ticks purs)', () => {
     const mineraiFromExtractor = BUILDINGS['forge-arcane'].cadenceTicks / BUILDINGS.extracteur.cadenceTicks;
     expect(s.forge.mineraiBrut).toBe(mineraiFromExtractor - 2);
     expect(s.forge.essence).toBe(9);
-    expect(s.forge.lingots).toBe(1);
+    // R6-05 : bonus de voisinage extracteur+forge-arcane -> +1 lingot par cycle
+    expect(s.forge.lingots).toBe(2);
   });
 
   it('la forge se bloque sans intrants (pending conservé, rien perdu)', () => {
@@ -33,6 +34,6 @@ describe('R2-02 extracteur -> forge arcane (ticks purs)', () => {
     // on fournit l'essence : la forge repart
     s = { ...s, forge: { ...s.forge, essence: 5 } };
     s = advanceProduction(s, 20);
-    expect(s.forge.lingots).toBe(1);
+    expect(s.forge.lingots).toBe(2); // R6-05 : +1 lingot de voisinage (extracteur présent)
   });
 });
