@@ -15,14 +15,16 @@ export function fusionCostMultiplier(state: GameState): number {
   return Math.max(0, 1 - level * LAB.fusionDiscountPerLevel);
 }
 
-// Recette tier 1 du labo : ne demande que du commun (essence + minerai brut).
-// Enregistre le module au codex de la Forge (débloque la recette connue).
+// Recette du labo par palier (R6-06) : tier 1 = que du commun, tier 2 = lingots +
+// commun, tier 3 = lingots + ressource de biome profond. Refus propre si solde
+// insuffisant. Enregistre le module au codex de la Forge (recette connue).
 export function craftLabRecipe(state: GameState, recipeId: string): GameState {
   if (state.mode !== 'FORGE') return state;
   const recipe = RECIPES.find((r) => r.id === recipeId);
-  if (!recipe || recipe.tier !== 1) return state;
+  if (!recipe) return state;
   if (state.forge.unlockedRecipes.includes(recipeId)) return state;
-  const next = spendResources(state, LAB.tier1RecipeCost);
+  const cost = recipe.tier === 1 ? LAB.tier1RecipeCost : recipe.tier === 2 ? LAB.tier2RecipeCost : LAB.tier3RecipeCost;
+  const next = spendResources(state, cost);
   if (next === state) return state; // solde insuffisant -> refus propre
   return {
     ...next,
