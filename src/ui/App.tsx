@@ -12,6 +12,7 @@ import GameCanvas, { type GameCanvasApi } from './GameCanvas';
 import CombatScreen from './screens/CombatScreen';
 import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
+import { BIOME_ORDER, BIOME_BY_ID, BIOME_PALETTES } from '../data/biomes';
 import { RECIPES } from '../data/recipes';
 import { craftableRecipes } from '../core/combat/createModule';
 import { ELEMENTS } from '../data/elements';
@@ -27,10 +28,13 @@ export default function App() {
   const [showModules, setShowModules] = useState(false);
   const levelRef = useRef<LevelMap | null>(null);
   const canvasApiRef = useRef<GameCanvasApi>(null);
+  // R6-09 : la famille de monstres et la palette suivent le biome courant de la run.
+  const runBiome = state?.run ? BIOME_ORDER[Math.min(state.run.biomeIndex, BIOME_ORDER.length - 1)] : BIOME_ORDER[0];
   const familyIds = useMemo(
-    () => MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id),
-    [],
+    () => MONSTERS.filter((m) => m.family === (BIOME_BY_ID[runBiome]?.family ?? 'spore')).map((m) => m.id),
+    [runBiome],
   );
+  const palette = BIOME_BY_ID[runBiome]?.palette ?? BIOME_PALETTES['failles-vertes'];
 
   const persist = useCallback((next: GameState) => {
     setState(next);
@@ -321,6 +325,7 @@ export default function App() {
           seed={run.seed}
           floor={run.floor}
           familyIds={familyIds}
+          palette={palette}
           onMove={onMove}
           onEncounter={onEncounter}
           onInteract={onInteract}

@@ -21,12 +21,13 @@ const GameCanvas = forwardRef<
     seed: number;
     floor: number;
     familyIds: string[];
+    palette: { floor: string; wall: string; accent: string; monster: string };
     onMove: (pos: Position) => void;
     onEncounter: (enemies: string[]) => void;
     onInteract: () => void;
   }
 >(function GameCanvas(
-  { gameKey, levelRef, initialPos, seed, floor, familyIds, onMove, onEncounter, onInteract },
+  { gameKey, levelRef, initialPos, seed, floor, familyIds, palette, onMove, onEncounter, onInteract },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,6 +61,7 @@ const GameCanvas = forwardRef<
           seed,
           floor,
           familyIdsRef.current,
+          palette,
           (p) => onMoveRef.current(p),
           (e) => onEncounterRef.current(e),
           () => onInteractRef.current(),

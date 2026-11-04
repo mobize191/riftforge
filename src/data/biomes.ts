@@ -6,7 +6,16 @@ export interface BiomeDef {
   resourceId: string;
   twist: string;
   family: MonsterFamily;
+  palette: { floor: string; wall: string; accent: string; monster: string }; // R6-09 — identité visuelle par biome
 }
+
+// Palettes par biome (identité visuelle ; assets générés en code, voir public/assets/LICENSE.md).
+export const BIOME_PALETTES: Record<string, BiomeDef['palette']> = {
+  'failles-vertes': { floor: '#1d3320', wall: '#2f5231', accent: '#66ff99', monster: '#4caf50' },
+  datacathedrales: { floor: '#14243d', wall: '#274a7a', accent: '#66d9ff', monster: '#3399ff' },
+  'hauts-fourneaux': { floor: '#3d1c10', wall: '#7a3a1e', accent: '#ffb066', monster: '#ff5533' },
+  fibration: { floor: '#241238', wall: '#4a2a7a', accent: '#e08cff', monster: '#b44aff' },
+};
 
 // Biome 1 — les biomes 2-4 seront des squelettes en P6-A.
 export const BIOME_1: BiomeDef = {
@@ -15,6 +24,7 @@ export const BIOME_1: BiomeDef = {
   resourceId: 'spores',
   twist: 'les racines bloquent/rouvrent des passages',
   family: 'spore',
+  palette: BIOME_PALETTES['failles-vertes'],
 };
 
 // Structure du biome 1 (itération 5, §SPEC-4.1). TODO-BALANCE.
@@ -40,6 +50,7 @@ export const BIOME_SKELETONS: BiomeDef[] = [
     resourceId: 'donnees',
     twist: 'circuits qui modifient la carte',
     family: 'gremlin',
+    palette: BIOME_PALETTES['datacathedrales'],
   },
   {
     id: 'hauts-fourneaux',
@@ -47,6 +58,7 @@ export const BIOME_SKELETONS: BiomeDef[] = [
     resourceId: 'mercurium',
     twist: 'sol brûlant, zones de dégâts',
     family: 'elementaire',
+    palette: BIOME_PALETTES['hauts-fourneaux'],
   },
   {
     id: 'fibration',
@@ -54,6 +66,7 @@ export const BIOME_SKELETONS: BiomeDef[] = [
     resourceId: 'optifibre',
     twist: 'zones accélérées / ralenties',
     family: 'vermine',
+    palette: BIOME_PALETTES['fibration'],
   },
 ];
 

@@ -49,3 +49,12 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 
 ## Tests / outillage
 (Q7-1/Q7-2 résolues ✅ — voir en-tête)
+
+## Itération 6 (session R6-00 → R9-06)
+- Q6-3 (substitution R6-09) : kenney.nl n'est PAS téléchargeable depuis l'environnement de
+  build -> assets générés en code (`scripts/generate-assets.mjs`, SVG dans `public/assets/`,
+  licence dans `public/assets/LICENSE.md`). À remplacer par les vrais packs Kenney CC0 +
+  licence lors d'une session avec accès réseau. Aucun asset externe au runtime.
+- Q6-4 (choix R6-00) : la simulation du bot compétent est mono-run sans compagnon (la
+  capture n'a d'effet que sur la run suivante via la Forge) — le taux 65.90 % est mesuré
+  sur le biome 1 seul, kit de départ.

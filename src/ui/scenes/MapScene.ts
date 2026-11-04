@@ -13,19 +13,24 @@ const ELEMENT_COLORS: Record<string, number> = {
   air: 0xdddddd,
 };
 
-// Textures générées en code (formes simples, aucun asset externe).
-function makeTextures(scene: Phaser.Scene): void {
+function hex(c: string): number {
+  return parseInt(c.slice(1), 16);
+}
+
+// Textures générées en code (formes simples), teintées selon la palette du biome
+// courant (R6-09 — identité visuelle par biome, voir src/data/biomes.ts BIOME_PALETTES).
+function makeTextures(scene: Phaser.Scene, palette: { floor: string; wall: string; accent: string; monster: string }): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(0x101828, 1);
+  g.fillStyle(hex(palette.floor), 1);
   g.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-  g.lineStyle(1, 0x24304d, 1);
+  g.lineStyle(1, hex(palette.wall), 1);
   for (let x = 0; x <= MAP_WIDTH; x++) g.lineBetween(x * TILE, 0, x * TILE, LOGICAL_HEIGHT);
   for (let y = 0; y <= MAP_HEIGHT; y++) g.lineBetween(0, y * TILE, LOGICAL_WIDTH, y * TILE);
   g.generateTexture('floor', LOGICAL_WIDTH, LOGICAL_HEIGHT);
   g.clear();
-  g.fillStyle(0x2a3a5f, 1);
+  g.fillStyle(hex(palette.wall), 1);
   g.fillRect(0, 0, TILE, TILE);
-  g.lineStyle(2, 0x3d5488, 1);
+  g.lineStyle(2, hex(palette.accent), 1);
   g.strokeRect(1, 1, TILE - 2, TILE - 2);
   g.generateTexture('wall', TILE, TILE);
   g.clear();
@@ -49,8 +54,8 @@ function makeTextures(scene: Phaser.Scene): void {
   g.fillRect(TILE / 2, 9, 6, 2);
   g.generateTexture('player', TILE - 4, TILE - 4);
   g.clear();
-  // monstre : boule + yeux
-  g.fillStyle(0xdd3355, 1);
+  // monstre : boule + yeux (couleur du biome)
+  g.fillStyle(hex(palette.monster), 1);
   g.fillCircle(TILE / 2, TILE / 2 + 2, TILE / 2 - 4);
   g.fillStyle(0xffffff, 1);
   g.fillCircle(TILE / 2 - 4, TILE / 2, 3);
@@ -117,6 +122,7 @@ export class MapScene extends Phaser.Scene {
   private seed: number;
   private floor: number;
   private familyIds: string[];
+  private palette: { floor: string; wall: string; accent: string; monster: string };
   private onMove?: (pos: Position) => void;
   private onEncounter?: (enemies: string[]) => void;
   private onInteract?: () => void;
@@ -127,6 +133,7 @@ export class MapScene extends Phaser.Scene {
     seed: number,
     floor: number,
     familyIds: string[],
+    palette: { floor: string; wall: string; accent: string; monster: string },
     onMove?: (pos: Position) => void,
     onEncounter?: (enemies: string[]) => void,
     onInteract?: () => void,
@@ -137,6 +144,7 @@ export class MapScene extends Phaser.Scene {
     this.seed = seed;
     this.floor = floor;
     this.familyIds = familyIds;
+    this.palette = palette;
     this.onMove = onMove;
     this.onEncounter = onEncounter;
     this.onInteract = onInteract;
@@ -145,7 +153,7 @@ export class MapScene extends Phaser.Scene {
   private keyOf = (p: Position) => `${p.x},${p.y}`;
 
   create(): void {
-    makeTextures(this);
+    makeTextures(this, this.palette);
     this.add.image(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, 'floor');
 
     for (let y = 0; y < this.level.height; y++) {

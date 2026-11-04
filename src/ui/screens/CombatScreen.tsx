@@ -83,24 +83,35 @@ export default function CombatScreen({
         </div>
       )}
       <ul className="flex w-full max-w-xl flex-col gap-2">
-        {combat.enemies.map((e, i) => (
+        {combat.enemies.map((e, i) => {
+          // R6-09 : portrait ennemi (idle + télégraphie pour les boss, §SPEC-5.1)
+          const baseId = e.id.split('-')[0].replace(/^boss:/, '');
+          const telegraphing = e.id.startsWith('boss:') && combat.telegraph !== null;
+          const portrait = `/assets/portrait-${baseId}${telegraphing ? '-telegraph' : ''}.svg`;
+          return (
           <li
             key={e.id}
-            className={`rounded border px-4 py-2 ${e.hp <= 0 ? 'border-slate-600 opacity-40 line-through' : i === aliveTarget ? 'border-amber-400 bg-amber-950/60 ring-2 ring-amber-300' : 'border-red-400/60 bg-red-950/40'}`}
+            className={`flex items-center gap-3 rounded border px-4 py-2 ${e.hp <= 0 ? 'border-slate-600 opacity-40 line-through' : i === aliveTarget ? 'border-amber-400 bg-amber-950/60 ring-2 ring-amber-300' : 'border-red-400/60 bg-red-950/40'}`}
             style={{ minHeight: '44px' }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={portrait} alt={e.name} width={48} height={48} className="shrink-0 rounded" />
+            <span>
             {e.name} — PV {e.hp}/{e.maxHp} · ATK {e.attack}
+            {telegraphing && <span className="ml-2 text-red-400 font-semibold">prépare {combat.telegraph}…</span>}
+            </span>
             {e.hp > 0 && (
               <button
                 onClick={() => setTarget(i)}
-                className={`ml-3 rounded px-3 py-1 ${i === aliveTarget ? 'bg-amber-500 text-black font-bold' : 'bg-slate-600'}`}
+                className={`ml-auto rounded px-3 py-1 ${i === aliveTarget ? 'bg-amber-500 text-black font-bold' : 'bg-slate-600'}`}
                 style={{ minHeight: '44px' }}
               >
                 {i === aliveTarget ? '◉ Sélectionné' : 'Sélectionner'}
               </button>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {menu === 'companions' && combat.companion && (
