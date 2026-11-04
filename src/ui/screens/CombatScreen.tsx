@@ -11,7 +11,7 @@ export default function CombatScreen({
 }: {
   combat: CombatState;
   onAction: (a: CombatAction) => void;
-  onEnd: (result: 'won' | 'lost' | 'fled', loot: CombatState['loot']) => void;
+  onEnd: (result: 'won' | 'lost' | 'fled', loot: CombatState['loot'], ko?: boolean) => void;
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack'>('root');
   const [target, setTarget] = useState(0);
@@ -28,7 +28,7 @@ export default function CombatScreen({
           {phase === 'won' ? 'VICTOIRE' : phase === 'fled' ? 'FUITE' : 'RUN TERMINÉE'}
         </h2>
         <button
-          onClick={() => onEnd(phase, combat.loot)}
+          onClick={() => onEnd(phase, combat.loot, combat.companion?.ko)}
           className="rounded-lg border border-emerald-300 bg-emerald-700 px-6 py-3 font-semibold"
           style={{ minHeight: '44px', fontSize: '1.05rem' }}
         >
@@ -51,6 +51,21 @@ export default function CombatScreen({
       <div className="w-full max-w-xl rounded-lg border border-slate-500 p-3">
         <strong>{combat.player.name}</strong> — PV {combat.player.hp}/{combat.player.maxHp}
       </div>
+      {combat.companion && (
+        <div className={`w-full max-w-xl rounded-lg border p-3 ${combat.companion.ko ? 'border-slate-600 opacity-50' : 'border-emerald-400/60'}`}>
+          <strong>Compagnon : {combat.companion.name}</strong> — PV {combat.companion.hp}/{combat.companion.maxHp}
+          {combat.companion.ko && ' — K.O. (hors combat jusqu’à la Forge)'}
+          <ul className="mt-1 text-sm opacity-80">
+            {Object.entries(combat.companion.skills)
+              .filter(([, lvl]) => lvl > 0)
+              .map(([skill, lvl]) => (
+                <li key={skill}>
+                  {skill} niv {lvl}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
       <ul className="flex w-full max-w-xl flex-col gap-2">
         {combat.enemies.map((e, i) => (
           <li

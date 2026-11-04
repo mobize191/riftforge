@@ -3,7 +3,17 @@ import { MONSTER_BY_ID } from '../../data/monsters';
 import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
 import { RECIPES, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
+import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
 import type { ElementId } from '../types';
+
+export interface CompanionState {
+  defId: string;
+  name: string;
+  hp: number;
+  maxHp: number;
+  ko: boolean;
+  skills: Record<string, number>;
+}
 
 export interface Combatant {
   id: string;
@@ -43,6 +53,7 @@ export interface CombatState {
   player: Combatant;
   enemies: Combatant[];
   captured: string[];
+  companion: CompanionState | null;
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -76,7 +87,20 @@ export function startCombat(
   playerAttack: number,
   enemyIds: string[],
   orbs: ElementId[] = [],
+  companionDef: CompanionDef | null = null,
+  companionSkills: Record<string, number> = {},
+  companionKo = false,
 ): CombatState {
+  const companion: CompanionState | null = companionDef
+    ? {
+        defId: companionDef.id,
+        name: companionDef.name,
+        hp: companionKo ? 0 : (MONSTER_BY_ID[companionDef.monsterId]?.hp ?? 5),
+        maxHp: MONSTER_BY_ID[companionDef.monsterId]?.hp ?? 5,
+        ko: companionKo,
+        skills: { ...companionSkills },
+      }
+    : null;
   const enemies: Combatant[] = enemyIds.map((id, i) => {
     const def = MONSTER_BY_ID[id];
     return {
@@ -106,6 +130,7 @@ export function startCombat(
     },
     enemies,
     captured: [],
+    companion,
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -113,13 +138,39 @@ export function startCombat(
   };
 }
 
+function companionAct(state: CombatState): CombatState {
+  const comp = state.companion;
+  if (!comp || comp.ko) return state;
+  const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === comp.defId);
+  if (!def) return state;
+  const unlocked = def.skills.filter((s) => (comp.skills[s.id] ?? 0) > 0);
+  const best = unlocked.sort((a, b) => (comp.skills[b.id] * b.healPerLevel) - (comp.skills[a.id] * a.healPerLevel))[0];
+  if (!best || best.healPerLevel <= 0) return state;
+  const heal = best.healPerLevel * comp.skills[best.id];
+  const player = { ...state.player, hp: Math.min(state.player.maxHp, state.player.hp + heal) };
+  return {
+    ...state,
+    player,
+    log: [...state.log, `${comp.name} (${def.support}) : ${best.name} +${heal} PV.`],
+  };
+}
+
 function enemyTurn(state: CombatState, rng: Rng): CombatState {
   const log = [...state.log];
   let player = state.player;
+  let companion = state.companion;
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
     if (e.stunned) {
       log.push(`${e.name} est projeté·e et perd son tour.`);
+      continue;
+    }
+    // 30 % des attaques visent le compagnon (tirage seedé).
+    if (companion && !companion.ko && rng.next() < 0.3) { // TODO-BALANCE
+      const dmg = e.attack;
+      const hp = Math.max(0, companion.hp - dmg);
+      companion = { ...companion, hp, ko: hp <= 0 };
+      log.push(`${e.name} attaque ${companion.name} : -${dmg} PV${hp <= 0 ? ' — K.O. !' : '.'}`);
       continue;
     }
     const absorbed = Math.min(player.shield, e.attack);
@@ -128,9 +179,10 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
     log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}.`);
   }
   if (player.hp <= 0) {
-    return { ...state, player, log, phase: 'lost' };
+    return { ...state, player, companion, log, phase: 'lost' };
   }
-  return { ...state, player, log, phase: 'player', turn: state.turn + 1 };
+  const afterComp = companionAct({ ...state, player, companion, log, phase: 'player', turn: state.turn + 1 });
+  return afterComp;
 }
 
 function checkVictory(state: CombatState, rng: Rng): CombatState {

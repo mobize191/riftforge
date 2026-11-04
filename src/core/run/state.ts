@@ -10,13 +10,14 @@ import { STARTING_BUILDINGS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { craftLabRecipe, upgradeLab } from '../forge/lab';
 import { advanceProduction } from '../forge/production';
+import { COMPANION_BY_MONSTER } from '../../data/companions';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
 export type GameAction =
   | { type: 'START_RUN'; seed: number }
   | { type: 'ENTER_COMBAT'; enemies: string[] }
-  | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot }
+  | { type: 'EXIT_COMBAT'; victory: boolean; loot?: CombatLoot; companionKo?: boolean }
   | { type: 'DIE' }
   | { type: 'END_BIOME' }
   | { type: 'RETURN_FORGE' }
@@ -41,6 +42,8 @@ export function initialState(): GameState {
       lingots: 0,
       equipment: [],
       unlockedRecipes: [],
+      roster: [],
+      team: [],
       buildings: { ...STARTING_BUILDINGS, [LAB.id]: 1 },
       pendingTicks: {},
     },
@@ -85,6 +88,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           orbs: startOrbs,
           modules: [],
           companions: [],
+          companionSkills: {},
+          companionKo: false,
         },
       };
     }
@@ -107,7 +112,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
     }
     case 'EXIT_COMBAT': {
       if (state.mode !== 'COMBAT' || !state.run) return state;
-      let run = { ...state.run, encounter: null };
+      let run = {
+        ...state.run,
+        encounter: null,
+        companionKo: action.companionKo ?? state.run.companionKo,
+      };
       if (action.victory && action.loot) {
         run = {
           ...run,
@@ -152,6 +161,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // Mort = fin de run, 100 % du butin conservé (§SPEC-3). La production accumulée pendant
       // la run est créditée au retour, moins l'entretien (§SPEC-6.4).
       const run = state.run;
+      // Les compagnons capturés rejoignent l'écurie (persistant) ; le compagnon K.O. se réveille.
+      const roster = [...new Set([...state.forge.roster, ...(run?.companions ?? [])])];
       const withProduction = run
         ? advanceProduction(
             { ...state, forge: { ...state.forge, credits: state.forge.credits + run.lootCredits, essence: state.forge.essence + run.lootEssence, mineraiBrut: state.forge.mineraiBrut + run.lootMinerai } },
@@ -165,6 +176,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         forge: {
           ...withProduction.forge,
           credits: Math.max(0, withProduction.forge.credits - maintenance),
+          roster,
         },
         run: null,
       };

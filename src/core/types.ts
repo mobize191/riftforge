@@ -66,6 +66,8 @@ export interface ForgeState {
   lingots: number;
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
+  roster: string[];
+  team: string[];
   buildings: Record<string, number>;
   pendingTicks: Record<string, number>;
 }
@@ -93,6 +95,8 @@ export interface RunState {
   orbs: Orb[];
   modules: Module[];
   companions: string[];
+  companionSkills: Record<string, number>;
+  companionKo: boolean;
 }
 
 export interface GameState {

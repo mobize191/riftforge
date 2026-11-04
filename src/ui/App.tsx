@@ -12,6 +12,7 @@ import CombatScreen from './screens/CombatScreen';
 import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
+import { COMPANION_BY_MONSTER } from '../data/companions';
 
 type View = 'title' | 'game' | 'forge';
 
@@ -74,6 +75,9 @@ export default function App() {
           prev.run.playerAttack,
           enemies,
           prev.run.orbs.map((o) => o.element).filter((e): e is NonNullable<typeof e> => e !== null),
+          prev.forge.team[0] ? COMPANION_BY_MONSTER[prev.forge.team[0]] ?? null : null,
+          prev.run.companionSkills,
+          prev.run.companionKo,
         ),
       );
       return reduce(prev, { type: 'ENTER_COMBAT', enemies });
@@ -85,12 +89,13 @@ export default function App() {
   }, []);
 
   const onCombatEnd = useCallback(
-    (result: 'won' | 'lost' | 'fled', loot: CombatState['loot']) => {
+    (result: 'won' | 'lost' | 'fled', loot: CombatState['loot'], ko = false) => {
       setCombat(null);
       setState((prev) => {
         if (!prev) return prev;
-        if (result === 'won') return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined });
-        if (result === 'fled') return reduce(prev, { type: 'EXIT_COMBAT', victory: false });
+        if (result === 'won')
+          return reduce(prev, { type: 'EXIT_COMBAT', victory: true, loot: loot ?? undefined, companionKo: ko });
+        if (result === 'fled') return reduce(prev, { type: 'EXIT_COMBAT', victory: false, companionKo: ko });
         return reduce(prev, { type: 'DIE' });
       });
     },
