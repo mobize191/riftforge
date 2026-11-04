@@ -477,7 +477,8 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       const target = state.enemies[action.target];
       if (!target || target.hp <= 0) return state;
       if (rng.next() < captureChance(target.hp, target.maxHp)) {
-        const monsterId = target.id.split('-')[0];
+        // R7-04 : capture d'élite -> compagnon à stats supérieures (id « elite-<base> »)
+        const monsterId = target.id.split('-').slice(0, -1).join('-');
         log.push(`Capturé : ${target.name} !`);
         const enemies = state.enemies.map((e, i) => (i === action.target ? { ...e, hp: 0 } : e));
         let next: CombatState = {

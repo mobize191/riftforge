@@ -18,7 +18,7 @@ import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
 import { MONSTERS_BY_FAMILY } from '../../data/monsters';
-import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE } from '../../data/riftModifiers';
+import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE, RIFT_REWARD_PER_MODIFIER } from '../../data/riftModifiers';
 
 // R7-02 : la jauge d'instabilité monte à chaque action (combat, récolte) quand le
 // modificateur « instabilite » est actif ; monotone seedée (déterministe), seuils en data.
@@ -189,7 +189,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
           pendingMilestone: false,
           runCompleted: false,
           discoveredRecipes: [],
-          journal: ['start', `biome-${biomeId}`, ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
+          journal: [
+            'start',
+            `biome-${biomeId}`,
+            ...(state.forge.riftModifiers[biomeId] ?? []).map((m) => `mod:${m}`), // R7-04 : modificateurs actifs journalisés
+            ...(state.forge.team.length === 0 ? ['no-companion'] : []),
+          ],
           lastEvent: `Vous entrez dans la Faille — ${BIOME_BY_ID[biomeId]?.name ?? biomeId}.`,
         },
       };
@@ -468,7 +473,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
             level: generateLevel(run.seed, 1, nextFamily, levelOpts(nextDef, 1, nextModifiers)),
             playerPos: { x: 1, y: 1 },
             pendingMilestone: false, // 1 jalon par biome
-            journal: [...run.journal, `biome-${nextBiomeId}`],
+            journal: [...run.journal, `biome-${nextBiomeId}`, ...nextModifiers.map((m) => `mod:${m}`)], // R7-04
             lastEvent: `Vous pénétrez dans ${BIOME_BY_ID[nextBiomeId]?.name ?? nextBiomeId}.`,
           },
         };
@@ -518,20 +523,38 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const withContracts = run
         ? settleContracts(withProduction, { events: run.journal, lootSpores: run.lootSpores, lootBiome: run.lootBiome })
         : withProduction;
+      // R7-04 : récompenses exclusives de fin de run, UNIQUEMENT si des modificateurs
+      // étaient actifs (journalisés en « mod:<id> ») — bonus par modificateur distinct.
+      const activeMods = [...new Set((run?.journal ?? []).filter((e) => e.startsWith('mod:')).map((e) => e.slice(4)))];
+      const withRiftRewards =
+        run && activeMods.length > 0
+          ? (() => {
+              const f = withContracts.forge;
+              return {
+                ...withContracts,
+                forge: {
+                  ...f,
+                  credits: f.credits + activeMods.length * (RIFT_REWARD_PER_MODIFIER.credits ?? 0),
+                  essence: f.essence + activeMods.length * (RIFT_REWARD_PER_MODIFIER.essence ?? 0),
+                  optifibre: f.optifibre + activeMods.length, // ressource spéciale exclusive (deep)
+                },
+              };
+            })()
+          : withContracts;
       // R6-03/R7-01 : victoire de run persistante -> débloque les modificateurs de Faille.
-      const runCompleted = withContracts.forge.runCompleted || (run?.runCompleted ?? false);
+      const runCompleted = withRiftRewards.forge.runCompleted || (run?.runCompleted ?? false);
       return {
-        ...withContracts,
+        ...withRiftRewards,
         mode: 'FORGE',
         forge: {
-          ...withContracts.forge,
-          credits: Math.max(0, withContracts.forge.credits - maintenance),
+          ...withRiftRewards.forge,
+          credits: Math.max(0, withRiftRewards.forge.credits - maintenance),
           roster,
           discoveredRecipes: discovered,
           orbStock: [...state.forge.orbStock, ...keptComposites],
           defeatedBosses,
           runCompleted,
-          allBiomesCleared: withContracts.forge.allBiomesCleared || runCompleted,
+          allBiomesCleared: withRiftRewards.forge.allBiomesCleared || runCompleted,
         },
         run: null,
       };

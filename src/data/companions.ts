@@ -38,8 +38,17 @@ export const COMPANIONS: CompanionDef[] = [
   },
 ];
 
+// R7-04 : élites capturables = compagnons à stats supérieures (mêmes compétences, soins x2).
+export const ELITE_COMPANIONS: CompanionDef[] = COMPANIONS.map((c) => ({
+  ...c,
+  id: `elite-${c.id}`,
+  name: `Élite ${c.name}`,
+  monsterId: `elite-${c.monsterId}`,
+  skills: c.skills.map((s) => ({ ...s, healPerLevel: s.healPerLevel * 2 })), // TODO-BALANCE
+}));
+
 export const COMPANION_BY_MONSTER: Record<string, CompanionDef> = Object.fromEntries(
-  COMPANIONS.map((c) => [c.monsterId, c]),
+  [...COMPANIONS, ...ELITE_COMPANIONS].map((c) => [c.monsterId, c]),
 );
 
 // Coûts en orbes pour monter une compétence du niveau n au niveau n+1 (§SPEC-7.2).
