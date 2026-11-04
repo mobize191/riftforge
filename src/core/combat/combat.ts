@@ -24,6 +24,9 @@ export interface Combatant {
   isPlayer: boolean;
   shield: number;
   stunned: boolean;
+  dot: number;
+  slowed: boolean;
+  blinded: boolean;
 }
 
 export interface CombatItem {
@@ -54,6 +57,7 @@ export interface CombatState {
   enemies: Combatant[];
   captured: string[];
   companion: CompanionState | null;
+  modules: string[];
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
@@ -90,7 +94,9 @@ export function startCombat(
   companionDef: CompanionDef | null = null,
   companionSkills: Record<string, number> = {},
   companionKo = false,
+  modules: string[] = [],
 ): CombatState {
+  const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false });
   const companion: CompanionState | null = companionDef
     ? {
         defId: companionDef.id,
@@ -110,8 +116,7 @@ export function startCombat(
       maxHp: def?.hp ?? 5,
       attack: def?.attack ?? 1,
       isPlayer: false,
-      shield: 0,
-      stunned: false,
+      ...mkStatuses(),
     };
   });
   return {
@@ -125,12 +130,12 @@ export function startCombat(
       maxHp: playerMaxHp,
       attack: playerAttack,
       isPlayer: true,
-      shield: 0,
-      stunned: false,
+      ...mkStatuses(),
     },
     enemies,
     captured: [],
     companion,
+    modules,
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
@@ -159,10 +164,26 @@ function enemyTurn(state: CombatState, rng: Rng): CombatState {
   const log = [...state.log];
   let player = state.player;
   let companion = state.companion;
-  for (const e of state.enemies) {
+  for (let i = 0; i < state.enemies.length; i++) {
+    let e = state.enemies[i];
     if (e.hp <= 0) continue;
     if (e.stunned) {
       log.push(`${e.name} est projeté·e et perd son tour.`);
+      continue;
+    }
+    if (e.dot > 0) {
+      const hp = Math.max(0, e.hp - e.dot);
+      log.push(`${e.name} subit ${e.dot} dégâts de poison.`);
+      e = { ...e, hp, dot: e.dot - 1 };
+      state.enemies[i] = e;
+      if (hp <= 0) continue;
+    }
+    if (e.slowed && rng.next() < 0.5) { // TODO-BALANCE
+      log.push(`${e.name} est ralenti·e et perd son tour.`);
+      continue;
+    }
+    if (e.blinded && rng.next() < 0.5) { // TODO-BALANCE
+      log.push(`L'attaque de ${e.name} manque sa cible (aveuglé).`);
       continue;
     }
     // 30 % des attaques visent le compagnon (tirage seedé).
@@ -242,41 +263,52 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
     }
     case 'CAST_MODULE': {
       const recipe = RECIPES.find((r) => r.id === action.moduleId);
-      if (!recipe || recipe.inputs.length !== 1) return state;
-      if (!state.orbs.includes(recipe.inputs[0])) return state;
+      if (!recipe) return state;
+      // Modules solo (tier 1, 1 orbe) : lançables gratuitement tant que l'orbe est tenue (R1-04).
+      // Autres modules : doivent avoir été créés (présents dans state.modules).
+      const isSolo = recipe.inputs.length === 1;
+      if (isSolo) {
+        if (!state.orbs.includes(recipe.inputs[0])) return state;
+      } else if (!state.modules.includes(recipe.id)) {
+        return state;
+      }
       const target = action.target ?? 0;
-      const enemy = state.enemies[target];
-      if (recipe.effect.kind === 'damage') {
+      const effect = recipe.effect;
+      let player = state.player;
+      let enemies = state.enemies;
+      if (effect.kind === 'damage') {
+        const enemy = enemies[target];
         if (!enemy || enemy.hp <= 0) return state;
-        const dmg = recipe.effect.power;
-        const enemies = state.enemies.map((e, i) =>
-          i === target ? { ...e, hp: Math.max(0, e.hp - dmg) } : e,
-        );
-        log.push(`${recipe.name} sur ${enemy.name} : -${dmg} PV. (lancement gratuit)`);
-        let next: CombatState = { ...state, enemies, log };
-        next = checkVictory(next, rng);
-        if (next.phase === 'won') return next;
-        return enemyTurn(next, rng);
-      }
-      if (recipe.effect.kind === 'shield') {
-        const player = { ...state.player, shield: state.player.shield + recipe.effect.power };
-        log.push(`${recipe.name} : +${recipe.effect.power} bouclier. (lancement gratuit)`);
-        return enemyTurn({ ...state, player, log }, rng);
-      }
-      if (recipe.effect.kind === 'push') {
+        enemies = enemies.map((e, i) => (i === target ? { ...e, hp: Math.max(0, e.hp - effect.power) } : e));
+        log.push(`${recipe.name} sur ${enemy.name} : -${effect.power} PV.`);
+      } else if (effect.kind === 'aoe') {
+        enemies = enemies.map((e) => (e.hp > 0 ? { ...e, hp: Math.max(0, e.hp - effect.power) } : e));
+        log.push(`${recipe.name} : zone, -${effect.power} PV à tous.`);
+      } else if (effect.kind === 'shield') {
+        player = { ...player, shield: player.shield + effect.power };
+        log.push(`${recipe.name} : +${effect.power} bouclier.`);
+      } else if (effect.kind === 'heal' || effect.kind === 'purify') {
+        player = { ...player, hp: Math.min(player.maxHp, player.hp + effect.power) };
+        log.push(`${recipe.name} : +${effect.power} PV.`);
+      } else if (effect.kind === 'push') {
+        enemies = enemies.map((e, i) => (effect.power >= 2 || i === target ? { ...e, stunned: e.hp > 0 } : e));
+        log.push(`${recipe.name} : projection${effect.power >= 2 ? ' de tous les ennemis' : ''} !`);
+      } else if (effect.kind === 'dot') {
+        const enemy = enemies[target];
         if (!enemy || enemy.hp <= 0) return state;
-        const enemies = state.enemies.map((e, i) => (i === target ? { ...e, stunned: true } : e));
-        log.push(`${recipe.name} projette ${enemy.name} ! (lancement gratuit)`);
-        let next: CombatState = { ...state, enemies, log };
-        next = checkVictory(next, rng);
-        if (next.phase === 'won') return next;
-        const after = enemyTurn(next, rng);
-        return {
-          ...after,
-          enemies: after.enemies.map((e) => ({ ...e, stunned: false })),
-        };
+        enemies = enemies.map((e, i) => (i === target ? { ...e, dot: effect.power } : e));
+        log.push(`${recipe.name} sur ${enemy.name} : poison ${effect.power}/tour.`);
+      } else if (effect.kind === 'slow') {
+        enemies = enemies.map((e, i) => (i === target || effect.power >= 2 ? { ...e, slowed: e.hp > 0 } : e));
+        log.push(`${recipe.name} : ralenti${effect.power >= 2 ? ' (tous)' : ''}.`);
+      } else if (effect.kind === 'blind') {
+        enemies = enemies.map((e, i) => (i === target ? { ...e, blinded: true } : e));
+        log.push(`${recipe.name} : ${enemies[target]?.name} aveuglé.`);
       }
-      return state;
+      let next: CombatState = { ...state, enemies, player, log };
+      next = checkVictory(next, rng);
+      if (next.phase === 'won') return next;
+      return enemyTurn(next, rng);
     }
     case 'CAPTURE': {
       const target = state.enemies[action.target];
