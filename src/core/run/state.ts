@@ -16,6 +16,7 @@ import { createModule } from '../combat/createModule';
 import { applyFusion } from '../combat/fuse';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
+import { BIOME_1_STRUCTURE } from '../../data/biomes';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -102,7 +103,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
           orbs: [...startOrbs, ...state.forge.orbStock],
           seed: action.seed,
           floor: BALANCE.START_FLOOR,
-          level: generateLevel(action.seed, BALANCE.START_FLOOR),
+          level: generateLevel(action.seed, BALANCE.START_FLOOR, undefined, {
+            roots: BIOME_1_STRUCTURE.rootsEnabled,
+            monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (BALANCE.START_FLOOR - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
+          }),
           encounter: null,
           playerPos: { x: 1, y: 1 },
           playerLevel: BALANCE.START_PLAYER_LEVEL,
@@ -139,7 +143,10 @@ export function reduce(state: GameState, action: GameAction): GameState {
         run: {
           ...state.run,
           floor,
-          level: generateLevel(state.run.seed, floor),
+          level: generateLevel(state.run.seed, floor, undefined, {
+            roots: BIOME_1_STRUCTURE.rootsEnabled,
+            monsterCount: BIOME_1_STRUCTURE.monsterCountBase + (floor - 1) * BIOME_1_STRUCTURE.monsterCountPerFloor,
+          }),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
         },
@@ -298,6 +305,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
         }
         run = { ...run, playerHp: run.playerMaxHp };
       }
+      // Victoire contre le boss -> fin du biome -> retour à la Forge.
+      const wasBoss = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
+      if (action.victory && wasBoss) {
+        return { ...state, mode: 'RETOUR', run };
+      }
       return { ...state, mode: 'RUN', run };
     }
     case 'DIE':
@@ -365,8 +377,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
     case 'INTERACT': {
       if (state.mode !== 'RUN' || !state.run || !state.run.level) return state;
       const { playerPos: pos, level, seed, floor } = state.run;
-      // Sortie du niveau -> niveau suivant (générateur identique, difficulté montante via le seed).
+      // Sortie du niveau -> niveau suivant, ou combat de boss au dernier sol (§SPEC-4.1).
       if (pos.x === level.exit.x && pos.y === level.exit.y) {
+        if (floor >= BIOME_1_STRUCTURE.floors) {
+          return reduce(state, { type: 'ENTER_COMBAT', enemies: [`boss:${BIOME_1_STRUCTURE.bossId}`] });
+        }
         return reduce(state, { type: 'NEXT_FLOOR' });
       }
       const chestIdx = level.chests.findIndex((c) => c.x === pos.x && c.y === pos.y);

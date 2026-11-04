@@ -16,6 +16,7 @@ export interface LevelMap {
   width: number;
   height: number;
   walls: boolean[];
+  roots: Position[];
   entrance: Position;
   exit: Position;
   monsters: PlacedMonster[];
@@ -86,7 +87,12 @@ function freeFloorPositions(map: LevelMap, exclude: Position[]): Position[] {
   return out;
 }
 
-export function generateLevel(seed: number, floor: number, monsterIds: string[] = ['mousse']): LevelMap {
+export function generateLevel(
+  seed: number,
+  floor: number,
+  monsterIds: string[] = ['mousse'],
+  opts: { roots?: boolean; monsterCount?: number } = {},
+): LevelMap {
   // Retry déterministe : on change la dérive de seed jusqu'à obtenir un niveau connexe.
   for (let attempt = 0; attempt < 50; attempt++) {
     const rng = createRng((seed * 31 + floor * 7 + attempt * 101) >>> 0);
@@ -94,6 +100,7 @@ export function generateLevel(seed: number, floor: number, monsterIds: string[] 
       width: MAP_WIDTH,
       height: MAP_HEIGHT,
       walls: new Array<boolean>(MAP_WIDTH * MAP_HEIGHT).fill(false),
+      roots: [],
       entrance: { x: 1, y: 1 },
       exit: { x: MAP_WIDTH - 2, y: MAP_HEIGHT - 2 },
       monsters: [],
@@ -103,13 +110,24 @@ export function generateLevel(seed: number, floor: number, monsterIds: string[] 
     carve(map, rng);
     map.walls[map.entrance.y * map.width + map.entrance.x] = false;
     map.walls[map.exit.y * map.width + map.exit.x] = false;
+    // Twist du biome 1 : des racines bloquent des passages (connexité vérifiée après placement).
+    if (opts.roots) {
+      const rootCount = 3 + floor; // TODO-BALANCE via BIOME_1_STRUCTURE côté appelant
+      const spots = rng.shuffle(freeFloorPositions(map, [map.entrance, map.exit]));
+      for (let i = 0; i < Math.min(rootCount, spots.length); i++) {
+        const p = spots[i];
+        map.walls[p.y * map.width + p.x] = true;
+        map.roots.push(p);
+      }
+    }
     if (!bfsReachable(map, map.entrance, map.exit)) continue;
+
+    const monsterCount = opts.monsterCount ?? Math.min(4 + floor, 99);
 
     const spots = rng.shuffle(freeFloorPositions(map, [map.entrance, map.exit]));
     let cursor = 0;
     const take = (): Position => spots[cursor++ % spots.length];
 
-    const monsterCount = Math.min(4 + floor, spots.length);
     for (let i = 0; i < monsterCount; i++) {
       map.monsters.push({ id: rng.pick(monsterIds), pos: take() });
     }
