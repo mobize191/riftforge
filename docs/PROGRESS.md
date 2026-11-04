@@ -34,7 +34,7 @@ Dernier commit publié : à compléter à chaque ticket.
 | R3-04 | done | jalon à 3 choix après le 2e niveau |
 | R3-05 | done | montée de niveau des compétences en orbes (3/5/10) |
 | R3-06 | EN ATTENTE DE VALIDATION HUMAINE | playtest : capture -> nommage -> équipe compréhensible sans doc |
-| R3-07 | pending | |
+| R3-07 | done | rejeu complet déterministe depuis un seul seed (capture->...->retour Forge) |
 | R4-01..R4-08 | pending | |
 | R5-01..R5-07 | pending | |
 | P6-A..P6-D | pending | |
