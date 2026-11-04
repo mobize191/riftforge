@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const SAVE_KEY = 'riftforge-save';
 
 export interface SaveFile {
@@ -36,8 +36,21 @@ function withBondDefaults(save: SaveFile): SaveFile {
   };
 }
 
+function withBuildingPosDefaults(save: SaveFile): SaveFile {
+  const f = save.state.forge as Partial<typeof save.state.forge>;
+  return { ...save, version: 6, state: { ...save.state, forge: { ...f, buildingPos: f.buildingPos ?? {} } as typeof save.state.forge } };
+}
+
 export function migrate(save: SaveFile): SaveFile {
-  if (save.version === 4) return withBondDefaults(save);
+  if (save.version === 5) {
+    // v5 -> v6 (B29) : placement des bâtiments sur la grille de la Forge
+    const f = save.state.forge as Partial<typeof save.state.forge>;
+    return {
+      version: 6,
+      state: { ...save.state, forge: { ...f, buildingPos: f.buildingPos ?? {} } as typeof save.state.forge },
+    };
+  }
+  if (save.version === 4) return withBuildingPosDefaults(withBondDefaults(save));
   // v1 -> v2 (R6-01/R6-03) : nouvelles ressources de Forge (donnees, mercurium,
   // optifibre), flags runCompleted/allBiomesCleared, et champs de run multi-biomes.
   // v3 -> v4 (R7-01) : modificateurs de Faille (forge.riftModifiers).
@@ -81,7 +94,7 @@ export function migrate(save: SaveFile): SaveFile {
           elitePending: prevRun.elitePending ?? false, // R7-02
         } as NonNullable<typeof save.state.run>)
       : save.state.run;
-    return withBondDefaults({
+    return withBuildingPosDefaults(withBondDefaults({
       version: 4,
       state: {
         ...save.state,
@@ -94,7 +107,7 @@ export function migrate(save: SaveFile): SaveFile {
         },
         run,
       },
-    });
+    }));
   }
   return save;
 }

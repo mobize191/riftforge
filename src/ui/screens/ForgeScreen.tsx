@@ -3,6 +3,11 @@
 import type { GameState } from '../../core/types';
 import { CRAFTABLE_EQUIPMENT, MERCHANT_ITEMS, EQUIPMENT_SLOT_LIMITS } from '../../data/equipment';
 import { ownedCount, slotFull } from '../../core/forge/forge';
+import { trophiesOf } from '../../core/forge/home';
+import { canEvolve, liaisonQuestStatus } from '../../core/forge/bond';
+import { LIAISON_QUESTS } from '../../data/liaison';
+import { BOND_TIERS } from '../../data/bond';
+import { FORGE_GRID, BUILDINGS as BUILDING_DEFS } from '../../data/buildings';
 import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
@@ -45,6 +50,13 @@ export default function ForgeScreen({
   onSetTeam,
   onAssignWorker,
   onSaveGrimoire,
+  onEquip,
+  onUnequip,
+  onRest,
+  onGift,
+  onEvolve,
+  onLiaisonQuest,
+  onPlaceBuilding,
 }: {
   state: GameState;
   onBuy: (defId: string) => void;
@@ -57,12 +69,20 @@ export default function ForgeScreen({
   onSetTeam: (monsterIds: string[]) => void;
   onAssignWorker: (buildingId: string, monsterId: string | null) => void;
   onSaveGrimoire: (slot: number, name: string, recipeIds: string[]) => void;
+  onEquip: (instanceId: string) => void;
+  onUnequip: (instanceId: string) => void;
+  onRest: () => void;
+  onGift: (monsterId: string) => void;
+  onEvolve: (monsterId: string) => void;
+  onLiaisonQuest: (questId: string) => void;
+  onPlaceBuilding: (buildingId: string, x: number, y: number) => void;
 }) {
   const f = state.forge;
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
+  const [placeSel, setPlaceSel] = useState<string | null>(null); // B29 : bâtiment sélectionné pour placement
+  const trophies = trophiesOf(state);
   const btn = 'rounded border px-4 py-2 text-left disabled:opacity-40';
   const btnStyle = { minHeight: '44px' } as const;
-  const tier1 = RECIPES.filter((r) => r.tier === 1);
 
   return (
     <main
@@ -235,6 +255,17 @@ export default function ForgeScreen({
                 >
                   {f.team.includes(id) ? '✓ En équipe' : 'Mettre en équipe'}
                 </button>
+                <span className="text-sm opacity-80">
+                  palier {f.bondTier[id] ?? 1} ({BOND_TIERS[(f.bondTier[id] ?? 1) - 1]?.name ?? 'Étincelle'}){f.evolved[id] ? ' · évolué' : ''}
+                </span>
+                <button className={`${btn} border-pink-300/70`} style={btnStyle} onClick={() => onGift(id)}>
+                  Cadeau (2 essence)
+                </button>
+                {canEvolve(state, id) && (
+                  <button className={`${btn} border-fuchsia-400/80`} style={btnStyle} onClick={() => onEvolve(id)}>
+                    Évolution (palier 4)
+                  </button>
+                )}
                 <button
                   className={`${btn} border-sky-300/70`}
                   style={btnStyle}
@@ -277,18 +308,118 @@ export default function ForgeScreen({
       </section>
 
       <section className="w-full max-w-xl">
-        <h2 className="mb-2 font-semibold">Équipement porté ({f.equipment.length})</h2>
-        {f.equipment.length === 0 ? (
-          <p className="opacity-60">Aucun équipement.</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {f.equipment.map((e) => (
-              <li key={e.id} className="rounded border border-slate-500 px-3 py-2" style={btnStyle}>
-                {e.defId}
-              </li>
+        <h2 className="mb-2 font-semibold">Maison du héros</h2>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="text-sm opacity-80">Équipement porté ({f.equipment.length}) :</span>
+          {f.equipment.length === 0 && <span className="opacity-60">aucun</span>}
+          {f.equipment.map((e) => (
+            <span key={e.id} className="flex items-center gap-1 rounded border border-slate-500 px-2 py-1" style={btnStyle}>
+              {e.defId}
+              <button className={`${btn} border-slate-400`} style={btnStyle} onClick={() => onUnequip(e.id)}>
+                Ranger
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="text-sm opacity-80">Rangements ({f.homeEquipment.length}) :</span>
+          {f.homeEquipment.length === 0 && <span className="opacity-60">vide</span>}
+          {f.homeEquipment.map((e) => (
+            <span key={e.id} className="flex items-center gap-1 rounded border border-slate-600 px-2 py-1 opacity-90" style={btnStyle}>
+              {e.defId}
+              <button className={`${btn} border-emerald-400/70`} style={btnStyle} onClick={() => onEquip(e.id)}>
+                Équiper
+              </button>
+            </span>
+          ))}
+        </div>
+        <button className={`${btn} border-emerald-400/70`} style={btnStyle} onClick={onRest}>
+          Se reposer à la Maison
+        </button>
+        {f.lastHomeEvent && <p className="mt-1 text-sm text-emerald-200">{f.lastHomeEvent}</p>}
+        <p className="mt-2 text-sm opacity-80">
+          Trophées — boss vaincus : {trophies.bosses.length ? trophies.bosses.join(', ') : 'aucun'} · codex{' '}
+          {trophies.codexSeen}/{trophies.codexTotal} · contrats remplis : {trophies.contractsDone} · run complétée :{' '}
+          {trophies.runCompleted ? 'oui' : 'non'}
+        </p>
+      </section>
+
+      <section className="w-full max-w-xl">
+        <h2 className="mb-2 font-semibold">Liaiseuse — quêtes de lien</h2>
+        <div className="flex flex-col gap-2">
+          {LIAISON_QUESTS.map((q) => {
+            const status = liaisonQuestStatus(state, q);
+            return (
+              <div key={q.id} className="rounded border border-fuchsia-300/50 px-3 py-2" style={btnStyle}>
+                <strong>{q.name}</strong>{' '}
+                <span className="opacity-70">({status === 'done' ? 'terminée' : status === 'available' ? 'disponible' : 'verrouillée'})</span>
+                {status !== 'done' && (
+                  <ul className="mt-1 text-sm opacity-80">
+                    {q.lines.map((l, i) => (
+                      <li key={i}>« {l} »</li>
+                    ))}
+                  </ul>
+                )}
+                {status === 'available' && (
+                  <button className={`${btn} border-fuchsia-300/70 mt-1`} style={btnStyle} onClick={() => onLiaisonQuest(q.id)}>
+                    Terminer la quête (+{q.bondXpReward} lien)
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="w-full max-w-xl">
+        <h2 className="mb-2 font-semibold">Travailleurs par bâtiment</h2>
+        <ul className="flex flex-col gap-1 text-sm">
+          {Object.keys(BUILDING_DEFS).map((bid) => (
+            <li key={bid} className="rounded border border-slate-600 px-3 py-2" style={btnStyle}>
+              {BUILDING_DEFS[bid].name} : {(f.workers[bid] ?? []).length > 0 ? (f.workers[bid] ?? []).map((w) => f.companionNames[w] ?? w).join(', ') : 'aucun worker'}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="w-full max-w-xl">
+        <h2 className="mb-2 font-semibold">Plan de la Forge — placement des bâtiments</h2>
+        <p className="mb-2 text-sm opacity-70">
+          Placez vos bâtiments sur la grille : les bonus de voisinage s&apos;activent quand les deux bâtiments
+          d&apos;un binôme sont sur des cases adjacentes. Cliquez un bâtiment construit, puis une case.
+        </p>
+        <div className="mb-2 flex flex-wrap gap-1">
+          {Object.entries(f.buildings)
+            .filter(([, lvl]) => (lvl as number) > 0)
+            .map(([bid, lvl]) => (
+              <button
+                key={bid}
+                className={`${btn} ${placeSel === bid ? 'border-emerald-300 bg-emerald-900/60' : 'border-slate-500'}`}
+                style={btnStyle}
+                onClick={() => setPlaceSel(placeSel === bid ? null : bid)}
+              >
+                {bid} niv {lvl}
+              </button>
             ))}
-          </ul>
-        )}
+        </div>
+        <div className="grid w-fit gap-1" style={{ gridTemplateColumns: `repeat(${FORGE_GRID.width}, 56px)` }}>
+          {Array.from({ length: FORGE_GRID.height }).map((_, y) =>
+            Array.from({ length: FORGE_GRID.width }).map((_, x) => {
+              const here = Object.entries(f.buildingPos).find(([, pp]) => pp.x === x && pp.y === y);
+              return (
+                <button
+                  key={`${x},${y}`}
+                  aria-label={`Case ${x},${y}`}
+                  className="rounded border border-slate-600 bg-black/40 px-1 py-1 text-xs"
+                  style={{ minHeight: '44px', minWidth: '56px' }}
+                  onClick={() => placeSel && onPlaceBuilding(placeSel, x, y)}
+                >
+                  {here ? here[0] : '·'}
+                </button>
+              );
+            }),
+          )}
+        </div>
       </section>
 
       <button

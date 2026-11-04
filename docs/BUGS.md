@@ -72,3 +72,19 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   désormais toutes les recettes par palier avec leur coût + l'explication que les modules
   palier 1 sont gratuits avec l'orbe.
 - **Tests** : `tests/r9-09-equipment-slots.test.ts` (3 tests).
+
+## B29 — Aucun plan pour placer les bâtiments (voisinage opaque) (fix)
+- **Vu** : le voisinage (« à côté ») n'avait aucune représentation visuelle.
+- **Fix** : grille de la Forge 4x3 (FORGE_GRID), action PLACE_BUILDING, section
+  « Plan de la Forge » dans l'écran Forge ; le bonus de voisinage s'applique si les
+  deux bâtiments du binôme sont construits ET adjacents (Manhattan = 1) quand placés,
+  sinon « les deux construits » (rétrocompatible). Save v6 + migration.
+- **Tests** : `tests/r9-10-forge-ui-core.test.ts` (2 tests) + `e2e/forge.spec.ts` (CI).
+
+## B30 — Maison et PNJ inaccessibles depuis l'UI (fix)
+- **Vu** : la Maison du héros et la Liaiseuse existaient en core mais sans écran ; les
+  workers n'étaient pas visibles par bâtiment.
+- **Fix** : sections « Maison du héros » (équiper/ranger, repos, trophées), « Liaiseuse —
+  quêtes de lien » (dialogues + bouton terminer), « Travailleurs par bâtiment », palier
+  de lien + cadeau + évolution dans l'écurie. Handlers App.tsx.
+- **Tests** : e2e/forge.spec.ts (sections visibles en CI).

@@ -84,6 +84,7 @@ export interface ForgeState {
   evolved: Record<string, boolean>; // R8-03 — évolution au palier 4 (irréversible)
   killCounts: Record<string, number>; // R8-03 — kills par race de monstre (persistants)
   liaisonQuests: Record<string, 'available' | 'done'>; // R8-04 — quêtes de la Liaiseuse
+  buildingPos: Record<string, Position>; // B29 — placement des bâtiments sur la grille de la Forge
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];

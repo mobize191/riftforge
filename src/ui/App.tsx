@@ -276,6 +276,36 @@ export default function App() {
     return () => clearInterval(interval);
   }, [view]);
 
+  // B29/R6-07/R8 — Maison, Liaiseuse, placement des bâtiments (écran Forge)
+  const onEquip = useCallback((instanceId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'EQUIP_ITEM', instanceId }) : prev));
+    playSound('ui-click');
+  }, []);
+  const onUnequip = useCallback((instanceId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'UNEQUIP_ITEM', instanceId }) : prev));
+    playSound('ui-click');
+  }, []);
+  const onRest = useCallback(() => {
+    setState((prev) => (prev ? reduce(prev, { type: 'REST_AT_HOME' }) : prev));
+    playSound('heal');
+  }, []);
+  const onGift = useCallback((monsterId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'GIFT_COMPANION', monsterId }) : prev));
+    playSound('ui-buy');
+  }, []);
+  const onEvolve = useCallback((monsterId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'EVOLVE_COMPANION', monsterId }) : prev));
+    playSound('victory');
+  }, []);
+  const onLiaisonQuest = useCallback((questId: string) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'COMPLETE_LIAISON_QUEST', questId }) : prev));
+    playSound('ui-buy');
+  }, []);
+  const onPlaceBuilding = useCallback((buildingId: string, x: number, y: number) => {
+    setState((prev) => (prev ? reduce(prev, { type: 'PLACE_BUILDING', buildingId, x, y }) : prev));
+    playSound('forge');
+  }, []);
+
   const onDescend = useCallback(() => {
     const seed = Date.now() % 2147483647;
     setState((prev) => {
@@ -312,6 +342,13 @@ export default function App() {
         onSetTeam={onSetTeam}
         onAssignWorker={onAssignWorker}
         onSaveGrimoire={onSaveGrimoire}
+        onEquip={onEquip}
+        onUnequip={onUnequip}
+        onRest={onRest}
+        onGift={onGift}
+        onEvolve={onEvolve}
+        onLiaisonQuest={onLiaisonQuest}
+        onPlaceBuilding={onPlaceBuilding}
       />
     );
   }

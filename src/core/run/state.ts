@@ -17,6 +17,7 @@ import { applyFusion } from '../combat/fuse';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
+import { FORGE_GRID } from '../../data/buildings';
 import { MONSTERS_BY_FAMILY } from '../../data/monsters';
 import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE, RIFT_REWARD_PER_MODIFIER } from '../../data/riftModifiers';
 import { addBondXp, bondHpBonus, giftCompanion, evolveCompanion, completeLiaisonQuest } from '../forge/bond';
@@ -95,7 +96,8 @@ export type GameAction =
   | { type: 'SET_RIFT_MODIFIERS'; biomeId: string; modifiers: string[] } // R7-01 — activation par biome (si allBiomesCleared)
   | { type: 'GIFT_COMPANION'; monsterId: string } // R8-01 — cadeau offert à un compagnon
   | { type: 'EVOLVE_COMPANION'; monsterId: string } // R8-03 — évolution au palier 4
-  | { type: 'COMPLETE_LIAISON_QUEST'; questId: string }; // R8-04 — quête de la Liaiseuse
+  | { type: 'COMPLETE_LIAISON_QUEST'; questId: string } // R8-04 — quête de la Liaiseuse
+  | { type: 'PLACE_BUILDING'; buildingId: string; x: number; y: number }; // B29 — placement sur la grille
 
 export function initialState(): GameState {
   return {
@@ -120,6 +122,7 @@ export function initialState(): GameState {
       evolved: {},
       killCounts: {},
       liaisonQuests: {},
+      buildingPos: {},
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -835,6 +838,18 @@ export function reduce(state: GameState, action: GameAction): GameState {
       };
       if (state.forge.team[0]) return addBondXp(next, state.forge.team[0], BOND_XP.perForgeMoment);
       return next;
+    }
+    case 'PLACE_BUILDING': {
+      // B29 : place un bâtiment construit sur la grille de la Forge (une case par bâtiment).
+      if (state.mode !== 'FORGE') return state;
+      if ((state.forge.buildings[action.buildingId] ?? 0) < 1) return state; // bâtiment non construit
+      if (action.x < 0 || action.y < 0 || action.x >= FORGE_GRID.width || action.y >= FORGE_GRID.height) return state;
+      const occupied = Object.entries(state.forge.buildingPos).find(([, p]) => p.x === action.x && p.y === action.y);
+      if (occupied && occupied[0] !== action.buildingId) return state;
+      return {
+        ...state,
+        forge: { ...state.forge, buildingPos: { ...state.forge.buildingPos, [action.buildingId]: { x: action.x, y: action.y } } },
+      };
     }
     case 'GIFT_COMPANION': {
       return giftCompanion(state, action.monsterId);

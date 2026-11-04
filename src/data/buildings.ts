@@ -107,6 +107,10 @@ export const BUILDINGS_V1: BuildingSkeleton[] = [
   { id: 'maison-heros', name: 'Maison du héros', tier: 3, cost: { credits: 150, lingots: 8, spores: 5 } }, // TODO-BALANCE
 ];
 
+// B29 — grille de placement des bâtiments à la Forge (le voisinage = cases adjacentes).
+// TODO-BALANCE.
+export const FORGE_GRID = { width: 4, height: 3 } as const;
+
 // Bonus de voisinage décrits en data (ex. four à côté de la mine). TODO-BALANCE.
 export const NEIGHBOR_BONUSES: Record<string, string> = {
   'extracteur+forge-arcane': 'La Forge Arcane à côté de l’Extracteur produit un lingot de plus.', // TODO-BALANCE
