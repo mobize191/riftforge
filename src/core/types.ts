@@ -76,6 +76,7 @@ export interface ForgeState {
   discoveredRecipes: string[];
   orbStock: Orb[];
   grimoire: GrimoireSlot[];
+  claimedContracts: string[];
   companionNames: Record<string, string>;
   team: string[];
   workers: Record<string, string>;
@@ -111,6 +112,7 @@ export interface RunState {
   companionKo: boolean;
   pendingMilestone: boolean;
   discoveredRecipes: string[];
+  journal: string[];
 }
 
 export interface GameState {

@@ -18,6 +18,7 @@ import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE } from '../../data/biomes';
 import { attractMonsters } from './encounter';
+import { settleContracts } from '../forge/contracts';
 
 export { MAP_WIDTH, MAP_HEIGHT };
 
@@ -63,6 +64,7 @@ export function initialState(): GameState {
       discoveredRecipes: [],
       orbStock: [],
       grimoire: [],
+      claimedContracts: [],
       companionNames: {},
       team: [],
       workers: {},
@@ -128,6 +130,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           companionKo: false,
           pendingMilestone: false,
           discoveredRecipes: [],
+          journal: ['start', ...(state.forge.team.length === 0 ? ['no-companion'] : [])],
         },
       };
     }
@@ -154,6 +157,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
           }),
           playerPos: { x: 1, y: 1 },
           pendingMilestone,
+          journal: [...state.run.journal, `floor-${floor}`],
         },
       };
     }
@@ -313,6 +317,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // Victoire contre le boss -> fin du biome -> retour à la Forge.
       const wasBoss = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
       if (action.victory && wasBoss) {
+        run = { ...run, journal: [...run.journal, 'boss-killed'] };
         return { ...state, mode: 'RETOUR', run };
       }
       return { ...state, mode: 'RUN', run };
@@ -340,12 +345,16 @@ export function reduce(state: GameState, action: GameAction): GameState {
           )
         : state;
       const maintenance = Math.floor((run?.elapsedTicks ?? 0) / 100) * BALANCE.MAINTENANCE_PER_100_TICKS;
+      // Contrats du Marchand : vérifiés depuis le journal de la run, primes versées au retour.
+      const withContracts = run
+        ? settleContracts(withProduction, { events: run.journal, lootSpores: run.lootSpores })
+        : withProduction;
       return {
-        ...withProduction,
+        ...withContracts,
         mode: 'FORGE',
         forge: {
-          ...withProduction.forge,
-          credits: Math.max(0, withProduction.forge.credits - maintenance),
+          ...withContracts.forge,
+          credits: Math.max(0, withContracts.forge.credits - maintenance),
           roster,
           discoveredRecipes: discovered,
           orbStock: [...state.forge.orbStock, ...keptComposites],
@@ -382,7 +391,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (sporeIdx >= 0) {
         const level2 = { ...level, sporeNodes: level.sporeNodes.filter((_, i) => i !== sporeIdx) };
         attractMonsters(level2, { x, y }, BIOME_1_STRUCTURE.attractRadius, (lx, ly) => isWall(level2, lx, ly));
-        run = { ...run, level: level2, lootSpores: run.lootSpores + 1 };
+        run = { ...run, level: level2, lootSpores: run.lootSpores + 1, journal: [...run.journal, 'spore'] };
       }
       return { ...state, run };
     }
