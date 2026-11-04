@@ -79,6 +79,11 @@ export interface ForgeState {
   defeatedBosses: string[]; // R6-07 — trophées : boss vaincus (persistants)
   lastHomeEvent: string | null; // R6-07 — texte léger du repos à la Maison
   riftModifiers: Record<string, string[]>; // R7-01 — modificateurs actifs par biome (débloqués si allBiomesCleared)
+  bondXp: Record<string, number>; // R8-01 — XP de lien par compagnon (persistant)
+  bondTier: Record<string, number>; // R8-02 — palier 1-5 par compagnon (dérivé de l'XP)
+  evolved: Record<string, boolean>; // R8-03 — évolution au palier 4 (irréversible)
+  killCounts: Record<string, number>; // R8-03 — kills par race de monstre (persistants)
+  liaisonQuests: Record<string, 'available' | 'done'>; // R8-04 — quêtes de la Liaiseuse
   equipment: EquipmentInstance[];
   unlockedRecipes: string[];
   roster: string[];

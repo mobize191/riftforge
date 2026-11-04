@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_KEY = 'riftforge-save';
 
 export interface SaveFile {
@@ -16,7 +16,28 @@ export class UnknownSaveVersionError extends Error {
   }
 }
 
+// R8 : champs de lien ajoutés en v5 — remplissage par défaut pour toute save < v5.
+function withBondDefaults(save: SaveFile): SaveFile {
+  const f = save.state.forge as Partial<typeof save.state.forge>;
+  return {
+    ...save,
+    version: 5,
+    state: {
+      ...save.state,
+      forge: {
+        ...f,
+        bondXp: f.bondXp ?? {},
+        bondTier: f.bondTier ?? {},
+        evolved: f.evolved ?? {},
+        killCounts: f.killCounts ?? {},
+        liaisonQuests: f.liaisonQuests ?? {},
+      } as typeof save.state.forge,
+    },
+  };
+}
+
 export function migrate(save: SaveFile): SaveFile {
+  if (save.version === 4) return withBondDefaults(save);
   // v1 -> v2 (R6-01/R6-03) : nouvelles ressources de Forge (donnees, mercurium,
   // optifibre), flags runCompleted/allBiomesCleared, et champs de run multi-biomes.
   // v3 -> v4 (R7-01) : modificateurs de Faille (forge.riftModifiers).
@@ -60,7 +81,7 @@ export function migrate(save: SaveFile): SaveFile {
           elitePending: prevRun.elitePending ?? false, // R7-02
         } as NonNullable<typeof save.state.run>)
       : save.state.run;
-    return {
+    return withBondDefaults({
       version: 4,
       state: {
         ...save.state,
@@ -73,7 +94,7 @@ export function migrate(save: SaveFile): SaveFile {
         },
         run,
       },
-    };
+    });
   }
   return save;
 }

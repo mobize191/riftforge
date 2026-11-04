@@ -19,6 +19,8 @@ import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL }
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
 import { MONSTERS_BY_FAMILY } from '../../data/monsters';
 import { RIFT_MODIFIER_BY_ID, INSTABILITY, ELITE, RIFT_REWARD_PER_MODIFIER } from '../../data/riftModifiers';
+import { addBondXp, bondHpBonus, giftCompanion, evolveCompanion, completeLiaisonQuest } from '../forge/bond';
+import { BOND_XP } from '../../data/bond';
 
 // R7-02 : la jauge d'instabilité monte à chaque action (combat, récolte) quand le
 // modificateur « instabilite » est actif ; monotone seedée (déterministe), seuils en data.
@@ -90,7 +92,10 @@ export type GameAction =
   | { type: 'EQUIP_ITEM'; instanceId: string } // R6-07 — Maison : équiper un objet rangé
   | { type: 'UNEQUIP_ITEM'; instanceId: string } // R6-07 — Maison : ranger l'objet porté
   | { type: 'REST_AT_HOME' } // R6-07 — repos à la Maison (texte léger)
-  | { type: 'SET_RIFT_MODIFIERS'; biomeId: string; modifiers: string[] }; // R7-01 — activation par biome (si allBiomesCleared)
+  | { type: 'SET_RIFT_MODIFIERS'; biomeId: string; modifiers: string[] } // R7-01 — activation par biome (si allBiomesCleared)
+  | { type: 'GIFT_COMPANION'; monsterId: string } // R8-01 — cadeau offert à un compagnon
+  | { type: 'EVOLVE_COMPANION'; monsterId: string } // R8-03 — évolution au palier 4
+  | { type: 'COMPLETE_LIAISON_QUEST'; questId: string }; // R8-04 — quête de la Liaiseuse
 
 export function initialState(): GameState {
   return {
@@ -110,6 +115,11 @@ export function initialState(): GameState {
       defeatedBosses: [],
       lastHomeEvent: null,
       riftModifiers: {},
+      bondXp: {},
+      bondTier: {},
+      evolved: {},
+      killCounts: {},
+      liaisonQuests: {},
       equipment: [],
       unlockedRecipes: [],
       roster: [],
@@ -144,7 +154,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       }));
       // L'équipement forgé/acheté à la Forge se porte à la run suivante (§SPEC-2).
       const bonus = equipmentBonuses(state);
-      const maxHp = BALANCE.START_PLAYER_HP + bonus.hp;
+      // R8-02 : bonus de palier de lien, appliqué EN RUN uniquement si compagnon en équipe.
+      const maxHp = BALANCE.START_PLAYER_HP + bonus.hp + bondHpBonus(state);
       const attack = BALANCE.PLAYER_ATTACK + bonus.attack;
       // 1 compétence initiale débloquée aléatoirement si un compagnon est en équipe (§SPEC-7.2).
       let companionSkills: Record<string, number> = {};
@@ -153,6 +164,15 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (teamDef) {
         const initial = rng.pick(teamDef.skills);
         companionSkills = { [initial.id]: 1 };
+        // R8-02 : palier 5 = capacité signature -> +1 niveau sur toutes les compétences débloquées
+        const tier = state.forge.bondTier[teamMonster] ?? 1;
+        if (tier >= 5) {
+          for (const s of teamDef.skills) {
+            if ((companionSkills[s.id] ?? 0) > 0) {
+              companionSkills[s.id] = Math.min(s.maxLevel, SKILL_MAX_LEVEL, (companionSkills[s.id] ?? 0) + 1);
+            }
+          }
+        }
       }
       return {
         ...state,
@@ -409,6 +429,16 @@ export function reduce(state: GameState, action: GameAction): GameState {
         lastEvent: null,
       };
       run = addInstability(run, INSTABILITY.perCombat); // R7-02 : +jauge par combat
+      // R8-01 : victoire partagée avec le compagnon d'équipe (vivant) -> XP de lien (comptabilisée au retour)
+      if (action.victory && state.forge.team[0] && !(action.companionKo ?? false)) {
+        run = { ...run, journal: [...run.journal, 'shared-victory'] };
+      }
+      // R8-03 : journal des kills par race (pour la condition d'évolution)
+      if (action.victory) {
+        for (const id of state.run.encounter ?? []) {
+          if (!id.startsWith('boss:')) run = { ...run, journal: [...run.journal, `kill-${id}`] };
+        }
+      }
       if (action.victory && action.loot) {
         run = {
           ...run,
@@ -543,18 +573,34 @@ export function reduce(state: GameState, action: GameAction): GameState {
           : withContracts;
       // R6-03/R7-01 : victoire de run persistante -> débloque les modificateurs de Faille.
       const runCompleted = withRiftRewards.forge.runCompleted || (run?.runCompleted ?? false);
+      // R8-01/R8-03 : au retour, l'XP de lien des victoires partagées et les compteurs de
+      // kills (journal) sont persistés sur la Forge.
+      const sharedVictories = (run?.journal ?? []).filter((e) => e === 'shared-victory').length;
+      const killEntries = (run?.journal ?? []).filter((e) => e.startsWith('kill-'));
+      let bonded = withRiftRewards;
+      if (run && sharedVictories > 0 && state.forge.team[0]) {
+        bonded = addBondXp(bonded, state.forge.team[0], sharedVictories * BOND_XP.perSharedVictory);
+      }
+      if (run && killEntries.length > 0) {
+        const killCounts = { ...bonded.forge.killCounts };
+        for (const e of killEntries) {
+          const id = e.slice(5);
+          killCounts[id] = (killCounts[id] ?? 0) + 1;
+        }
+        bonded = { ...bonded, forge: { ...bonded.forge, killCounts } };
+      }
       return {
-        ...withRiftRewards,
+        ...bonded,
         mode: 'FORGE',
         forge: {
-          ...withRiftRewards.forge,
-          credits: Math.max(0, withRiftRewards.forge.credits - maintenance),
+          ...bonded.forge,
+          credits: Math.max(0, bonded.forge.credits - maintenance),
           roster,
           discoveredRecipes: discovered,
           orbStock: [...state.forge.orbStock, ...keptComposites],
           defeatedBosses,
           runCompleted,
-          allBiomesCleared: withRiftRewards.forge.allBiomesCleared || runCompleted,
+          allBiomesCleared: bonded.forge.allBiomesCleared || runCompleted,
         },
         run: null,
       };
@@ -780,12 +826,24 @@ export function reduce(state: GameState, action: GameAction): GameState {
       };
     }
     case 'REST_AT_HOME': {
-      // R6-07 : repos à la Maison — texte léger, aucun effet mécanique.
+      // R6-07 : repos à la Maison — texte léger. R8-01 : moment à la Forge = source de lien
+      // si un compagnon est en équipe.
       if (state.mode !== 'FORGE') return state;
-      return {
+      const next = {
         ...state,
         forge: { ...state.forge, lastHomeEvent: 'Vous vous reposez un moment à la Maison. La Faille vous attend.' },
       };
+      if (state.forge.team[0]) return addBondXp(next, state.forge.team[0], BOND_XP.perForgeMoment);
+      return next;
+    }
+    case 'GIFT_COMPANION': {
+      return giftCompanion(state, action.monsterId);
+    }
+    case 'EVOLVE_COMPANION': {
+      return evolveCompanion(state, action.monsterId);
+    }
+    case 'COMPLETE_LIAISON_QUEST': {
+      return completeLiaisonQuest(state, action.questId);
     }
     case 'ADVANCE_TICKS': {
       // L'UI fournit les ticks écoulés (dérivés de l'horloge réelle hors du core).
