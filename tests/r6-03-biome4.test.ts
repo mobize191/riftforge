@@ -97,7 +97,7 @@ describe('R6-03 biome 4 — La Fibration', () => {
     s = reduce(s, { type: 'INTERACT' });
     expect(s.run!.encounter).toEqual([`boss:${B4.bossId}`]);
     // combat de boss gagné directement (kit de test)
-    let c = startCombat(1, 60, 60, 10, s.run!.encounter!, ['feu'], null, {}, false, ['deflagration']);
+    let c = startCombat(1, 500, 500, 40, s.run!.encounter!, ['feu'], null, {}, false, ['deflagration']);
     let guard = 0;
     while (c.phase === 'player' && guard++ < 50) {
       c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
@@ -117,7 +117,7 @@ describe('R6-03 biome 4 — La Fibration', () => {
     let s = reduce(initialState(), { type: 'START_RUN', seed: 12, biomeIndex: 0 });
     s = { ...s, run: { ...s.run!, floor: 4, playerPos: s.run!.level!.exit } };
     s = reduce(s, { type: 'INTERACT' });
-    let c = startCombat(1, 60, 60, 10, s.run!.encounter!, ['feu'], null, {}, false, ['deflagration']);
+    let c = startCombat(1, 500, 500, 40, s.run!.encounter!, ['feu'], null, {}, false, ['deflagration']);
     let guard = 0;
     while (c.phase === 'player' && guard++ < 50) {
       c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });

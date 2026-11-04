@@ -110,8 +110,8 @@ export const BIOME_STRUCTURES: Record<string, BiomeStructure> = {
     bossId: 'grand-index', // TODO-BALANCE
     family: 'gremlin',
     resourceId: 'donnees',
-    monsterCountBase: 5, // TODO-BALANCE
-    monsterCountPerFloor: 1, // TODO-BALANCE
+    monsterCountBase: 6, // TODO-BALANCE (ajusté R9-01)
+    monsterCountPerFloor: 1, // TODO-BALANCE (ajusté R9-01)
     resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de données
     altarsPerFloor: 1, // TODO-BALANCE
     circuits: { triggers: 2, doorsPerTrigger: 2 }, // TODO-BALANCE — twist circuits
@@ -121,20 +121,20 @@ export const BIOME_STRUCTURES: Record<string, BiomeStructure> = {
     bossId: 'coeur-fournaise', // TODO-BALANCE
     family: 'elementaire',
     resourceId: 'mercurium',
-    monsterCountBase: 5, // TODO-BALANCE
-    monsterCountPerFloor: 1, // TODO-BALANCE
+    monsterCountBase: 6, // TODO-BALANCE (ajusté R9-01)
+    monsterCountPerFloor: 1, // TODO-BALANCE (ajusté R9-01)
     resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds de mercurium
     altarsPerFloor: 1, // TODO-BALANCE
     burnZonesPerFloor: 4, // TODO-BALANCE — twist sol brûlant
-    burnDamage: 3, // TODO-BALANCE — dégâts exacts par tour sur une case brûlante
+    burnDamage: 6, // TODO-BALANCE (ajusté R9-01) — dégâts exacts par tour sur une case brûlante
   },
   fibration: {
     floors: 4, // TODO-BALANCE
     bossId: 'noeud-final', // TODO-BALANCE
     family: 'vermine',
     resourceId: 'optifibre',
-    monsterCountBase: 6, // TODO-BALANCE
-    monsterCountPerFloor: 1, // TODO-BALANCE
+    monsterCountBase: 7, // TODO-BALANCE (ajusté R9-01)
+    monsterCountPerFloor: 1, // TODO-BALANCE (ajusté R9-01)
     resourceNodesPerFloor: 3, // TODO-BALANCE — nœuds d'optifibre
     altarsPerFloor: 1, // TODO-BALANCE
     speedZonesPerFloor: 5, // TODO-BALANCE — twist zones de vitesse

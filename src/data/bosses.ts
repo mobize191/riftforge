@@ -51,13 +51,13 @@ export const BOSS_BY_ID: Record<string, BossDef> = { [BOSS_BIOME_1.id]: BOSS_BIO
 export const BOSS_BIOME_2: BossDef = {
   id: 'grand-index',
   name: 'Le Grand Index',
-  hp: 40, // TODO-BALANCE
+  hp: 270, // TODO-BALANCE
   weaknesses: ['eau'], // TODO-BALANCE
   resistances: ['air'], // TODO-BALANCE
   attacks: [
-    { id: 'frappe-index', name: 'Frappe d’index', damage: 5 }, // TODO-BALANCE
-    { id: 'requete', name: 'Requête vorace', damage: 3 }, // TODO-BALANCE
-    { id: 'surcharge', name: 'Surcharge de données', damage: 4 }, // TODO-BALANCE
+    { id: 'frappe-index', name: 'Frappe d’index', damage: 7 }, // TODO-BALANCE
+    { id: 'requete', name: 'Requête vorace', damage: 5 }, // TODO-BALANCE
+    { id: 'surcharge', name: 'Surcharge de données', damage: 6 }, // TODO-BALANCE
   ],
   phases: [
     { atHpRatioBelow: 1.01, pattern: ['frappe-index', 'requete', 'requete'] }, // TODO-BALANCE
@@ -69,13 +69,13 @@ export const BOSS_BIOME_2: BossDef = {
 export const BOSS_BIOME_3: BossDef = {
   id: 'coeur-fournaise',
   name: 'Cœur de Fournaise',
-  hp: 50, // TODO-BALANCE
+  hp: 337, // TODO-BALANCE
   weaknesses: ['eau'], // TODO-BALANCE
   resistances: ['feu'], // TODO-BALANCE
   attacks: [
-    { id: 'jet-magma', name: 'Jet de magma', damage: 6 }, // TODO-BALANCE
-    { id: 'explosion', name: 'Explosion thermique', damage: 4 }, // TODO-BALANCE
-    { id: 'brasier', name: 'Brasier', damage: 3 }, // TODO-BALANCE (AoE compagnon)
+    { id: 'jet-magma', name: 'Jet de magma', damage: 8 }, // TODO-BALANCE
+    { id: 'explosion', name: 'Explosion thermique', damage: 6 }, // TODO-BALANCE
+    { id: 'brasier', name: 'Brasier', damage: 5 }, // TODO-BALANCE (AoE compagnon)
   ],
   phases: [
     { atHpRatioBelow: 1.01, pattern: ['jet-magma', 'explosion', 'brasier'] }, // TODO-BALANCE
@@ -87,13 +87,13 @@ export const BOSS_BIOME_3: BossDef = {
 export const BOSS_BIOME_4: BossDef = {
   id: 'noeud-final',
   name: 'Le Nœud Final',
-  hp: 60, // TODO-BALANCE
+  hp: 405, // TODO-BALANCE
   weaknesses: ['feu', 'air'], // TODO-BALANCE
   resistances: ['terre'], // TODO-BALANCE
   attacks: [
-    { id: 'lame-fibre', name: 'Lame de fibre', damage: 6 }, // TODO-BALANCE
-    { id: 'siphon', name: 'Siphon de données', damage: 4 }, // TODO-BALANCE
-    { id: 'surcharge-reseau', name: 'Surcharge du réseau', damage: 5 }, // TODO-BALANCE
+    { id: 'lame-fibre', name: 'Lame de fibre', damage: 8 }, // TODO-BALANCE
+    { id: 'siphon', name: 'Siphon de données', damage: 6 }, // TODO-BALANCE
+    { id: 'surcharge-reseau', name: 'Surcharge du réseau', damage: 7 }, // TODO-BALANCE
   ],
   phases: [
     { atHpRatioBelow: 1.01, pattern: ['lame-fibre', 'siphon', 'siphon'] }, // TODO-BALANCE

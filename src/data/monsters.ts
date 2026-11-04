@@ -46,26 +46,26 @@ export const MONSTERS: MonsterDef[] = [
 
 // Biome 2 — Les Datacathédrales (famille gremlin, ressource « données »).
 export const GREMLINS: MonsterDef[] = [
-  { id: 'fouineur', name: 'Fouineur de données', family: 'gremlin', hp: 7, attack: 3, weaknesses: ['eau'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'sapeur', name: 'Sapeur de circuits', family: 'gremlin', hp: 10, attack: 2, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
-  { id: 'arroseur', name: 'Arroseur de bugs', family: 'gremlin', hp: 8, attack: 4, weaknesses: ['feu'], resistances: ['eau'] }, // TODO-BALANCE
-  { id: 'horloge-cassee', name: 'Horloge cassée', family: 'gremlin', hp: 12, attack: 3, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'fouineur', name: 'Fouineur de données', family: 'gremlin', hp: 31, attack: 10, weaknesses: ['eau'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'sapeur', name: 'Sapeur de circuits', family: 'gremlin', hp: 45, attack: 9, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'arroseur', name: 'Arroseur de bugs', family: 'gremlin', hp: 36, attack: 11, weaknesses: ['feu'], resistances: ['eau'] }, // TODO-BALANCE
+  { id: 'horloge-cassee', name: 'Horloge cassée', family: 'gremlin', hp: 54, attack: 10, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
 ];
 
 // Biome 3 — Les Hauts-Fourneaux (famille élémentaire, ressource « mercurium »).
 export const ELEMENTAIRES: MonsterDef[] = [
-  { id: 'brasero', name: 'Brasero vivant', family: 'elementaire', hp: 9, attack: 4, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
-  { id: 'geyser', name: 'Geyser', family: 'elementaire', hp: 7, attack: 3, weaknesses: ['terre'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'cendre', name: 'Spectre de cendre', family: 'elementaire', hp: 11, attack: 3, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
-  { id: 'magmaton', name: 'Magmaton', family: 'elementaire', hp: 13, attack: 5, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'brasero', name: 'Brasero vivant', family: 'elementaire', hp: 40, attack: 11, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'geyser', name: 'Geyser', family: 'elementaire', hp: 31, attack: 10, weaknesses: ['terre'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'cendre', name: 'Spectre de cendre', family: 'elementaire', hp: 49, attack: 10, weaknesses: ['air'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'magmaton', name: 'Magmaton', family: 'elementaire', hp: 58, attack: 12, weaknesses: ['eau'], resistances: ['feu'] }, // TODO-BALANCE
 ];
 
 // Biome 4 — La Fibration (famille vermine des réseaux, ressource « optifibre »).
 export const VERMINE: MonsterDef[] = [
-  { id: 'wyrm', name: 'Wyrm de fibre', family: 'vermine', hp: 8, attack: 4, weaknesses: ['feu'], resistances: ['air'] }, // TODO-BALANCE
-  { id: 'vampire-reseau', name: 'Vampire du réseau', family: 'vermine', hp: 10, attack: 5, weaknesses: ['air'], resistances: ['eau'] }, // TODO-BALANCE
-  { id: 'drone-corrompu', name: 'Drone corrompu', family: 'vermine', hp: 12, attack: 3, weaknesses: ['eau'], resistances: ['terre'] }, // TODO-BALANCE
-  { id: 'tisseuse', name: 'Tisseuse de fil', family: 'vermine', hp: 9, attack: 4, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
+  { id: 'wyrm', name: 'Wyrm de fibre', family: 'vermine', hp: 36, attack: 11, weaknesses: ['feu'], resistances: ['air'] }, // TODO-BALANCE
+  { id: 'vampire-reseau', name: 'Vampire du réseau', family: 'vermine', hp: 45, attack: 12, weaknesses: ['air'], resistances: ['eau'] }, // TODO-BALANCE
+  { id: 'drone-corrompu', name: 'Drone corrompu', family: 'vermine', hp: 54, attack: 10, weaknesses: ['eau'], resistances: ['terre'] }, // TODO-BALANCE
+  { id: 'tisseuse', name: 'Tisseuse de fil', family: 'vermine', hp: 40, attack: 11, weaknesses: ['terre'], resistances: ['feu'] }, // TODO-BALANCE
 ];
 
 MONSTERS.push(...GREMLINS, ...ELEMENTAIRES, ...VERMINE);

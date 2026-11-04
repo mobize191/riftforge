@@ -232,7 +232,7 @@ describe('R6-04 continuité inter-biomes (run complète 4 biomes)', () => {
     s = { ...s, run: { ...s.run!, biomeIndex: 3, floor: 4, playerPos: s.run!.level!.exit } };
     s = reduce(s, { type: 'INTERACT' });
     expect(s.run!.encounter![0]).toBe(`boss:${biomeStructureOf(3).def.bossId}`);
-    let c = startCombat(7, 80, 80, 12, s.run!.encounter!, ['feu', 'air'], null, {}, false, ['deflagration']);
+    let c = startCombat(7, 500, 500, 40, s.run!.encounter!, ['feu', 'air'], null, {}, false, ['deflagration']);
     let guard = 0;
     while (c.phase === 'player' && guard++ < 60) {
       c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'deflagration', target: 0 });
