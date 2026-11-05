@@ -8,6 +8,7 @@ import { BALANCE } from '../../src/data/balance';
 import { BOSS_BY_ID } from '../../src/data/bosses';
 import { affinityMultiplier } from '../../src/data/affinities';
 import { craftAndFuseAll } from './modules';
+import { COMPANION_BY_MONSTER } from '../../src/data/companions';
 import type { ElementId } from '../../src/core/types';
 
 // Bot compétent de simulation, extrait de r10-06 (partagé avec r11-03/r11-06).
@@ -63,6 +64,21 @@ export function botCombat(c: CombatState): CombatState {
   let guard = 0;
   while (c.phase === 'player' && guard++ < 300) {
     const hpRatio = c.player.hp / c.player.maxHp;
+    // R11-06 : au tour du compagnon, il joue sa meilleure compétence débloquée
+    // (soin si le héros est blessé, sinon dégâts sur la cible la plus faible).
+    if (c.order[c.actorIdx % c.order.length] === 'companion' && c.companion && !c.companion.ko) {
+      const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === c.companion!.defId);
+      const unlocked = def ? def.skills.filter((sk) => (c.companion!.skills[sk.id] ?? 0) > 0) : [];
+      const heal = unlocked.find((sk) => sk.kind === 'heal');
+      const dmg = unlocked.filter((sk) => sk.kind === 'damage' || sk.kind === 'aoe').sort((a, b) => b.powerPerLevel - a.powerPerLevel)[0];
+      const skill = hpRatio < 0.7 && heal ? heal : dmg ?? heal;
+      if (skill) {
+        c = combatReduce(c, { type: 'USE_COMPANION_SKILL', skillId: skill.id });
+        continue;
+      }
+      c = combatReduce(c, { type: 'ATTACK', target: c.enemies.findIndex((e) => e.hp > 0) });
+      continue;
+    }
     if (hpRatio < 0.3) {
       const heal = c.modules.find((id) => ['heal', 'purify'].includes(RECIPE_BY_ID[id]?.effect.kind ?? ''));
       if (heal && c.energy >= moduleEnergyCost(RECIPE_BY_ID[heal])) {
@@ -133,7 +149,10 @@ export interface SimResult {
 
 // Joue une run complète avec le bot compétent. R11-03 : suit aussi le niveau atteint par biome.
 export function fullRun(seed: number): SimResult {
-  let s = reduce(initialState(), { type: 'START_RUN', seed });
+  // R11-06 : le bot emmène la Mousse en équipe (compagnon palier 1) et monte de niveau (E3).
+  let s0 = initialState();
+  s0 = { ...s0, forge: { ...s0.forge, roster: ['mousse'], team: ['mousse'] } };
+  let s = reduce(s0, { type: 'START_RUN', seed });
   s = craftAll(s);
   let guard = 0;
   let turns = 0;
@@ -156,9 +175,9 @@ export function fullRun(seed: number): SimResult {
           run.playerAttack,
           run.encounter!,
           run.orbs.map((o) => o.element).filter((e): e is ElementId => e !== null),
-          null,
-          {},
-          false,
+          COMPANION_BY_MONSTER[s.forge.team[0] ?? 'mousse'] ?? null,
+          run.companionSkills,
+          run.companionKo,
           run.modules.map((m) => m.id),
         ),
       );

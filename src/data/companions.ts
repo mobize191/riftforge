@@ -51,7 +51,7 @@ export const COMPANIONS: CompanionDef[] = [
     family: 'spore',
     support: 'soin',
     skills: [
-      { id: 'soin-simple', name: 'Soin simple', kind: 'heal', powerPerLevel: 2, maxLevel: 3, unlockTier: 1 }, // TODO-BALANCE
+      { id: 'soin-simple', name: 'Soin simple', kind: 'heal', powerPerLevel: 1, maxLevel: 3, unlockTier: 1 }, // TODO-BALANCE (R11-06 : 2->1 pour tenir la bande avec compagnon soigneur)
       { id: 'antidote', name: 'Antidote', kind: 'purify', powerPerLevel: 1, maxLevel: 1, unlockTier: 2 }, // TODO-BALANCE
       { id: 'bouclier-ally', name: 'Barrière', kind: 'shield', powerPerLevel: 3, maxLevel: 2, unlockTier: 3 }, // TODO-BALANCE
       { id: 'soin-rapide', name: 'Soin rapide', kind: 'heal', powerPerLevel: 3, maxLevel: 2, unlockTier: 4 }, // TODO-BALANCE

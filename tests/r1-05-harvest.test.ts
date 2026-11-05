@@ -39,7 +39,7 @@ describe('R1-05 harvest & progression', () => {
     const lvl0 = s.run!.playerLevel;
     s = reduce(s, { type: 'ENTER_COMBAT', enemies: ['mousse', 'sporeling'] });
     s = reduce(s, { type: 'EXIT_COMBAT', victory: true, loot: { credits: 5, orbs: [], kills: 6, essence: 1, minerai: 1, captured: [] } });
-    expect(s.run!.xp).toBe(6 * 2); // R11-03 (E3) : 4 kills x XP_PER_KILL_BY_BIOME[0] (= 2)
+    expect(s.run!.xp).toBe(6 * 1); // R11-03/R11-06 (E3) : 6 kills x XP_PER_KILL_BY_BIOME[0] (= 1)
     expect(s.run!.playerLevel).toBeGreaterThan(lvl0);
     expect(s.run!.playerMaxHp).toBeGreaterThan(20);
   });

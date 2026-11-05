@@ -79,10 +79,10 @@ describe('jouer avec son compagnon — flux complet', () => {
       const refused = combatReduce(cPlayerTurn, { type: 'USE_COMPANION_SKILL', skillId: 'soin-simple' });
       expect(refused).toBe(cPlayerTurn);
     }
-    // au tour du compagnon : soin effectif (2 PV/niveau x niv 2 = +4)
+    // au tour du compagnon : soin effectif (1 PV/niveau x niv 2 = +2, R11-06)
     c = { ...c, player: { ...c.player, hp: 5 } };
     const c2 = combatReduce(c, { type: 'USE_COMPANION_SKILL', skillId: 'soin-simple' });
-    expect(c2.player.hp).toBe(9);
+    expect(c2.player.hp).toBe(7); // 5 + 2 (soin-simple niv 2 x 1 PV, R11-06)
     expect(c2.log.some((l) => l.includes(c.companion!.name))).toBe(true);
   });
 

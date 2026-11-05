@@ -9,6 +9,7 @@ import { isWall, type LevelMap } from '../src/core/run/generate';
 import { MONSTERS_BY_FAMILY, MONSTER_BY_ID } from '../src/data/monsters';
 import { RECIPES, RECIPE_BY_ID } from '../src/data/recipes';
 import { BALANCE } from '../src/data/balance';
+import { fullRun as fullRunShared } from './helpers/simbot';
 import { BOSS_BY_ID } from '../src/data/bosses';
 import { affinityMultiplier } from '../src/data/affinities';
 import { craftAndFuseAll } from './helpers/modules';
@@ -196,7 +197,7 @@ describe('R9-01 équilibrage final (1000 runs complètes, bande §SPEC-2)', () =
     const N = process.env.SIM_RUNS_FINAL ? parseInt(process.env.SIM_RUNS_FINAL, 10) : 1000; // bande §SPEC-2 : N=1000 requis
     let wins = 0;
     for (let seed = 1; seed <= N; seed++) {
-      if (fullRun((seed * 2654435761) >>> 0).won) wins++;
+      if (fullRunShared((seed * 2654435761) >>> 0).won) wins++; // R11-06 : bot partagé (E1 + compagnon + niveaux)
     }
     const rate = wins / N;
     console.log(
