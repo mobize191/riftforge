@@ -35,10 +35,10 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
 }
 
 /** Déambule sur la carte en « épouvantail » (rangées) jusqu'à déclencher un combat. */
-async function marcherJusquAuCombat(page: Page): Promise<void> {
+async function marcherJusquAuCombat(page: Page): Promise<boolean> {
   let horiz = 'Droite';
   for (let i = 0; i < 900; i++) {
-    if (await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false)) return;
+    if (await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false)) return true;
     const horizBouge = await bouger(page, horiz);
     if (horizBouge === null) {
       // Mur horizontal : on descend d'une rangée (ou on remonte si bloqué) et on inverse.
@@ -46,6 +46,7 @@ async function marcherJusquAuCombat(page: Page): Promise<void> {
       horiz = horiz === 'Droite' ? 'Gauche' : 'Droite';
     }
   }
+  return false;
 }
 
 /** Descend et tente la capture. Retourne true si VICTOIRE atteinte. */
@@ -56,6 +57,15 @@ async function tenterCapture(page: Page): Promise<boolean> {
 
   await page.getByRole('button', { name: 'Nouvelle descente' }).click();
   await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
+  // R11-07 (CI) : stash de la run seed 1 (déterministe) pour l'étape 5, sans Redescendre aléatoire
+  await page.evaluate(() => {
+    const ls = window.localStorage;
+    const raw = ls.getItem('riftforge-save');
+    if (raw) {
+      const origSet = Storage.prototype.setItem;
+      origSet.call(ls, '__run-stash', JSON.stringify(JSON.parse(raw).state.run));
+    }
+  });
   await page.screenshot({ path: `${SHOTS}/02-carte.png` });
 
   await marcherJusquAuCombat(page);
@@ -77,6 +87,33 @@ async function tenterCapture(page: Page): Promise<boolean> {
     await page.waitForTimeout(120);
   }
   return (await page.getByRole('heading', { name: /VICTOIRE/ }).isVisible().catch(() => false));
+}
+
+
+/** Réinjecte la run seed 1 stashée (déterministe) et reprend la run — évite Redescendre (seed aléatoire, lent/flaky en CI). */
+async function rejouerRunSeed1(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const ls = window.localStorage;
+    const raw = ls.getItem('riftforge-save');
+    if (!raw) throw new Error('save absente');
+    const stash = ls.getItem('__run-stash');
+    if (!stash) throw new Error('run seed 1 non stashée');
+    const file = JSON.parse(raw);
+    const r = JSON.parse(stash);
+    r.encounter = null;
+    r.playerPos = { x: 1, y: 1 };
+    // SET_TEAM n'est persisté qu'au pagehide : on force l'équipe depuis le roster (étape 4)
+    if (file.state.forge.roster.length > 0) file.state.forge.team = [file.state.forge.roster[0]];
+    file.state.mode = 'RUN';
+    file.state.run = r;
+    const origSet = Storage.prototype.setItem;
+    origSet.call(ls, 'riftforge-save', JSON.stringify(file));
+    Storage.prototype.setItem = function () {};
+  });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'RIFTFORGE' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
 }
 
 test('parcours compagnon : capture -> écurie -> équipe -> combat', async ({ page }) => {
@@ -106,10 +143,9 @@ test('parcours compagnon : capture -> écurie -> équipe -> combat', async ({ pa
   await expect(page.getByRole('button', { name: /✓ En équipe/ })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/07-equipe.png` });
 
-  // 5. Redescente : le compagnon apparaît au combat.
-  await page.getByRole('button', { name: 'Redescendre' }).click();
-  await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
-  await marcherJusquAuCombat(page);
+  // 5. Re-descente déterministe (run seed 1) : le compagnon apparaît au combat.
+  await rejouerRunSeed1(page);
+  expect(await marcherJusquAuCombat(page)).toBe(true);
   await expect(page.getByRole('heading', { name: /COMBAT/ })).toBeVisible();
   await expect(page.getByText(/Au tour de/).first()).toBeVisible();
   await expect(page.getByText(/Compagnon :/).first()).toBeVisible();
