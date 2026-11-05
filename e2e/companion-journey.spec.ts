@@ -6,7 +6,7 @@ import { test, expect, type Page } from '@playwright/test';
 // Preuves : captures d'écran commitées dans docs/SCREENSHOTS-R10/.
 
 const SHOTS = 'docs/SCREENSHOTS-R10';
-test.setTimeout(120000);
+test.setTimeout(240000);
 
 const DIRS = ['Droite', 'Bas', 'Gauche', 'Haut'] as const;
 

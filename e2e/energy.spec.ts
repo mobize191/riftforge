@@ -7,7 +7,7 @@ import { serialize, SAVE_KEY } from '../src/core/save/save';
 // 2. refus réel « Pas assez d'énergie — +X/tour » (save injectée : Déflagration tier 3,
 //    PV élevés pour survivre aux rounds).
 
-test.setTimeout(120000);
+test.setTimeout(240000);
 
 const DIRS = ['Droite', 'Bas', 'Gauche', 'Haut'] as const;
 

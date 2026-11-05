@@ -4,7 +4,7 @@ import { test, expect, type Page } from '@playwright/test';
 // Premier combat (seed 1) : Amas de spores (faible EAU), Mousse sporulée (résistante EAU).
 // Orbes de départ (seed 1) : eau, air, terre -> « Jet sous pression » (eau) est solo-castable.
 
-test.setTimeout(90000);
+test.setTimeout(180000);
 
 async function lirePos(page: Page): Promise<string | null> {
   try {

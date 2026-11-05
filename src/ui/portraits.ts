@@ -31,7 +31,7 @@ export const PORTRAIT_FILE: Record<string, string> = {
   'noeud-final': 'noeud-final.png',
   marchand: 'marchand.png',
   constructeur: 'constructeur.png',
-  liaiseuse: 'liaiseuse.png', // à venir — fallback code-gen
+  liaiseuse: 'liaiseuse.png', // déposé (R10-08)
 };
 
 // id d'ennemi de combat (peut être « boss:x-0 » ou « elite-mousse-0 ») -> id d'entité

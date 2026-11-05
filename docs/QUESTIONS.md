@@ -63,9 +63,8 @@ Classées par itération / thème. Les questions de playtest résolues par des f
 - Q7-1 (choix R7-04) : la « ressource spéciale exclusive » des modificateurs de Faille
   est l'optifibre (biome 4) + bonus crédits/essence — plutôt qu'une 9e ressource. OK ?
 
-## Q10-1 — 404 sur assets/portraits/*.png en headed (session R10-08)
+## Q10-1 — RÉSOLU (session R10-08) : portraits IA déposés
 
-Les portraits IA ne sont pas encore déposés dans public/assets/portraits/ ; le fallback
-code-gen (R9-07) prend le relais, mais chaque chargement logue un 404 console. Décision :
-laisser le fallback (aucun écran vide), déposer les vrais PNG à la prochaine session
-réseau (Q6-3). Non bloquant.
+24 portraits (512x512, ~10 Mo) copiés de out/assets/portraits/ vers public/assets/portraits/
+selon la convention ASSETS.md. Preuve navigateur : 3/3 portraits chargés en combat, 0 404
+(scripts/probe-portraits.mjs, capture docs/SCREENSHOTS-R10/17-combat-portraits-ia.png).

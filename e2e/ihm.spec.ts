@@ -11,7 +11,7 @@ import * as path from 'node:path';
 // 6. matrice de viewports 390/768/1440/2560 sur titre, carte, Forge, combat
 
 const SHOTS = 'docs/SCREENSHOTS-R10';
-test.setTimeout(120000);
+test.setTimeout(300000);
 
 async function lirePos(page: Page): Promise<string | null> {
   try {

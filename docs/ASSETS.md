@@ -3,8 +3,8 @@
 > 23 portraits générés par IA (Mistral) pour Riftforge, style anime cel-shadé cohérent,
 > palettes par biome respectées (cf. `BIOME_PALETTES` dans `src/data/biomes.ts`).
 > Licence : générés pour ce projet — utilisation libre dans Riftforge, tous droits réservés au projet.
-> **Les fichiers seront déposés par l'humain dans `public/assets/portraits/`** (table ci-dessous).
-> Jusqu'à leur dépôt, le fallback code-gen reste la règle (BRIEF-6-9 §2) — aucune attente bloquante.
+> **Fichiers déposés dans `public/assets/portraits/`** (session R10-08, 24 portraits, 512x512, ~10 Mo).
+> Tant qu'un fichier est absent, le fallback code-gen reste la règle (BRIEF-6-9 §2) — jamais d'écran vide.
 
 ## Convention de nommage (fichets attendus dans `public/assets/portraits/`)
 
@@ -33,7 +33,7 @@
 | noeud-final.png | boss noeud-final | boss biome 4 |
 | marchand.png | PNJ Marchand | écran Forge (§SPEC-6.2) |
 | constructeur.png | PNJ Constructeur | écran Forge |
-| liaiseuse.png | PNJ Liaiseuse | écran Forge (R8-04) — à venir |
+| liaiseuse.png | PNJ Liaiseuse | écran Forge (R8-04) — déposé |
 
 ## Intégration attendue (quand les fichiers seront présents)
 

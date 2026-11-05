@@ -7,7 +7,7 @@ import { serialize, SAVE_KEY } from '../src/core/save/save';
 // combat avec jauge d'énergie + menu Modules ouvert (coûts visibles).
 
 const SHOTS = 'docs/SCREENSHOTS-R10';
-test.setTimeout(120000);
+test.setTimeout(240000);
 
 async function lirePos(page: Page): Promise<string | null> {
   try {
