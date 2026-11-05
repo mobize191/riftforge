@@ -39,16 +39,71 @@ Dans l'ordre strict (cf. `docs/BRIEF-R11.md`, chaque ticket liste ses « Skills 
 
 ## Environnement e2e (IMPORTANT — pièges du sandbox)
 
-1. **`PORT=3030` est défini dans l'environnement du sandbox** et le port 3030 est détenu par PID 1 (`sandbox-executor`, non tuable). `scripts/serve-e2e.mjs` lit `process.env.PORT ?? 4173` → il faut **toujours** lancer : `PORT=4173 pnpm test:e2e`.
-2. **Navigateur Playwright** : `pnpm exec playwright install chromium` (déjà fait — cache `/home/appuser/.cache/ms-playwright/`, shell 156.0.8078.4 v1248).
-3. **Bibliothèques système manquantes** (sandbox Debian 13 sans root, pas de libglib etc.) : dépendances extraites localement dans `/home/appuser/pw-libs/root` via `python3 /tmp/resolve.py` (télécharge les .deb trixie et `dpkg -x`). Lancer le navigateur avec :
-   ```
-   LD_LIBRARY_PATH=/home/appuser/pw-libs/root/usr/lib/x86_64-linux-gnu:/home/appuser/pw-libs/root/lib/x86_64-linux-gnu
-   FONTCONFIG_PATH=/home/appuser/pw-libs/root/etc/fonts
-   ```
-   Pour Playwright, exporter ces deux variables avant `pnpm test:e2e` (Playwright hérite de l'environnement). Test manuel OK : `--dump-dom about:blank` rend `<html>`.
-   ⚠️ `/tmp` peut être vidé entre sessions : si `resolve.py`/le pickle disparaissent, régénérer l'index (`Packages.gz` trixie main amd64 sur deb.debian.org) et relancer le résolveur (seeds t64 : libasound2t64, libatk1.0-0t64, libatk-bridge2.0-0t64, libatspi2.0-0t64, libglib2.0-0t64, libdbus-1-3, libgbm1, libnspr4, libnss3, libx11-6, libxcb1, libxcomposite1, libxdamage1, libxext6, libxfixes3, libxkbcommon0, libxrandr2, fontconfig, fonts-liberation).
-4. **Corruption de session** : lors de cette session, des payloads d'outils longs ont été corrompus (insertions de sauts de ligne) et `fuseModules.ts` a dû être réécrit. Si un fichier semble altéré sans raison : vérifier `git diff` avant tout commit.
+### Faire fonctionner Chromium (recette COMPLÈTE, vérifiée de bout en bout)
+
+Un agent précédent a échoué ici. La recette ci-dessous a été testée à froid
+(dossier `~/pw-libs` supprimé puis régénéré) et validée par un run e2e réel
+(`e2e/smoke.spec.ts` : 3 passed).
+
+Le sandbox est Debian 13 (trixie), utilisateur `appuser`, **sans root et sans
+aucune lib système de Chromium** (pas de libglib, libnss, libX11...). Il faut
+donc : (1) installer le navigateur Playwright, (2) extraire les libs Debian
+dans le home, (3) exporter 2 variables d'environnement.
+
+Étape 1 — navigateur Playwright (une fois par sandbox) :
+
+```bash
+pnpm exec playwright install chromium
+```
+
+Étape 2 — libs système + polices (une fois par sandbox, ~1 min) :
+
+```bash
+python3 scripts/setup-pw-libs.py
+```
+
+Le script (idempotent) télécharge l'index Debian trixie, résout les
+dépendances des libs de runtime Chromium (19 paquets racine, suffixes t64),
+les extrait via `dpkg -x` dans `~/pw-libs/root` et écrit
+`~/pw-libs/fonts.conf`. Il est conservé dans le repo précisément pour ça.
+
+Étape 3 — environnement OBLIGATOIRE avant tout run Playwright :
+
+```bash
+export LD_LIBRARY_PATH=$HOME/pw-libs/root/usr/lib/x86_64-linux-gnu:$HOME/pw-libs/root/lib/x86_64-linux-gnu
+export FONTCONFIG_FILE=$HOME/pw-libs/fonts.conf
+```
+
+Étape 4 — lancement (le port NE DOIT PAS être 3030) :
+
+```bash
+PORT=4173 pnpm test:e2e
+```
+
+Pièges connus :
+- **`PORT=3030` est défini dans l'environnement du sandbox** et le port 3030
+  est détenu par PID 1 (`sandbox-executor`, non tuable). `serve-e2e.mjs` lit
+  `process.env.PORT ?? 4173` → sans `PORT=4173` explicite, le webServer meurt
+  en `EADDRINUSE 127.0.0.1:3030`. C'est LE piège n°1.
+- **`FONTCONFIG_FILE` (pas `FONTCONFIG_PATH`)** : le fonts.conf par défaut
+  pointe vers `/usr/share/fonts` (inexistant ici). Sans polices, les captures
+  e2e rendent du texte en tofu. `scripts/setup-pw-libs.py` écrit un
+  fonts.conf qui pointe vers `~/pw-libs/root/usr/share/fonts`
+  (Liberation, 20 fontes — vérifié avec `fc-list`).
+- Les messages `dbus/bus.cc: Failed to connect to the bus` au lancement de
+  chrome sont **bénins** (pas de bus système dans le sandbox).
+- Le sandbox Playwright par défaut désactive la sandbox Chromium
+  (`chromiumSandbox: false`) — pas besoin de `--no-sandbox` manuel.
+- Vérification rapide hors Playwright :
+  ```bash
+  LD_LIBRARY_PATH=$HOME/pw-libs/root/usr/lib/x86_64-linux-gnu:$HOME/pw-libs/root/lib/x86_64-linux-gnu \
+  FONTCONFIG_FILE=$HOME/pw-libs/fonts.conf \
+  $HOME/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell \
+    --headless --dump-dom about:blank | grep -c "<html"   # doit afficher 1
+  ```
+- `/tmp` peut être vidé entre sessions : le script régénère tout
+  (`/tmp/pw-pkgs.pkl` index, `/tmp/pw-debs` .debs). `~/pw-libs` survit tant
+  que le sandbox vit ; en cas de doute, relancer l'étape 2 (idempotent).
 
 ## Commandes de reprise
 
@@ -56,8 +111,10 @@ Dans l'ordre strict (cf. `docs/BRIEF-R11.md`, chaque ticket liste ses « Skills 
 cd /workspace/github__mobize191__riftforge
 pnpm vitest run                       # suite complète (85 fichiers / 277 tests)
 pnpm build                            # build statique -> out/
-export LD_LIBRARY_PATH=/home/appuser/pw-libs/root/usr/lib/x86_64-linux-gnu:/home/appuser/pw-libs/root/lib/x86_64-linux-gnu
-export FONTCONFIG_PATH=/home/appuser/pw-libs/root/etc/fonts
+# si ~/pw-libs n'existe pas ou navigateur absent : voir « Faire fonctionner Chromium »
+python3 scripts/setup-pw-libs.py && pnpm exec playwright install chromium
+export LD_LIBRARY_PATH=$HOME/pw-libs/root/usr/lib/x86_64-linux-gnu:$HOME/pw-libs/root/lib/x86_64-linux-gnu
+export FONTCONFIG_FILE=$HOME/pw-libs/fonts.conf
 PORT=4173 pnpm test:e2e               # e2e complet (webServer sur 4173, JAMAIS 3030)
 ```
 
