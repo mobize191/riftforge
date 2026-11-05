@@ -148,3 +148,15 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
 - **Fix** : R10-06 lit `SIM_RUNS_FINAL` (comme R9-01, « bande §SPEC-2 : N=1000 requis »)
   au lieu de `SIM_RUNS` — la bande est toujours mesurée à N=1000, en local comme en CI.
   Commentaire du workflow mis à jour en conséquence.
+
+## B38 — sprites de carte : portraits PNG affichés à leur taille native (recouvrent la carte)
+
+- **Vu** : depuis le dépôt des portraits IA dans `public/assets/portraits/`, la carte
+  affiche les monstres et le héros avec le PNG natif (~1024 px) — chaque sprite recouvre
+  une large zone de plusieurs cases au lieu d'une. Les fallbacks code-gen (`makeTextures`,
+  32 px) masquaient le bug tant que les PNG n'existaient pas (R9-07 « downscalés en
+  textures 32 px » n'était jamais exécuté sur un vrai PNG).
+- **Fix** : `MapScene` passe par `addEntitySprite()` : toute texture de portrait
+  (`p-*`) reçoit `setDisplaySize(TILE, TILE)` à la création, et est re-bornée après
+  `setTexture` dans `syncSprites()` (recréation / repositionnement des monstres).
+  Les fallbacks restent inchangés (déjà à la taille d'une case).

@@ -167,6 +167,15 @@ export class MapScene extends Phaser.Scene {
     return this.textures.exists(`p-${id}`) ? `p-${id}` : fallback;
   }
 
+  // B38 : un portrait PNG (natif ~1024 px) doit tenir dans UNE case (TILE) — sinon il
+  // recouvre une large zone de la carte. Les fallbacks code-gen (makeTextures) sont déjà
+  // générés à la taille d'une case et ne sont pas retouchés.
+  private addEntitySprite(x: number, y: number, key: string): Phaser.GameObjects.Image {
+    const spr = this.add.image(x, y, key);
+    if (key.startsWith('p-')) spr.setDisplaySize(TILE, TILE);
+    return spr;
+  }
+
   create(): void {
     makeTextures(this, this.palette);
     this.add.image(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, 'floor');
@@ -203,7 +212,7 @@ export class MapScene extends Phaser.Scene {
       this.altarSprites.set(this.keyOf(altar), spr);
     }
     this.level.monsters.forEach((m, i) => {
-      const spr = this.add.image(
+      const spr = this.addEntitySprite(
         m.pos.x * TILE + TILE / 2,
         m.pos.y * TILE + TILE / 2,
         this.spriteFor(entityIdOf(m.id), 'monster'),
@@ -211,7 +220,7 @@ export class MapScene extends Phaser.Scene {
       this.monsterSprites.set(i, spr);
     });
 
-    this.player = this.add.image(
+    this.player = this.addEntitySprite(
       this.pos.x * TILE + TILE / 2,
       this.pos.y * TILE + TILE / 2,
       this.spriteFor('heros', 'player'),
@@ -274,9 +283,11 @@ export class MapScene extends Phaser.Scene {
       this.monsterSprites.delete(i);
     }
     alive.forEach((m: PlacedMonster, i: number) => {
-      const spr = this.monsterSprites.get(i) ?? this.add.image(0, 0, this.spriteFor(entityIdOf(m.id), 'monster'));
+      const key = this.spriteFor(entityIdOf(m.id), 'monster');
+      const spr = this.monsterSprites.get(i) ?? this.addEntitySprite(0, 0, key);
       this.monsterSprites.set(i, spr);
-      spr.setTexture(this.spriteFor(entityIdOf(m.id), 'monster'));
+      spr.setTexture(key);
+      if (key.startsWith('p-')) spr.setDisplaySize(TILE, TILE); // B38 : re-borné après setTexture
       spr.setPosition(m.pos.x * TILE + TILE / 2, m.pos.y * TILE + TILE / 2);
     });
   }
