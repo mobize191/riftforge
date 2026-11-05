@@ -137,6 +137,7 @@ export function initialState(): GameState {
       workers: {},
       buildings: { ...STARTING_BUILDINGS, [LAB.id]: 1 },
       pendingTicks: {},
+      notice: null, // R11-02 (E2) — message FR explicite (ex. refus de départ), jamais de null silencieux
     },
     run: null,
   };
@@ -146,6 +147,19 @@ export function reduce(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_RUN': {
       if (state.mode !== 'FORGE' && state.mode !== 'RETOUR') return state;
+      // R11-02 (E2) — fin du null silencieux : un compagnon d'équipe sans définition
+      // de compagnon = refus EXPLICITE avec message FR (jamais de départ en run avec
+      // un compagnon muet).
+      const teamMonster0 = state.forge.team[0];
+      if (teamMonster0 && !COMPANION_BY_MONSTER[teamMonster0]) {
+        return {
+          ...state,
+          forge: {
+            ...state.forge,
+            notice: `Refus de départ : le compagnon « ${state.forge.companionNames[teamMonster0] ?? teamMonster0} » n'a pas de définition de compagnon. Retirez-le de l'équipe à l'écurie.`,
+          },
+        };
+      }
       const biomeIndex = Math.max(0, Math.min(BIOME_ORDER.length - 1, action.biomeIndex ?? 0));
       const { id: biomeId, def: biomeDef } = biomeStructureOf(biomeIndex);
       const familyIds = MONSTERS_BY_FAMILY[biomeDef.family].map((m) => m.id);
@@ -162,26 +176,21 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // R8-02 : bonus de palier de lien, appliqué EN RUN uniquement si compagnon en équipe.
       const maxHp = BALANCE.START_PLAYER_HP + bonus.hp + bondHpBonus(state);
       const attack = BALANCE.PLAYER_ATTACK + bonus.attack;
-      // 1 compétence initiale débloquée aléatoirement si un compagnon est en équipe (§SPEC-7.2).
-      let companionSkills: Record<string, number> = {};
+      // R11-02 (E2) : compétences débloquées = palier de lien >= unlockTier (1 compétence
+      // par palier 1→5, docs/COMPANIONS-R11.md). Plus de tirage aléatoire.
+      const companionSkills: Record<string, number> = {};
       const teamMonster = state.forge.team[0];
       const teamDef = teamMonster ? COMPANION_BY_MONSTER[teamMonster] : undefined;
       if (teamDef) {
-        const initial = rng.pick(teamDef.skills);
-        companionSkills = { [initial.id]: 1 };
-        // R8-02 : palier 5 = capacité signature -> +1 niveau sur toutes les compétences débloquées
         const tier = state.forge.bondTier[teamMonster] ?? 1;
-        if (tier >= 5) {
-          for (const s of teamDef.skills) {
-            if ((companionSkills[s.id] ?? 0) > 0) {
-              companionSkills[s.id] = Math.min(s.maxLevel, SKILL_MAX_LEVEL, (companionSkills[s.id] ?? 0) + 1);
-            }
-          }
+        for (const s of teamDef.skills) {
+          if (tier >= s.unlockTier) companionSkills[s.id] = 1;
         }
       }
       return {
         ...state,
         mode: 'RUN',
+        forge: { ...state.forge, notice: null },
         run: {
           // Les orbes composites de la Forge se portent en run ; le reste repart de zéro (§SPEC-2).
           orbs: [...startOrbs, ...state.forge.orbStock],
@@ -304,12 +313,17 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const team = action.monsterIds
         .filter((id) => state.forge.roster.includes(id))
         .slice(0, 1);
+      // R11-02 (E2) : retirer un compagnon sans def de l'équipe efface le refus de départ.
+      const notice =
+        state.forge.team[0] && !COMPANION_BY_MONSTER[state.forge.team[0]] && team[0] !== state.forge.team[0]
+          ? null
+          : state.forge.notice;
       // exclusivité dans l'autre sens : un nouveau membre d'équipe quitte son poste de worker
       const workers2 = Object.fromEntries(
         Object.entries(state.forge.workers).map(([b, list]) => [b, list.filter((w) => !team.includes(w))]),
       );
       for (const b of Object.keys(workers2)) if (workers2[b].length === 0) delete workers2[b];
-      return { ...state, forge: { ...state.forge, team, workers: workers2 } };
+      return { ...state, forge: { ...state.forge, team, workers: workers2, notice } };
     }
     case 'ASSIGN_WORKER': {
       if (state.mode !== 'FORGE') return state;
@@ -423,6 +437,9 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (!def) return state;
       const skill = def.skills.find((s) => s.id === action.skillId);
       if (!skill) return state;
+      // R11-02 : seules les compétences débloquées (palier de lien >= unlockTier) montent.
+      const tier = state.forge.bondTier[teamMonster] ?? 1;
+      if (tier < skill.unlockTier) return state;
       const level = state.run.companionSkills[action.skillId] ?? 0;
       if (level === 0 || level >= Math.min(skill.maxLevel, SKILL_MAX_LEVEL)) return state;
       const cost = SKILL_UPGRADE_ORB_COSTS[level];
@@ -445,12 +462,14 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const teamMonster = state.forge.team[0];
       const def = teamMonster ? COMPANION_BY_MONSTER[teamMonster] : undefined;
       if (!def) return state;
+      const tier = state.forge.bondTier[teamMonster] ?? 1;
       return {
         ...state,
         run: {
           ...state.run,
           pendingMilestone: false,
-          companionSkills: applyChoice(state.run.companionSkills, action.choice, def),
+          // R11-02 : déblocage par palier de lien (unlockTier), plus de prérequis en chaîne.
+          companionSkills: applyChoice(state.run.companionSkills, action.choice, def, tier),
         },
       };
     }

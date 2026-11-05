@@ -211,6 +211,7 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
 
 ### 7.2 En combat — arbre de compétences et jalons à 3 choix
 
+- **Amendement E2 (R11) — tous les monstres capturables sont jouables** : chaque monstre des 4 familles a une définition de compagnon (support, arbre de 5 compétences, textes FR) — design autoritatif dans `docs/COMPANIONS-R11.md`. **Une compétence par palier de lien** : la compétence N se débloque au palier de lien N (1→5), le palier 5 = capacité signature ⬔ ; `unlockTier` remplace l'ancien prérequis en chaîne `requires`. Les jalons (1 par biome) continuent de donner de l'XP de lien mais ne débloquent plus directement de compétences. Les orbes renforcent ensuite les compétences débloquées (coûts existants 3/5/10). Nouveaux kinds de compétences : `stun`, `drain`, `debuff-atk`, `buff-energy`, `capture-bonus` (+ `purify`). Élites : mêmes arbres, valeurs ×2. **Plus jamais de null silencieux** : un compagnon d'équipe sans def = refus explicite (message FR) au départ en run et marqueur visible à l'écurie.
 - 0-2 compagnons accompagnent le joueur (slots d'équipe).
 - **Chaque compagnon a un Support** — sa spécialité : **soins**, **dégâts de zone**, **affaiblissements**, **capture**… — et un **arbre de compétences propre** (**5 compétences en V1**, ~7-8 à terme). **Ils ne fusionnent pas d'orbes.**
 - **Pas de mana** (cohérent avec le joueur) : leurs compétences actives sont gratuites une fois débloquées.

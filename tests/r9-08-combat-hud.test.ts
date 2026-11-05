@@ -13,7 +13,7 @@ describe('HUD combat : acteur courant et effets de modules', () => {
     for (let seed = 1; seed <= 50 && !found; seed++) {
       const c = startCombat(seed, 20, 20, 4, ['mousse'], [], COMPANION_BY_MONSTER['mousse'], { 'soin-simple': 1 });
       if (c.phase === 'player' && c.order[c.actorIdx % c.order.length] === 'companion') {
-        expect(actorLabel(c)).toContain('Mousse recrue');
+        expect(actorLabel(c)).toContain('Mousse sporulée');
         found = true;
       }
     }

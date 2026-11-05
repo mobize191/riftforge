@@ -41,7 +41,18 @@ function withBuildingPosDefaults(save: SaveFile): SaveFile {
   return { ...save, version: 6, state: { ...save.state, forge: { ...f, buildingPos: f.buildingPos ?? {} } as typeof save.state.forge } };
 }
 
+// R11-02 : champ forge.notice ajouté sans bump de version (rempli par défaut, rétrocompatible).
+function withNoticeDefault(save: SaveFile): SaveFile {
+  const f = save.state.forge as Partial<typeof save.state.forge>;
+  if (f.notice !== undefined) return save;
+  return { ...save, state: { ...save.state, forge: { ...f, notice: null } as typeof save.state.forge } };
+}
+
 export function migrate(save: SaveFile): SaveFile {
+  return withNoticeDefault(migrateInner(save));
+}
+
+function migrateInner(save: SaveFile): SaveFile {
   if (save.version === 5) {
     // v5 -> v6 (B29) : placement des bâtiments sur la grille de la Forge
     const f = save.state.forge as Partial<typeof save.state.forge>;

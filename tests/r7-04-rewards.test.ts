@@ -39,13 +39,13 @@ describe('R7-04 récompenses exclusives de Faille', () => {
       }
     }
     expect(captured.some((id) => id.startsWith('elite-'))).toBe(true);
-    // le compagnon élite existe en data avec des soins supérieurs au compagnon de base
+    // le compagnon élite existe en data avec des valeurs supérieures au compagnon de base (R11-02 : x2)
     const elite = COMPANION_BY_MONSTER['elite-mousse'];
     const base = COMPANION_BY_MONSTER['mousse'];
     expect(elite).toBeDefined();
     expect(elite!.name).toContain('Élite');
-    const eliteHeal = elite!.skills.reduce((a, s) => a + s.healPerLevel, 0);
-    const baseHeal = base!.skills.reduce((a, s) => a + s.healPerLevel, 0);
-    expect(eliteHeal).toBeGreaterThan(baseHeal);
+    const elitePower = elite!.skills.reduce((a, s) => a + s.powerPerLevel, 0);
+    const basePower = base!.skills.reduce((a, s) => a + s.powerPerLevel, 0);
+    expect(elitePower).toBe(basePower * 2);
   });
 });

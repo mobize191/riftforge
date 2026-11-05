@@ -142,9 +142,11 @@ describe('jouer avec son compagnon — flux complet', () => {
     s = reduce(s, { type: 'NEXT_FLOOR' }); // sol 3
     expect(s.run!.pendingMilestone).toBe(true);
     const before = { ...s.run!.companionSkills };
-    s = reduce(s, { type: 'RESOLVE_MILESTONE', choice: { kind: 'unlock', skillId: 'bouclier-ally' } });
+    // R11-02 (E2) : déblocage par palier de lien — un jalon ne débloque que si le palier
+    // est atteint ; ici palier 1, donc on monte la compétence déjà débloquée.
+    s = reduce(s, { type: 'RESOLVE_MILESTONE', choice: { kind: 'upgrade', skillId: 'soin-simple' } });
     expect(s.run!.pendingMilestone).toBe(false);
-    expect(Object.keys(s.run!.companionSkills).length).toBeGreaterThan(Object.keys(before).length);
+    expect(s.run!.companionSkills['soin-simple']).toBe((before['soin-simple'] ?? 0) + 1);
   });
 
   it('victoire partagée -> XP de lien au retour (compagnon vivant)', () => {

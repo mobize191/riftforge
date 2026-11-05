@@ -10,6 +10,7 @@ import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
 import { entityIdOf, isEliteId, portraitUrl, portraitFallbackUrl, bondTierTint, ELITE_TINT } from '../portraits';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
+import { companionSkillLabel } from '../../core/combat/combat';
 import type { Orb } from '../../core/types';
 
 export default function CombatScreen({
@@ -50,6 +51,10 @@ export default function CombatScreen({
   const soloModules = availableSoloModules(combat.orbs);
   const orbObjs: Orb[] = combat.orbs.map((el, i) => ({ id: `c${i}`, kind: 'primordial', element: el, tier: 1 }));
   const craftable = craftableRecipes(orbObjs, discovered).filter((r) => !combat.modules.includes(r.id));
+  // R11-02 (E2) : def du compagnon pour afficher les vraies compétences (noms/effets FR).
+  const compDef = combat.companion
+    ? Object.values(COMPANION_BY_MONSTER).find((d) => d.id === combat.companion!.defId)
+    : undefined;
   const createdModules = combat.modules
     .map((id) => RECIPES.find((r) => r.id === id))
     .filter((r): r is NonNullable<typeof r> => !!r);
@@ -148,11 +153,14 @@ export default function CombatScreen({
           <ul className="mt-1 text-sm opacity-80">
             {Object.entries(combat.companion.skills)
               .filter(([, lvl]) => lvl > 0)
-              .map(([skill, lvl]) => (
-                <li key={skill}>
-                  {skill} niv {lvl}
-                </li>
-              ))}
+              .map(([skillId, lvl]) => {
+                const sk = compDef?.skills.find((s) => s.id === skillId);
+                return (
+                  <li key={skillId}>
+                    {sk ? `${sk.name} — ${companionSkillLabel(sk)}` : skillId} niv {lvl}
+                  </li>
+                );
+              })}
           </ul>
           </div>
         </div>
@@ -220,20 +228,25 @@ export default function CombatScreen({
           </p>
           {Object.entries(combat.companion.skills)
             .filter(([, lvl]) => lvl > 0)
-            .map(([skillId, lvl]) => (
-              <button
-                key={skillId}
-                disabled={combat.companion!.ko || !isCompTurn}
-                onClick={() => {
-                  onAction({ type: 'USE_COMPANION_SKILL', skillId });
-                  setMenu('root');
-                }}
-                className="rounded border border-emerald-300 px-4 py-2 text-left disabled:opacity-40"
-                style={{ minHeight: '44px' }}
-              >
-                {skillId} niv {lvl} — gratuit{!isCompTurn ? ' (tour du compagnon requis)' : ''}
-              </button>
-            ))}
+            .map(([skillId, lvl]) => {
+              // R11-02 (E2) : seules les compétences débloquées (palier de lien) sont listées,
+              // avec leur nom et effet FR — plus jamais d'id brut.
+              const sk = compDef?.skills.find((s) => s.id === skillId);
+              return (
+                <button
+                  key={skillId}
+                  disabled={combat.companion!.ko || !isCompTurn}
+                  onClick={() => {
+                    onAction({ type: 'USE_COMPANION_SKILL', skillId });
+                    setMenu('root');
+                  }}
+                  className="rounded border border-emerald-300 px-4 py-2 text-left disabled:opacity-40"
+                  style={{ minHeight: '44px' }}
+                >
+                  {sk ? `${sk.name} niv ${lvl} — ${companionSkillLabel(sk)}` : `${skillId} niv ${lvl}`} — gratuit{!isCompTurn ? ' (tour du compagnon requis)' : ''}
+                </button>
+              );
+            })}
         </div>
       )}
 

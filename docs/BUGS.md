@@ -182,3 +182,18 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   (bande retrouvée : 0,200 %, morts biome 1 = 46,2 %).
 - **Test** : `tests/r9-01-final-balance.test.ts` et `tests/r10-06-resim.test.ts`
   (lecture `SIM_RUNS_FINAL`, B37) servent de gardes de régression — ils ont détecté le bug.
+
+## B40 — R11-02 (E2) : compagnon muet en combat (`?? null` silencieux dans App.tsx)
+
+- **Vu** : `COMPANION_BY_MONSTER` ne contenait que la Mousse (et son élite) ; capturer
+  n'importe quel autre monstre puis le mettre en équipe produisait `?? null` **silencieux**
+  dans `startCombat` (App.tsx) — le compagnon n'apparaissait jamais en combat.
+- **Fix** : 16 définitions de compagnon (4 familles × 4, `docs/COMPANIONS-R11.md` fait foi,
+  `unlockTier` remplace `requires`) + refus explicite au départ en run si un membre de
+  l'équipe n'a pas de def (`forge.notice`, message FR affiché à la Forge, `onDescend` ne
+  quitte pas l'écran) + marqueur « Définition de compagnon manquante » à l'écurie. Les 5
+  nouveaux kinds (`stun`, `drain`, `debuff-atk`, `buff-energy`, `capture-bonus`) sont
+  implémentés purs et seedés dans le core (`USE_COMPANION_SKILL`).
+- **Tests** : `tests/r11-02-companions.test.ts` (invariants §4 de COMPANIONS-R11.md, un
+  compagnon par famille rejoué en combat, refus explicite testé) + `e2e/companions-r11.spec.ts`
+  (arbre écurie + gremlin en combat 390 px + refus de départ, captures 15-17).

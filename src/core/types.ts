@@ -97,6 +97,7 @@ export interface ForgeState {
   workers: Record<string, string[]>;
   buildings: Record<string, number>;
   pendingTicks: Record<string, number>;
+  notice: string | null; // R11-02 (E2) — message FR explicite (refus de départ si compagnon sans def), jamais de null silencieux
 }
 
 export interface Position {

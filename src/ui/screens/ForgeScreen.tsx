@@ -12,6 +12,8 @@ import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
 import { canalizationSlots } from '../../core/forge/lab';
+import { COMPANION_BY_MONSTER, unlockedSkillsOf } from '../../data/companions';
+import { companionSkillLabel } from '../../core/combat/combat';
 import { portraitUrl } from '../portraits';
 import { useState } from 'react';
 
@@ -111,6 +113,12 @@ export default function ForgeScreen({
           </span>
         ))}
       </div>
+      {/* R11-02 (E2) — jamais de null silencieux : un refus explicite est affiché ici */}
+      {f.notice && (
+        <p role="alert" className="w-full max-w-xl rounded border border-red-400/70 bg-red-950/50 px-4 py-2 text-sm text-red-200">
+          {f.notice}
+        </p>
+      )}
 
       <section className="w-full max-w-xl">
         <h2 className="mb-2 font-semibold">Bâtiments</h2>
@@ -292,6 +300,38 @@ export default function ForgeScreen({
                 >
                   {(f.workers['extracteur'] ?? []).includes(id) ? '✓ Worker extracteur' : f.team.includes(id) ? 'En équipe' : '+ Worker extracteur'}
                 </button>
+                {/* R11-02 (E2) — garde-fou : compagnon de combat vs worker uniquement */}
+                <span className={`text-xs ${f.team.includes(id) ? 'text-emerald-300' : 'opacity-70'}`}>
+                  {f.team.includes(id) ? '⚔ compagnon de combat' : (f.workers['extracteur'] ?? []).includes(id) ? 'worker uniquement' : 'ni équipe ni worker'}
+                </span>
+                {/* R11-02 (E2) — arbre de compétences : 1 compétence par palier de lien 1→5 */}
+                {(() => {
+                  const def = COMPANION_BY_MONSTER[id];
+                  if (!def) {
+                    return (
+                      <p role="alert" className="w-full text-xs text-red-300">
+                        Définition de compagnon manquante pour « {id} » — non jouable en combat (départ en run refusé).
+                      </p>
+                    );
+                  }
+                  const tier = f.bondTier[id] ?? 1;
+                  return (
+                    <ul className="flex w-full flex-wrap gap-1 text-xs">
+                      {def.skills.map((s) => {
+                        const unlocked = tier >= s.unlockTier;
+                        return (
+                          <li
+                            key={s.id}
+                            className={`rounded border px-2 py-1 ${unlocked ? 'border-emerald-400/60' : 'border-slate-600 opacity-60'}`}
+                            title={unlocked ? companionSkillLabel(s) : `Verrouillée — palier de lien ${s.unlockTier} requis`}
+                          >
+                            Palier {s.unlockTier} · {s.name} — {unlocked ? companionSkillLabel(s) : `🔒 palier ${s.unlockTier} requis`}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  );
+                })()}
               </li>
             ))}
           </ul>

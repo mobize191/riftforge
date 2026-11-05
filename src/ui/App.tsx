@@ -18,7 +18,16 @@ import { craftableRecipes } from '../core/combat/createModule';
 import { achievableFusions } from '../core/combat/fuseModules';
 import { ELEMENTS } from '../data/elements';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
-import { COMPANION_BY_MONSTER } from '../data/companions';
+import { COMPANION_BY_MONSTER, type CompanionDef } from '../data/companions';
+
+// R11-02 (E2) — fin du null silencieux : si un compagnon d'équipe n'a pas de def,
+// le core REFUSE le départ en run avec un message FR explicite (forge.notice affiché
+// à la Forge) ; ce lookup ne peut donc plus renvoyer null sans message en pratique.
+function teamCompanionDef(monsterId: string | undefined): CompanionDef | null {
+  if (!monsterId) return null;
+  const def: CompanionDef | undefined = COMPANION_BY_MONSTER[monsterId];
+  return def ?? null;
+}
 import { playSound } from './audio';
 
 type View = 'title' | 'game' | 'forge';
@@ -123,7 +132,7 @@ export default function App() {
           state.run.playerAttack,
           state.run.encounter,
           state.run.orbs.map((o) => o.element).filter((e): e is NonNullable<typeof e> => e !== null),
-          state.forge.team[0] ? COMPANION_BY_MONSTER[state.forge.team[0]] ?? null : null,
+          teamCompanionDef(state.forge.team[0]),
           state.run.companionSkills,
           state.run.companionKo,
           state.run.modules.map((m) => m.id),
@@ -146,7 +155,7 @@ export default function App() {
           prev.run.playerAttack,
           enemies,
           prev.run.orbs.map((o) => o.element).filter((e): e is NonNullable<typeof e> => e !== null),
-          prev.forge.team[0] ? COMPANION_BY_MONSTER[prev.forge.team[0]] ?? null : null,
+          teamCompanionDef(prev.forge.team[0]),
           prev.run.companionSkills,
           prev.run.companionKo,
           prev.run.modules.map((m) => m.id),
@@ -317,7 +326,12 @@ export default function App() {
       saveToPort(createLocalStoragePort(), SAVE_KEY, serialize(next));
       return next;
     });
-    setView('game');
+    // R11-02 (E2) : si le départ est refusé (ex. compagnon sans def), on reste à la
+    // Forge et le message FR explicite (forge.notice) est affiché — jamais de null silencieux.
+    setState((prev) => {
+      if (prev && prev.mode === 'RUN') setView('game');
+      return prev;
+    });
   }, []);
 
   if (view === 'game' && state?.mode === 'COMBAT' && combat) {

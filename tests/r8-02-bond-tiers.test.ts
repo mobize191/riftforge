@@ -34,11 +34,11 @@ describe('R8-02 paliers de lien 1-5', () => {
     const base = reduce(initialState(), { type: 'START_RUN', seed: 1 });
     const withBond = reduce(s, { type: 'START_RUN', seed: 1 });
     expect(withBond.run!.playerMaxHp).toBe(base.run!.playerMaxHp + 8);
-    // palier 5 : capacité signature -> compétence initiale +1 niveau
+    // R11-02 (E2) : palier 5 = toutes les compétences débloquées (1 par palier 1→5, signature incluse)
     let s5 = initialState();
     s5 = { ...s5, forge: { ...s5.forge, roster: ['mousse'], team: ['mousse'], bondXp: { mousse: 90 }, bondTier: { mousse: 5 } } };
     const r5 = reduce(s5, { type: 'START_RUN', seed: 7 });
-    const skillId = Object.keys(r5.run!.companionSkills)[0];
-    expect(r5.run!.companionSkills[skillId]).toBe(2); // 1 (initial) + 1 (signature palier 5)
+    expect(Object.keys(r5.run!.companionSkills)).toHaveLength(5);
+    for (const lvl of Object.values(r5.run!.companionSkills)) expect(lvl).toBe(1);
   });
 });

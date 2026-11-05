@@ -11,7 +11,7 @@ import { BOSS_BY_ID } from '../../data/bosses';
 import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
 import { CHALLENGE_BY_ID, type ChallengeDef } from '../../data/challenges';
 import { BALANCE } from '../../data/balance';
-import { COMPANION_BY_MONSTER, type CompanionDef } from '../../data/companions';
+import { COMPANION_BY_MONSTER, type CompanionDef, type CompanionSkill } from '../../data/companions';
 import { ELITE, MONSTER_LEVEL_BONUS, BLURRED_AFFINITY_VALUES, RARE_ORBS } from '../../data/riftModifiers';
 import type { ElementId } from '../types';
 
@@ -30,6 +30,7 @@ export interface Combatant {
   hp: number;
   maxHp: number;
   attack: number;
+  atkDown: number; // R11-02 — debuff-atk des compétences de compagnon (ATQ effective = max(1, attack - atkDown))
   isPlayer: boolean;
   shield: number;
   stunned: boolean;
@@ -80,6 +81,7 @@ export interface CombatState {
   items: CombatItem[];
   orbs: ElementId[];
   loot: CombatLoot | null;
+  captureBonus: number; // R11-02 — bonus de capture accumulé (compétences capture-bonus du compagnon)
   modifiers: string[];
   energy: number; // R10-02 (D1) : énergie de combat (régénérée à chaque round, remise à zéro à chaque combat)
   log: string[];
@@ -131,7 +133,7 @@ export function startCombat(
   modifiers: string[] = [],
 ): CombatState {
   const challenge = challengeId ? CHALLENGE_BY_ID[challengeId] : undefined;
-  const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false });
+  const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false, atkDown: 0 });
   const companion: CompanionState | null = companionDef
     ? {
         defId: companionDef.id,
@@ -203,6 +205,7 @@ export function startCombat(
     items: COMBAT_ITEMS.map((def) => ({ def, usesLeft: def.usesPerCombat })),
     orbs,
     loot: null,
+    captureBonus: 0, // R11-02
     modifiers,
     energy: BALANCE.COMBAT_ENERGY_START, // R10-02 (D1) : énergie de départ du combat
     log: ['Un combat éclate !'],
@@ -250,21 +253,87 @@ export function moduleEffectLabel(recipe: RecipeDef): string {
   }
 }
 
+// Libellé FR de l'effet d'une compétence de compagnon (partagé UI + tests).
+export function companionSkillLabel(skill: CompanionSkill): string {
+  const el = skill.element ? ` ${skill.element}` : '';
+  switch (skill.kind) {
+    case 'heal':
+      return `soigne ${skill.powerPerLevel} PV/niv`;
+    case 'shield':
+      return `bouclier ${skill.powerPerLevel}/niv`;
+    case 'damage':
+      return `dégâts${el} ${skill.powerPerLevel}/niv`;
+    case 'aoe':
+      return `dégâts de zone${el} ${skill.powerPerLevel}/niv`;
+    case 'dot':
+      return `poison${el} ${skill.powerPerLevel}/tour/niv`;
+    case 'purify':
+      return 'purifie les malus du héros';
+    case 'stun':
+      return skill.powerPerLevel >= 2 ? 'étourdit tous les ennemis (1 tour)' : 'étourdit la cible (1 tour)';
+    case 'drain':
+      return `dégâts${el} ${skill.powerPerLevel}/niv, volés en PV`;
+    case 'debuff-atk':
+      return `réduit l'ATQ ennemie de ${skill.powerPerLevel}/niv`;
+    case 'buff-energy':
+      return `+${skill.powerPerLevel} énergie/niv`;
+    case 'capture-bonus':
+      return `+${Math.round(CAPTURE.bonusPerPower * skill.powerPerLevel * 100)} % capture`;
+    default:
+      return skill.kind;
+  }
+}
+
+// Action automatique du compagnon à son tour quand le joueur ne choisit rien :
+// soigne si le héros est blessé, sinon la meilleure compétence offensive débloquée.
 function companionAct(state: CombatState): CombatState {
   const comp = state.companion;
   if (!comp || comp.ko) return state;
   const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === comp.defId);
   if (!def) return state;
   const unlocked = def.skills.filter((s) => (comp.skills[s.id] ?? 0) > 0);
-  const best = unlocked.sort((a, b) => (comp.skills[b.id] * b.healPerLevel) - (comp.skills[a.id] * a.healPerLevel))[0];
-  if (!best || best.healPerLevel <= 0) return state;
-  const heal = best.healPerLevel * comp.skills[best.id];
-  const player = { ...state.player, hp: Math.min(state.player.maxHp, state.player.hp + heal) };
-  return {
-    ...state,
-    player,
-    log: [...state.log, `${comp.name} (${def.support}) : ${best.name} +${heal} PV.`],
-  };
+  if (unlocked.length === 0) return state;
+  const hurt = state.player.hp < state.player.maxHp * 0.7;
+  const heals = unlocked.filter((s) => s.kind === 'heal');
+  const offensives = unlocked.filter((s) => s.kind === 'damage' || s.kind === 'aoe' || s.kind === 'drain' || s.kind === 'dot');
+  let skill = hurt && heals.length > 0
+    ? heals.sort((a, b) => comp.skills[b.id] * b.powerPerLevel - comp.skills[a.id] * a.powerPerLevel)[0]
+    : offensives.sort((a, b) => comp.skills[b.id] * b.powerPerLevel - comp.skills[a.id] * a.powerPerLevel)[0];
+  if (!skill) skill = unlocked[0];
+  const level = comp.skills[skill.id] ?? 1;
+  const power = skill.powerPerLevel * level;
+  const log = [...state.log];
+  if (skill.kind === 'heal') {
+    const heal = Math.min(state.player.maxHp, state.player.hp + power) - state.player.hp;
+    return {
+      ...state,
+      player: { ...state.player, hp: state.player.hp + heal },
+      log: [...log, `${comp.name} (${def.support}) : ${skill.name} +${heal} PV.`],
+    };
+  }
+  const target = state.enemies.find((e) => e.hp > 0);
+  if (!target) return state;
+  if (skill.kind === 'damage' || skill.kind === 'aoe' || skill.kind === 'drain' || skill.kind === 'dot') {
+    const idx = state.enemies.indexOf(target);
+    const baseId = target.id.split('-')[0].replace(/^elite-/, '');
+    const mdef = MONSTER_BY_ID[baseId];
+    const mult = skill.element && mdef ? affinityMultiplier(skill.element, mdef) : 1;
+    const dmg = Math.max(1, Math.round(power * mult));
+    const enemies = state.enemies.map((e, i) => (skill.kind === 'aoe' || i === idx ? { ...e, hp: Math.max(0, e.hp - dmg), dot: skill.kind === 'dot' ? power : e.dot } : e));
+    log.push(`${comp.name} : ${skill.name} sur ${target.name} : -${dmg} PV.${mult > 1 ? ' Faiblesse !' : mult < 1 ? ' Résisté !' : ''}`);
+    let next: CombatState = { ...state, enemies, log };
+    if (skill.kind === 'drain') {
+      const healed = Math.min(state.player.maxHp, state.player.hp + dmg) - state.player.hp;
+      next = { ...next, player: { ...next.player, hp: next.player.hp + healed }, log: [...next.log, `${comp.name} récupère ${healed} PV.`] };
+    }
+    return next;
+  }
+  return state;
+}
+
+// ATQ effective d'un ennemi (R11-02 : debuff-atk des compétences de compagnon).
+function effectiveAttack(e: Combatant): number {
+  return Math.max(1, e.attack - e.atkDown);
 }
 
 // Un ennemi agit (attaque, DoT, boss télégraphié, etc.). Renvoie l'état mis à jour.
@@ -314,16 +383,17 @@ function enemyAct(state: CombatState, i: number, rng: Rng): CombatState {
   }
   // 30 % des attaques visent le compagnon (tirage seedé).
   if (companion && !companion.ko && rng.next() < 0.3) { // TODO-BALANCE
-    const dmg = e.attack;
+    const dmg = effectiveAttack(e);
     const hp = Math.max(0, companion.hp - dmg);
     companion = { ...companion, hp, ko: hp <= 0 };
     log.push(`${e.name} attaque ${companion.name} : -${dmg} PV${hp <= 0 ? ' — K.O. !' : '.'}`);
     return { ...state, player, companion, enemies, log };
   }
-  const absorbed = Math.min(player.shield, e.attack);
-  const dmg = e.attack - absorbed;
+  const atk = effectiveAttack(e);
+  const absorbed = Math.min(player.shield, atk);
+  const dmg = atk - absorbed;
   player = { ...player, hp: Math.max(0, player.hp - dmg), shield: player.shield - absorbed };
-  log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}.`);
+  log.push(`${e.name} attaque : -${dmg} PV${absorbed > 0 ? ` (${absorbed} absorbés)` : ''}${e.atkDown > 0 ? ` (ATQ réduite de ${e.atkDown})` : ''}.`);
   return { ...state, player, companion, enemies, log };
 }
 
@@ -580,7 +650,9 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
     case 'CAPTURE': {
       const target = state.enemies[action.target];
       if (!target || target.hp <= 0) return state;
-      if (rng.next() < captureChance(target.hp, target.maxHp)) {
+      // R11-02 : bonus de capture des compétences du compagnon (capture-bonus).
+      const chance = Math.min(1, captureChance(target.hp, target.maxHp) + (state.captureBonus ?? 0));
+      if (rng.next() < chance) {
         // R7-04 : capture d'élite -> compagnon à stats supérieures (id « elite-<base> »)
         const monsterId = target.id.split('-').slice(0, -1).join('-');
         log.push(`Capturé : ${target.name} !`);
@@ -614,23 +686,85 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       return { ...state, orbs, modules: [...state.modules, recipe.id], log };
     }
     case 'USE_COMPANION_SKILL': {
-      // Le joueur déclenche une compétence du compagnon (gratuite, 1 fois par compétence et par tour).
+      // R11-02 (E2) : le joueur déclenche une compétence du compagnon (gratuite, 1 fois
+      // par compétence et par tour). Tous les kinds de docs/COMPANIONS-R11.md sont gérés.
       const comp = state.companion;
       if (!comp || comp.ko) return state;
       const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === comp.defId);
       const skill = def?.skills.find((sk) => sk.id === action.skillId);
       if (!def || !skill) return state;
       const level = comp.skills[skill.id] ?? 0;
-      if (level <= 0) return state;
+      if (level <= 0) return state; // compétence verrouillée (palier de lien insuffisant)
       if ((state.usedSkillsThisTurn ?? []).includes(skill.id)) return state;
+      const power = skill.powerPerLevel * level;
       let player = state.player;
-      let healed = 0; // B33
-      if (skill.healPerLevel > 0) {
-        healed = Math.min(player.maxHp, player.hp + skill.healPerLevel * level) - player.hp;
+      let enemies = state.enemies;
+      let captureBonus = state.captureBonus ?? 0;
+      // Cible = première ennemie vivante (auto-retarget comme l'attaque).
+      const ti = state.enemies.findIndex((e) => e.hp > 0);
+      const el = skill.element;
+      const affinityOf = (e: Combatant) => {
+        const baseId = e.id.split('-')[0].replace(/^elite-/, '');
+        const mdef = MONSTER_BY_ID[baseId];
+        return el && mdef ? affinityMultiplier(el, mdef) : 1;
+      };
+      if (skill.kind === 'heal') {
+        const healed = Math.min(player.maxHp, player.hp + power) - player.hp; // B33
         player = { ...player, hp: player.hp + healed };
+        log.push(`${comp.name} : ${skill.name} niv ${level}${healed > 0 ? ` (+${healed} PV)` : ' (PV déjà au max)'}.`);
+      } else if (skill.kind === 'shield') {
+        player = { ...player, shield: player.shield + power };
+        log.push(`${comp.name} : ${skill.name} niv ${level} — +${power} bouclier.`);
+      } else if (skill.kind === 'purify') {
+        player = { ...player, dot: 0, blinded: false, slowed: false };
+        log.push(`${comp.name} : ${skill.name} niv ${level} — malus du héros purgés.`);
+      } else if (skill.kind === 'buff-energy') {
+        const before = state.energy ?? 0;
+        const energy = Math.min(BALANCE.COMBAT_ENERGY_MAX, before + power);
+        log.push(`${comp.name} : ${skill.name} niv ${level} — +${energy - before} énergie.`);
+        return afterActor({ ...state, player, log, energy, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] });
+      } else if (skill.kind === 'capture-bonus') {
+        captureBonus += CAPTURE.bonusPerPower * power;
+        log.push(`${comp.name} : ${skill.name} niv ${level} — +${Math.round(CAPTURE.bonusPerPower * power * 100)} % capture ce combat.`);
+      } else if (ti >= 0 && (skill.kind === 'damage' || skill.kind === 'aoe' || skill.kind === 'drain' || skill.kind === 'dot' || skill.kind === 'stun' || skill.kind === 'debuff-atk')) {
+        const target = state.enemies[ti];
+        if (skill.kind === 'damage' || skill.kind === 'drain') {
+          const mult = affinityOf(target);
+          const dmg = Math.max(1, Math.round(power * mult));
+          enemies = enemies.map((e, i) => (i === ti ? { ...e, hp: Math.max(0, e.hp - dmg) } : e));
+          log.push(`${comp.name} : ${skill.name} niv ${level} sur ${target.name} : -${dmg} PV.${mult > 1 ? ' Faiblesse !' : mult < 1 ? ' Résisté !' : ''}`);
+          if (skill.kind === 'drain') {
+            const healed = Math.min(player.maxHp, player.hp + dmg) - player.hp;
+            player = { ...player, hp: player.hp + healed };
+            log.push(`${comp.name} récupère ${healed} PV.`);
+          }
+        } else if (skill.kind === 'aoe') {
+          let best = 1;
+          enemies = enemies.map((e) => {
+            if (e.hp <= 0) return e;
+            const mult = affinityOf(e);
+            best = Math.max(best, mult);
+            const dmg = Math.max(1, Math.round(power * mult));
+            return { ...e, hp: Math.max(0, e.hp - dmg) };
+          });
+          log.push(`${comp.name} : ${skill.name} niv ${level} — zone, -${power} PV à tous.${best > 1 ? ' Faiblesse !' : ''}`);
+        } else if (skill.kind === 'dot') {
+          enemies = enemies.map((e, i) => (i === ti ? { ...e, dot: power } : e));
+          log.push(`${comp.name} : ${skill.name} niv ${level} sur ${target.name} : poison ${power}/tour.`);
+        } else if (skill.kind === 'stun') {
+          enemies = enemies.map((e, i) => (skill.powerPerLevel >= 2 || i === ti ? { ...e, stunned: e.hp > 0 } : e));
+          log.push(`${comp.name} : ${skill.name} niv ${level} — ${skill.powerPerLevel >= 2 ? 'tous les ennemis perdent leur tour' : `${target.name} perd son tour`}.`);
+        } else if (skill.kind === 'debuff-atk') {
+          enemies = enemies.map((e, i) => (i === ti ? { ...e, atkDown: e.atkDown + power } : e));
+          log.push(`${comp.name} : ${skill.name} niv ${level} — ATQ de ${target.name} -${power}.`);
+        }
+      } else {
+        return state; // kind sans cible valide (ex. damage sans ennemi vivant)
       }
-      log.push(`${comp.name} : ${skill.name} niv ${level}${skill.healPerLevel > 0 ? (healed > 0 ? ` (+${healed} PV)` : ' (PV déjà au max)') : ''}.`);
-      return afterActor({ ...state, player, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] });
+      let next: CombatState = { ...state, player, enemies, captureBonus, log, usedSkillsThisTurn: [...(state.usedSkillsThisTurn ?? []), skill.id] };
+      next = checkVictory(next, rng);
+      if (next.phase === 'won') return next;
+      return afterActor(next);
     }
     case 'FUSE_IN_COMBAT': {
       // En combat, la fusion coûte 1 tour (§SPEC-5.2) : on fusionne puis les ennemis jouent.
