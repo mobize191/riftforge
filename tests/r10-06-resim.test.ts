@@ -208,7 +208,7 @@ function fullRun(seed: number) {
 
 describe('R10-06 re-simulation V1.1 (1000 runs, bot compétent économe en énergie)', () => {
   it('bande 0,1-0,2 % tenue, morts étalées (<= 50 % biome 1), 4 biomes visités', { timeout: 900000 }, () => {
-    const N = process.env.SIM_RUNS ? parseInt(process.env.SIM_RUNS, 10) : 1000;
+    const N = process.env.SIM_RUNS_FINAL ? parseInt(process.env.SIM_RUNS_FINAL, 10) : 1000; // bande §SPEC-2 : N=1000 requis — SIM_RUNS (250 en CI) ne peut pas la mesurer
     let wins = 0;
     let totalTurns = 0;
     const deathBiomes = [0, 0, 0, 0];

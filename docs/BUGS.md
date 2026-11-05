@@ -136,3 +136,15 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   tant que la scène n'est pas prête). Les 404 restants sont les portraits PNG absents
   (fallback code-gen prévu R9-07) — consignés dans docs/QUESTIONS.md.
 - **Test** : parcours headed rejoué (`scripts/headed-final.mjs`) -> 0 pageerror.
+
+## B37 — r10-06 en CI : bande §SPEC-2 impossible à mesurer avec SIM_RUNS=250 (fix)
+
+- **Vu** : build CI en failure sur `tests/r10-06-resim.test.ts:228` —
+  `AssertionError: expected 0.004 to be less than or equal to 0.002`.
+  La CI réduit `SIM_RUNS` à 250 (perf, commit 3f13203) et le test R10-06 l'utilisait
+  pour la bande 0,1–0,2 % : à N=250, aucun taux discret ne tient la bande
+  (0 victoire = 0 % < 0,1 % ; 1 victoire = 0,4 % > 0,2 %). Échec garanti en CI,
+  indépendant de l'équilibrage — le même test passait en local à N=1000.
+- **Fix** : R10-06 lit `SIM_RUNS_FINAL` (comme R9-01, « bande §SPEC-2 : N=1000 requis »)
+  au lieu de `SIM_RUNS` — la bande est toujours mesurée à N=1000, en local comme en CI.
+  Commentaire du workflow mis à jour en conséquence.
