@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
+import { BALANCE } from '../src/data/balance';
 import { MERCHANT_ITEMS } from '../src/data/equipment';
 
 function stateWithCredits(credits: number) {
@@ -27,7 +28,7 @@ describe('R1-06 minimal forge + merchant', () => {
   it('equipment survives two runs and is worn on the next one', () => {
     let s = stateWithCredits(100);
     s = reduce(s, { type: 'BUY_ITEM', defId: 'lame-rustique' }); // +1 ATK (R10-03 : jamais de one-shot)
-    const baseAtk = 4;
+    const baseAtk = BALANCE.PLAYER_ATTACK;
     s = reduce(s, { type: 'START_RUN', seed: 1 });
     expect(s.run!.playerAttack).toBe(baseAtk + 1);
     s = reduce(s, { type: 'DIE' });

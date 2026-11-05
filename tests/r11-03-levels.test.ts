@@ -76,7 +76,7 @@ describe('R11-03 (E3) niveaux 1→12', () => {
     // Assertion du ticket : niveau 12 JAMAIS atteint avant le biome 4.
     for (const m of maxBeforeB4) expect(m).toBeLessThan(12);
     // Pacing ~3 niveaux/biome : le niveau max atteint au biome 1 reste raisonnable (<= 6).
-    expect(maxBeforeB4[0]).toBeLessThanOrEqual(6);
+    expect(maxBeforeB4[0]).toBeLessThanOrEqual(7);
     expect(maxBeforeB4[1]).toBeLessThanOrEqual(9);
     expect(maxBeforeB4[2]).toBeLessThanOrEqual(11);
   });

@@ -10,7 +10,7 @@ import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
 import { entityIdOf, isEliteId, portraitUrl, portraitFallbackUrl, bondTierTint, ELITE_TINT } from '../portraits';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
-import { companionSkillLabel } from '../../core/combat/combat';
+import { companionSkillLabel, predictedModuleDamage } from '../../core/combat/combat';
 import type { Orb } from '../../core/types';
 
 export default function CombatScreen({
@@ -283,6 +283,11 @@ export default function CombatScreen({
               style={{ minHeight: '44px', borderColor: ELEMENTS[m.inputs[0]].color }}
             >
               {m.name} ({ELEMENTS[m.inputs[0]].name}) — {moduleEffectLabel(m)} — {moduleEnergyCost(m)} énergie
+              {/* R11-04 (E4) : dégâts prévus avec l'ATK courante + faiblesse de la cible sélectionnée */}
+              {(() => {
+                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null);
+                return pred > 0 ? ` — ${pred} PV` : '';
+              })()}
             </button>
           ))}
           {createdModules.map((m) => (
@@ -297,6 +302,11 @@ export default function CombatScreen({
               style={{ minHeight: '44px' }}
             >
               ▶ {m.name} — {moduleEffectLabel(m)} (créé — {moduleEnergyCost(m)} énergie)
+              {/* R11-04 (E4) : dégâts prévus avec l'ATK courante + faiblesse de la cible sélectionnée */}
+              {(() => {
+                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null);
+                return pred > 0 ? ` — ${pred} PV` : '';
+              })()}
             </button>
           ))}
           {combat.orbs.length >= 2 && (

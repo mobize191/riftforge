@@ -22,11 +22,11 @@ describe('R4-06 affinités & faiblesses', () => {
     const dmgFeu = Math.round((5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.weakness);
     let c = startCombat(1, 20, 20, 4, ['mousse'], ['feu']);
     c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'trait-incandescent', target: 0 });
-    expect(c.enemies[0].hp).toBe(mousse.hp - dmgFeu);
+    expect(c.enemies[0].hp).toBe(Math.max(0, mousse.hp - dmgFeu));
     // mousse résistante à l'eau : jet sous pression (4 + scaling) x0.5
     const dmgEau = Math.round((4 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.resistance);
     c = startCombat(2, 20, 20, 4, ['mousse'], ['eau']);
     c = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'jet-pression', target: 0 });
-    expect(c.enemies[0].hp).toBe(mousse.hp - dmgEau);
+    expect(c.enemies[0].hp).toBe(Math.max(0, mousse.hp - dmgEau));
   });
 });

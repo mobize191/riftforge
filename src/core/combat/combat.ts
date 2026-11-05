@@ -286,6 +286,22 @@ export function companionSkillLabel(skill: CompanionSkill): string {
 
 // Action automatique du compagnon à son tour quand le joueur ne choisit rien :
 // soigne si le héros est blessé, sinon la meilleure compétence offensive débloquée.
+// R11-04 (E4) : dégâts PRÉvus d'un module, calculés avec l'ATK courante et la
+// faiblesse de la cible — MÊME formule que CAST_MODULE (testé : affiché == infligé).
+export function predictedModuleDamage(recipe: RecipeDef, attack: number, targetEnemyId: string | null): number {
+  const effect = recipe.effect;
+  if (effect.kind !== 'damage' && effect.kind !== 'aoe') return 0;
+  const element = recipe.inputs[0];
+  const power = effect.power + attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0);
+  let mult = 1;
+  if (targetEnemyId) {
+    const baseId = targetEnemyId.split('-')[0].replace(/^elite-/, '');
+    const def = MONSTER_BY_ID[baseId];
+    if (def && element) mult = affinityMultiplier(element, def);
+  }
+  return Math.round(power * mult);
+}
+
 function companionAct(state: CombatState): CombatState {
   const comp = state.companion;
   if (!comp || comp.ko) return state;

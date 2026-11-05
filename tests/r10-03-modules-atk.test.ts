@@ -13,8 +13,8 @@ import { AFFINITY } from '../src/data/affinities';
 describe('R10-03 — modules indexés sur ATK + retours d\'affinité (D2)', () => {
   it('un module lancé avec ATQ 12 inflige strictement plus qu\'avec ATQ 4', () => {
     const recipe = RECIPE_BY_ID['combustion']; // tier 2, dégâts 9, feu
-    const low = startCombat(3, 20, 20, 4, ['cuirasse'], ['feu', 'feu'], null, {}, false, ['combustion']); // 13 PV : pas de cap
-    const high = startCombat(3, 20, 20, 12, ['cuirasse'], ['feu', 'feu'], null, {}, false, ['combustion']);
+    const low = startCombat(3, 20, 20, 4, ['tisseuse'], ['feu', 'feu'], null, {}, false, ['combustion']); // 260 PV : pas de cap
+    const high = startCombat(3, 20, 20, 12, ['tisseuse'], ['feu', 'feu'], null, {}, false, ['combustion']);
     const dmgOf = (c: typeof low) => {
       const c2 = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'combustion', target: 0 });
       return c.enemies[0].maxHp - c2.enemies[0].hp;
@@ -23,7 +23,7 @@ describe('R10-03 — modules indexés sur ATK + retours d\'affinité (D2)', () =
     const dHigh = dmgOf(high);
     expect(dHigh).toBeGreaterThan(dLow);
     // et conforme à la formule data : base + ATQ x ratio[palier]
-    expect(dLow).toBe(Math.round((recipe.effect.power + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[2]) * 1));
+    expect(dLow).toBe(Math.round((recipe.effect.power + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[2]) * AFFINITY.resistance)); // tisseuse résiste au feu
     expect(dHigh).toBeGreaterThan(dLow);
   });
 
@@ -68,10 +68,10 @@ describe('R10-03 — modules indexés sur ATK + retours d\'affinité (D2)', () =
   });
 
   it('les dégâts respectent toujours le multiplicateur d\'affinité (weakness x1.5)', () => {
-    const mousse = MONSTER_BY_ID['mousse'];
-    const expected = Math.round((5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.weakness);
-    const c = startCombat(1, 20, 20, 4, ['mousse'], ['feu']);
+    const tisseuse = MONSTER_BY_ID['tisseuse']; // 260 PV : dégâts non plafonnés
+    const expected = Math.round((5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.resistance); // tisseuse résiste au feu
+    const c = startCombat(1, 20, 20, 4, ['tisseuse'], ['feu']);
     const c2 = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'trait-incandescent', target: 0 });
-    expect(mousse.hp - c2.enemies[0].hp).toBe(expected);
+    expect(tisseuse.hp - c2.enemies[0].hp).toBe(expected);
   });
 });

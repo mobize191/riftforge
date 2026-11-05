@@ -5,7 +5,7 @@ export const BALANCE = {
   START_PLAYER_HP: 20, // TODO-BALANCE
   START_PLAYER_LEVEL: 1, // TODO-BALANCE
   START_FLOOR: 1, // TODO-BALANCE
-  PLAYER_ATTACK: 4, // TODO-BALANCE
+  PLAYER_ATTACK: 2, // TODO-BALANCE (R11-04/E4 : ratios relevés -> ATQ de base ajustée pour tenir la bande §SPEC-2)
   // Progression de run : seuils d'XP pour atteindre chaque niveau, gains par niveau.
   // R11-03 (E3) : niveau max 12, courbe croissante étalée sur les 4 biomes (~3 niveaux/biome).
   LEVEL_XP_THRESHOLDS: [0, 6, 14, 26, 42, 62, 86, 114, 146, 182, 222, 266], // TODO-BALANCE (12 entrées -> niveau max 12 ; XP cumulée pour passer au niveau n+1)
@@ -23,7 +23,7 @@ export const BALANCE = {
   FIRST_RUN_WIN_TARGET_MAX: 0.002, // TODO-BALANCE — 1/500 au maximum
   // R10-03 (décision D2) : les modules scalent avec l'attaque du joueur, ratio PAR
   // PALIER (base + ATQ x ratio[tier]) — un module haut palier profite plus de l'ATQ.
-  MODULE_ATK_SCALING_BY_TIER: { 1: 0.2, 2: 0.5, 3: 0.9 } as Record<number, number>, // TODO-BALANCE
+  MODULE_ATK_SCALING_BY_TIER: { 1: 0.6, 2: 1.0, 3: 1.5 } as Record<number, number>, // TODO-BALANCE (R11-04/E4 : ratios relevés ~0,6/1,0/1,5 — le lien ATK↔dégâts doit se voir)
 
   // R10-02 (décision D1) : énergie de combat — régénérée à chaque nouveau round,
   // conservée au sein d'un même combat, remise au niveau de départ à chaque combat.

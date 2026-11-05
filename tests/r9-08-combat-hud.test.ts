@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { startCombat, combatReduce, actorLabel, moduleEffectLabel } from '../src/core/combat/combat';
 import { RECIPES } from '../src/data/recipes';
 import { BALANCE } from '../src/data/balance';
+import { AFFINITY } from '../src/data/affinities';
 import { COMPANION_BY_MONSTER } from '../src/data/companions';
 
 describe('HUD combat : acteur courant et effets de modules', () => {
@@ -31,16 +32,16 @@ describe('HUD combat : acteur courant et effets de modules', () => {
 
   it('les modules scalent avec l’attaque du joueur (valeur en data)', () => {
     const recipe = RECIPES.find((r) => r.id === 'trait-incandescent')!; // dégâts 5, feu
-    const low = startCombat(3, 20, 20, 4, ['sporeling'], ['feu'], null, {}, false, ['trait-incandescent']); // ATQ 4, sporeling neutre feu
-    const high = startCombat(3, 20, 20, 12, ['sporeling'], ['feu'], null, {}, false, ['trait-incandescent']); // ATQ 12
+    const low = startCombat(3, 20, 20, 4, ['tisseuse'], ['feu'], null, {}, false, ['trait-incandescent']); // ATQ 4, tisseuse (260 PV, résiste feu) : pas de cap
+    const high = startCombat(3, 20, 20, 12, ['tisseuse'], ['feu'], null, {}, false, ['trait-incandescent']); // ATQ 12
     const dmgOf = (c: typeof low) => {
       const c2 = combatReduce(c, { type: 'CAST_MODULE', moduleId: 'trait-incandescent', target: 0 });
       return c.enemies[0].maxHp - c2.enemies[0].hp;
     };
     const dLow = dmgOf(low);
     const dHigh = dmgOf(high);
-    expect(dLow).toBe(Math.round(5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1])); // power + ATQ x scaling
-    expect(dHigh).toBe(Math.round(5 + 12 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]));
+    expect(dLow).toBe(Math.round((5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.resistance)); // power + ATQ x scaling, x résistance feu (tisseuse)
+    expect(dHigh).toBe(Math.round((5 + 12 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * AFFINITY.resistance));
     expect(dHigh).toBeGreaterThan(dLow);
   });
 });

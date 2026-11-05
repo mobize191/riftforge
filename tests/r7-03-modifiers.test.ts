@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { startCombat, combatReduce } from '../src/core/combat/combat';
 import { MONSTER_BY_ID } from '../src/data/monsters';
 import { MONSTER_LEVEL_BONUS, ELITE, RARE_ORBS, BLURRED_AFFINITY_VALUES } from '../src/data/riftModifiers';
+import { BALANCE } from '../src/data/balance';
 import { affinityMultiplier } from '../src/data/affinities';
 
 describe('R7-03 modificateurs de Faille', () => {
@@ -35,7 +36,7 @@ describe('R7-03 modificateurs de Faille', () => {
     const b = cast(7);
     expect(a).toBe(b); // reproductible par seed
     const normal = 8 - Math.round(5 * affinityMultiplier('feu', MONSTER_BY_ID['mousse']));
-    const possible = BLURRED_AFFINITY_VALUES.map((v) => 8 - Math.round(5 * v));
+    const possible = BLURRED_AFFINITY_VALUES.map((v) => Math.max(0, 9 - Math.round((5 + 4 * BALANCE.MODULE_ATK_SCALING_BY_TIER[1]) * v)));
     expect(possible).toContain(a);
     void normal;
   });
