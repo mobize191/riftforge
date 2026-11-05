@@ -190,8 +190,17 @@ Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'exis
 - `83277f1` : 24 portraits IA déposés dans `public/assets/portraits/` (512 px, ~10 Mo), Q10-1 résolu (0 404 en combat, capture 17-combat-portraits-ia.png).
 - `6a3d5fd` : 24 variantes `-evo.png` branchées — affichées quand le compagnon est évolué (palier 4), en combat et à l'écurie. ~21 Mo au total.
 
-## Vague 2 (R11)
+## Vague 2 (R11) — session en cours
 
-R11-01 (fusion module + module, E1) en cours — état détaillé et reprise dans docs/HANDOFF-R11.md.
-B39 : bot de bande brûlait ses orbes en craft direct (taux doublé 0,2 % → 0,4 %) ; fix bot E1-conforme, bande 0,200 % restaurée.
-Idées R12 (atelier UX + ComfyUI) : docs/BACKLOG.md uniquement, hors périmètre.
+- **Dernier commit** : `1a85a88` + commit R11-01 sur `main`.
+- **Preuves R11-01** (exécutées EN LOCAL, sorties dans le corps du commit) :
+  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **85 fichiers / 277 tests**, **18 tests e2e Playwright (390 px headless local)**.
+
+| Ticket | État | Notes |
+|---|---|---|
+| R11-01 | done | commit « R11-01: fusion module + module (E1) » — 13 `ModuleFusionDef` (data), `fuseModules`/`achievableFusions` (core pur, refus `unknown-fusion`/`missing-modules`/`missing-orbs`/`duplicate`), refus `fusion-only` (palier ≥ 2 jamais créé depuis les orbes), `FUSE_MODULES` hors combat (libre) et en combat (coûte le tour), panneau ⚗ + codex « réalisables avec vos modules et orbes actuels », 13 tests unitaires, e2e réel 2 specs (fusion hors combat + en combat), 4 captures `docs/SCREENSHOTS-R11/11..14-*.png`, SPEC §5.2 amendée (E1). Bandes r9-01/r10-06 à **0,200 %** tenues. |
+| R11-02..R11-07 | à faire | ordre strict, voir docs/BRIEF-R11.md §3 |
+
+- **B39** : bot de bande brûlait ses orbes en craft direct (taux doublé 0,2 % → 0,4 %) ; fix = bot E1-conforme (`tests/helpers/modules.ts`), aucune valeur d'équilibrage changée, bande 0,200 % restaurée.
+- **E2E sandbox** : recette Chromium vérifiée de bout en bout — `pnpm exec playwright install chromium` + `python3 scripts/setup-pw-libs.py` + `LD_LIBRARY_PATH`/`FONTCONFIG_FILE` + `PORT=4173 pnpm test:e2e` (jamais 3030) — voir docs/HANDOFF-R11.md.
+- Idées R12 (atelier UX + ComfyUI) : docs/BACKLOG.md uniquement, hors périmètre.

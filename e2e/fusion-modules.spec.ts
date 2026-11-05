@@ -57,29 +57,36 @@ async function descenteAvecDeuxModulesTier1(page: Page): Promise<void> {
   await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
 
   await page.getByRole('button', { name: /Modules \(\d+ cr/ }).click();
-  await page.getByRole('button', { name: /Jet sous pression \(palier 1\)/ }).click();
-  await expect(page.getByRole('button', { name: /▶ Jet sous pression/ })).toBeVisible(); // créé
-  await page.getByRole('button', { name: /Écran de gravats \(palier 1\)/ }).click();
-  await expect(page.getByRole('button', { name: /▶ Écran de gravats/ })).toBeVisible();
+  await page.getByRole('button', { name: /✚ Jet sous pression \(palier 1\)/ }).click();
+  // Le bouton de craft disparaît (module créé) et le compteur passe à 1.
+  await expect(page.getByRole('button', { name: /✚ Jet sous pression \(palier 1\)/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Modules \(1 cré/ })).toBeVisible();
+  await page.getByRole('button', { name: /✚ Écran de gravats \(palier 1\)/ }).click();
+  await expect(page.getByRole('button', { name: /✚ Écran de gravats \(palier 1\)/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Modules \(2 cré/ })).toBeVisible();
 }
 
 test('fusion hors combat : 2 modules tier 1 -> Boue (sources consommées)', async ({ page }) => {
   await descenteAvecDeuxModulesTier1(page);
 
+  // Ferme le panneau Modules : seuls les chips du panneau ⚗ restent matchables.
+  await page.getByRole('button', { name: /Modules \(\d+ cr/ }).click();
   // Panneau fusion : sélection des 2 sources puis fusion -> Boue (palier 2).
   await page.getByRole('button', { name: /⚗ Fusion de modules/ }).click();
-  await page.getByRole('button', { name: /Jet sous pression \(palier 1\)/ }).click();
-  await page.getByRole('button', { name: /Écran de gravats \(palier 1\)/ }).click();
+  await page.getByRole('button', { name: /^Jet sous pression \(palier 1\)$/ }).click();
+  await page.getByRole('button', { name: /^Écran de gravats \(palier 1\)$/ }).click();
   await page.screenshot({ path: `${SHOTS}/11-fusion-selection.png` });
   await page.getByRole('button', { name: /⚗ Fusionner → Boue \(palier 2\)/ }).click();
 
   // Les sources sont consommées : il ne reste que Boue (palier 2).
-  await expect(page.getByRole('button', { name: /Boue \(palier 2\)/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Jet sous pression \(palier 1\)/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Écran de gravats \(palier 1\)/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Boue \(palier 2\)$/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Jet sous pression \(palier 1\)$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Écran de gravats \(palier 1\)$/ })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/12-fusion-boue.png` });
 
-  // Le codex « réalisables » ne propose plus Boue (déjà possédée).
+  // Le codex « réalisables » (panneau Modules) ne propose plus Boue (déjà possédée).
+  await page.getByRole('button', { name: /⚗ Fusion de modules/ }).click(); // referme le panneau fusion
+  await page.getByRole('button', { name: /Modules \(\d+ cr/ }).click(); // rouvre le panneau Modules
   await expect(page.getByText('Fusions réalisables avec vos modules et orbes actuels :')).toBeVisible();
   await expect(page.getByRole('button', { name: /⚗ Boue \(palier 2\) — fusionne/ })).toHaveCount(0);
 });
@@ -104,7 +111,7 @@ test('fusion en combat : coûte le tour, résultat dans la liste des modules', a
   // La fusion a coûté le tour : log explicite, sources consommées, Boue présente.
   await expect(page.getByText(/obtenu par fusion de modules/).first()).toBeVisible({ timeout: 5000 });
   await page.getByRole('button', { name: /Modules \(\d+\)/ }).click();
-  await expect(page.getByRole('button', { name: 'Boue', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /▶ Boue/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Jet sous pression', exact: true })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/14-combat-apres-fusion.png` });
 });
