@@ -149,7 +149,7 @@ Aucun — `docs/BLOCKED.md` n'existe pas. Aucun échec répété 3x sur un ticke
 
 # Phase R10 (refonte combat V1.1, vague 1) — session locale, terminée
 
-- **Dernier commit** : `afcb713` sur `main` (8 commits R10-01 -> R10-08, ordre strict respecté).
+- **Dernier commit** : `6a3d5fd` sur `main` (8 commits R10-01 -> R10-08, ordre strict respecté, + 2 commits assets portraits).
 - **Preuves** (exécutées EN LOCAL, sorties dans les corps de commit) :
   `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **84 fichiers / 261 tests**, **15 tests e2e Playwright (3,7 min, 390 px headless local)**.
 - **Vérification headed** : `pnpm dev` + parcours complet (scripts/headed-final.mjs) -> 0 pageerror après fix B36.
@@ -184,6 +184,11 @@ Reportées dans docs/SPEC.md (§5.2 D1/D2, §5.3 D3, §6.3 D4, §7 D5). Chiffres
 ## Blocages
 
 Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'existe toujours pas.
+
+## Assets portraits (post-R10-08)
+
+- `83277f1` : 24 portraits IA déposés dans `public/assets/portraits/` (512 px, ~10 Mo), Q10-1 résolu (0 404 en combat, capture 17-combat-portraits-ia.png).
+- `6a3d5fd` : 24 variantes `-evo.png` branchées — affichées quand le compagnon est évolué (palier 4), en combat et à l'écurie. ~21 Mo au total.
 
 ## Vague 2 (R11)
 
