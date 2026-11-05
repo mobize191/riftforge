@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { availableSoloModules, actorLabel, type CombatState, type CombatAction, moduleEffectLabel, moduleEnergyCost } from '../../core/combat/combat';
 import { BALANCE } from '../../data/balance';
 import { craftableRecipes } from '../../core/combat/createModule';
+import { achievableFusions } from '../../core/combat/fuseModules';
+import { RECIPE_BY_ID } from '../../data/recipes';
 import { ELEMENTS } from '../../data/elements';
 import { RECIPES } from '../../data/recipes';
 import { entityIdOf, isEliteId, portraitUrl, portraitFallbackUrl, bondTierTint, ELITE_TINT } from '../portraits';
@@ -41,6 +43,7 @@ export default function CombatScreen({
   const flashEl = (color: string) => setFx({ color, key: Date.now() });
   const [target, setTarget] = useState(0);
   const [fuseSel, setFuseSel] = useState<number[]>([]);
+  const [fuseModSel, setFuseModSel] = useState<string[]>([]); // R11-01 (E1) — modules sources sélectionnés
   const actorId = combat.order[combat.actorIdx % combat.order.length];
   const isCompTurn = actorId === 'companion';
   void actorLabel(combat); // B27 : label conservé pour test (r9-08) — la bannière est rendue dans le h2
@@ -329,6 +332,50 @@ export default function CombatScreen({
               ✚ Créer {r.name} (palier {r.tier}) — consomme {r.inputs.map((e) => ELEMENTS[e].name).join(' + ')}
             </button>
           ))}
+          {/* R11-01 (E1) : fusion module + module en combat — coûte le tour. */}
+          {combat.modules.length >= 2 && (
+            <div className="rounded border border-fuchsia-300/70 p-2">
+              <p className="mb-1 text-sm opacity-80">Fusionner 2 modules (coûte le tour) :</p>
+              <div className="mb-2 flex flex-wrap gap-1">
+                {combat.modules.map((id) => (
+                  <button
+                    key={id}
+                    onClick={() =>
+                      setFuseModSel((sel) =>
+                        sel.includes(id) ? sel.filter((x) => x !== id) : sel.length < 2 ? [...sel, id] : [sel[1], id],
+                      )
+                    }
+                    className={`rounded border px-2 py-1 ${fuseModSel.includes(id) ? 'border-fuchsia-300 bg-fuchsia-900/60' : 'border-slate-500'}`}
+                    style={{ minHeight: '44px' }}
+                  >
+                    {RECIPE_BY_ID[id]?.name ?? id}
+                  </button>
+                ))}
+              </div>
+              {(() => {
+                const preview = achievableFusions(fuseModSel, orbObjs).filter(
+                  (f) => f.inputs.every((id) => fuseModSel.includes(id)) && f.inputs.length === fuseModSel.length,
+                );
+                if (fuseModSel.length === 2 && preview.length === 0) {
+                  return <p className="text-sm opacity-60">Ces 2 modules ne produisent aucune fusion connue.</p>;
+                }
+                return preview.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      onAction({ type: 'FUSE_MODULES', fusionId: f.id });
+                      setFuseModSel([]);
+                      setMenu('root');
+                    }}
+                    className="rounded border border-fuchsia-300 px-3 py-2"
+                    style={{ minHeight: '44px' }}
+                  >
+                    ⚗ Fusionner → {RECIPE_BY_ID[f.resultId]?.name ?? f.resultId} (palier {f.tier})
+                  </button>
+                ));
+              })()}
+            </div>
+          )}
         </div>
       )}
 

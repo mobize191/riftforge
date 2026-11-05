@@ -14,6 +14,7 @@ import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
 import { createModule } from '../combat/createModule';
 import { applyFusion } from '../combat/fuse';
+import { fuseModules, achievableFusions } from '../combat/fuseModules';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
@@ -83,6 +84,7 @@ export type GameAction =
   | { type: 'RESOLVE_MILESTONE'; choice: MilestoneChoice }
   | { type: 'UPGRADE_SKILL'; skillId: string }
   | { type: 'CREATE_MODULE'; recipeId: string }
+  | { type: 'FUSE_MODULES'; fusionId: string } // R11-01 (E1) — fusion module + module, hors combat
   | { type: 'FUSE_ORBS'; indices: number[] }
   | { type: 'SAVE_GRIMOIRE'; slot: number; name: string; recipeIds: string[] }
   | { type: 'EXEC_GRIMOIRE'; slot: number }
@@ -341,22 +343,35 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const slot: GrimoireSlot | undefined = state.forge.grimoire[action.slot];
       if (!slot) return state;
       let orbs = state.run.orbs;
-      const createdModules = [] as import('../types').Module[];
+      let created: import('../types').Module[] = [];
       for (const recipeId of slot.recipeIds) {
-        if (state.run.modules.some((m) => m.id === recipeId) || createdModules.some((m) => m.id === recipeId)) continue; // pas de doublon
+        if (state.run.modules.some((m) => m.id === recipeId) || created.some((m) => m.id === recipeId)) continue; // pas de doublon
         const res = createModule(orbs, recipeId);
         if (!res.ok) break; // orbes insuffisantes : on s'arrête là
         orbs = res.orbs;
-        createdModules.push(res.module);
+        created.push(res.module);
       }
-      if (createdModules.length === 0) return state;
+      // R11-01 (E1) : les fusions listées dans la composition s'appliquent aux
+      // seuls modules créés par cette exécution (jamais aux modules déjà possédés).
+      for (let guard = 0; guard < 40; guard++) {
+        const createdIds = created.map((m) => m.id);
+        const fusion = achievableFusions(createdIds, orbs).find((f) => slot.recipeIds.includes(f.resultId));
+        if (!fusion) break;
+        const res = fuseModules(createdIds, orbs, fusion.id);
+        if (!res.ok) break;
+        const remaining = new Set(res.modules);
+        created = created.filter((m) => remaining.has(m.id));
+        created.push(res.module);
+        orbs = res.orbs;
+      }
+      if (created.length === 0) return state;
       return {
         ...state,
         run: {
           ...state.run,
           orbs,
-          modules: [...state.run.modules, ...createdModules],
-          discoveredRecipes: [...new Set([...state.run.discoveredRecipes, ...createdModules.map((m) => m.id)])],
+          modules: [...state.run.modules, ...created],
+          discoveredRecipes: [...new Set([...state.run.discoveredRecipes, ...created.map((m) => m.id)])],
         },
       };
     }
@@ -366,6 +381,25 @@ export function reduce(state: GameState, action: GameAction): GameState {
       const res = applyFusion(state.run.orbs, action.indices);
       if (!res.ok) return state;
       return { ...state, run: { ...state.run, orbs: res.orbs } };
+    }
+    case 'FUSE_MODULES': {
+      // R11-01 (E1) : fusion module + module. Hors combat : libre, gratuite et
+      // illimitée. Consomme les modules sources (+ orbes exigées), produit le module
+      // de la table en data. Refus propre si ingrédients absents ou doublon.
+      if (state.mode !== 'RUN' || !state.run) return state;
+      const res = fuseModules(state.run.modules.map((m) => m.id), state.run.orbs, action.fusionId);
+      if (!res.ok) return state;
+      const remainingIds = new Set(res.modules); // sources consommées retirées
+      return {
+        ...state,
+        run: {
+          ...state.run,
+          modules: [...state.run.modules.filter((m) => remainingIds.has(m.id)), res.module],
+          orbs: res.orbs,
+          discoveredRecipes: [...new Set([...state.run.discoveredRecipes, res.module.id])],
+          lastEvent: `${res.module.name} obtenu par fusion de modules !`,
+        },
+      };
     }
     case 'CREATE_MODULE': {
       if (state.mode !== 'RUN' || !state.run) return state;

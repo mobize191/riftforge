@@ -192,4 +192,6 @@ Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'exis
 
 ## Vague 2 (R11)
 
-Non codée (périmètre strict). Idées déjà dans docs/BACKLOG.md + §6 du brief R10.
+R11-01 (fusion module + module, E1) en cours — état détaillé et reprise dans docs/HANDOFF-R11.md.
+B39 : bot de bande brûlait ses orbes en craft direct (taux doublé 0,2 % → 0,4 %) ; fix bot E1-conforme, bande 0,200 % restaurée.
+Idées R12 (atelier UX + ComfyUI) : docs/BACKLOG.md uniquement, hors périmètre.

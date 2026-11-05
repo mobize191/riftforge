@@ -1,9 +1,10 @@
 import type { ElementId, Module, Orb } from '../types';
 import { RECIPES, RECIPE_BY_ID, type RecipeDef } from '../../data/recipes';
+import { MODULE_FUSION_BY_RESULT } from '../../data/moduleFusions';
 
 export type CreateResult =
   | { ok: true; module: Module; orbs: Orb[] }
-  | { ok: false; reason: 'unknown-recipe' | 'missing-orbs' };
+  | { ok: false; reason: 'unknown-recipe' | 'missing-orbs' | 'fusion-only' };
 
 // Multiset d'éléments requis par la recette.
 function requiredElements(recipe: RecipeDef): Map<ElementId, number> {
@@ -16,6 +17,9 @@ function requiredElements(recipe: RecipeDef): Map<ElementId, number> {
 export function createModule(orbs: Orb[], recipeId: string): CreateResult {
   const recipe = RECIPE_BY_ID[recipeId];
   if (!recipe) return { ok: false, reason: 'unknown-recipe' };
+  // R11-01 (E1) : les modules de palier >= 2 ne se créent plus depuis des orbes —
+  // uniquement par fusion de modules (FUSE_MODULES).
+  if (MODULE_FUSION_BY_RESULT[recipeId]) return { ok: false, reason: 'fusion-only' };
   const required = requiredElements(recipe);
   const available = new Map<ElementId, Orb[]>();
   for (const orb of orbs) {
@@ -44,6 +48,7 @@ export function createModule(orbs: Orb[], recipeId: string): CreateResult {
 export function craftableRecipes(orbs: Orb[], discovered: string[]): RecipeDef[] {
   return RECIPES.filter((r) => {
     if (!discovered.includes(r.id)) return false;
+    if (MODULE_FUSION_BY_RESULT[r.id]) return false; // R11-01 (E1) : palier >= 2 = fusion de modules
     const required = requiredElements(r);
     const counts = new Map<ElementId, number>();
     for (const o of orbs) if (o.kind === 'primordial' && o.element) counts.set(o.element, (counts.get(o.element) ?? 0) + 1);

@@ -13,8 +13,9 @@ import CombatScreen from './screens/CombatScreen';
 import ForgeScreen from './screens/ForgeScreen';
 import { MONSTERS } from '../data/monsters';
 import { BIOME_ORDER, BIOME_BY_ID, BIOME_PALETTES } from '../data/biomes';
-import { RECIPES } from '../data/recipes';
+import { RECIPES, RECIPE_BY_ID } from '../data/recipes';
 import { craftableRecipes } from '../core/combat/createModule';
+import { achievableFusions } from '../core/combat/fuseModules';
 import { ELEMENTS } from '../data/elements';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 import { COMPANION_BY_MONSTER } from '../data/companions';
@@ -28,6 +29,8 @@ export default function App() {
   const [combat, setCombat] = useState<CombatState | null>(null);
   const [showModules, setShowModules] = useState(false);
   const [fuseSel, setFuseSel] = useState<number[]>([]); // B32 — fusion d'orbes hors combat
+  const [showModuleFuse, setShowModuleFuse] = useState(false); // R11-01 (E1) — panneau fusion module+module
+  const [fuseModSel, setFuseModSel] = useState<string[]>([]); // modules sources sélectionnés (2)
   const levelRef = useRef<LevelMap | null>(null);
   const canvasApiRef = useRef<GameCanvasApi>(null);
   // R6-09 : la famille de monstres et la palette suivent le biome courant de la run.
@@ -485,6 +488,13 @@ export default function App() {
           >
             Modules ({run.modules.length} créés{showModules ? ' ▲' : ' ▼'})
           </button>
+          <button
+            onClick={() => setShowModuleFuse((v) => !v)}
+            className="rounded border border-fuchsia-300 px-3 py-2"
+            style={{ minHeight: '44px' }}
+          >
+            ⚗ Fusion de modules{showModuleFuse ? ' ▲' : ' ▼'}
+          </button>
           {state.forge.grimoire.map((slot, i) => (
             <button
               key={i}
@@ -496,6 +506,60 @@ export default function App() {
             </button>
           ))}
         </div>
+        {showModuleFuse && (
+          <div className="flex w-full max-w-xl flex-col gap-2 px-4">
+            <p className="text-sm font-semibold">⚗ Fusion module + module — mode « Modules » (gratuit, hors combat)</p>
+            <p className="text-sm opacity-80">
+              Sélectionnez 2 modules à fusionner — la fusion consomme les modules sources.
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {run.modules.length === 0 && <span className="text-sm opacity-60">Aucun module créé pour l&apos;instant.</span>}
+              {run.modules.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() =>
+                    setFuseModSel((sel) =>
+                      sel.includes(m.id) ? sel.filter((x) => x !== m.id) : sel.length < 2 ? [...sel, m.id] : [sel[1], m.id],
+                    )
+                  }
+                  aria-pressed={fuseModSel.includes(m.id)}
+                  className={`rounded border px-2 py-1 ${fuseModSel.includes(m.id) ? 'border-fuchsia-300 bg-fuchsia-900/60 ring-2 ring-fuchsia-300' : 'border-slate-500'}`}
+                  style={{ minHeight: '44px' }}
+                >
+                  {m.name} (palier {m.tier})
+                </button>
+              ))}
+            </div>
+            {(() => {
+              const selOrbs = run.orbs;
+              const preview = achievableFusions(fuseModSel, selOrbs).filter((f) =>
+                f.inputs.every((id) => fuseModSel.includes(id)) &&
+                f.inputs.length === fuseModSel.length,
+              );
+              if (fuseModSel.length === 2 && preview.length === 0) {
+                return <p className="text-sm opacity-60">Ces 2 modules ne produisent aucune fusion connue.</p>;
+              }
+              return preview.map((f) => {
+                const res = RECIPE_BY_ID[f.resultId];
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      persist(reduce(state!, { type: 'FUSE_MODULES', fusionId: f.id }));
+                      setFuseModSel([]);
+                      playSound('forge');
+                    }}
+                    className="rounded border border-fuchsia-300/80 px-4 py-2 text-left"
+                    style={{ minHeight: '44px' }}
+                  >
+                    ⚗ Fusionner → {res?.name ?? f.resultId} (palier {f.tier})
+                    {f.orbs.length > 0 && ` — consomme aussi ${f.orbs.length} orbe(s)`}
+                  </button>
+                );
+              });
+            })()}
+          </div>
+        )}
         {showModules && (
           <div className="flex w-full max-w-xl flex-col gap-2 px-4">
             <p className="text-sm opacity-80">
@@ -524,6 +588,32 @@ export default function App() {
             ).length === 0 && (
               <p className="text-sm opacity-60">Aucune recette réalisable avec les orbes actuelles.</p>
             )}
+            <p className="mt-2 text-sm font-semibold">Fusions réalisables avec vos modules et orbes actuels :</p>
+            {(() => {
+              const fusions = achievableFusions(run.modules.map((m) => m.id), run.orbs);
+              if (fusions.length === 0) {
+                return <p className="text-sm opacity-60">Aucune fusion réalisable — créez ou conservez des modules sources.</p>;
+              }
+              return fusions.map((f) => {
+                const res = RECIPE_BY_ID[f.resultId];
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      persist(reduce(state!, { type: 'FUSE_MODULES', fusionId: f.id }));
+                      setFuseModSel([]);
+                      playSound('forge');
+                    }}
+                    className="rounded border border-fuchsia-300/80 px-4 py-2 text-left"
+                    style={{ minHeight: '44px' }}
+                  >
+                    ⚗ {res?.name ?? f.resultId} (palier {f.tier}) — fusionne{' '}
+                    {f.inputs.map((id) => RECIPE_BY_ID[id]?.name ?? id).join(' + ')}
+                    {f.orbs.length > 0 && ` + ${f.orbs.length} orbe(s)`}
+                  </button>
+                );
+              });
+            })()}
           </div>
         )}
         <p className="text-sm opacity-60">

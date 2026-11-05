@@ -198,7 +198,7 @@ describe('bot IHM — scénario complet rejoué comme l’UI', () => {
     expect(['won', 'lost', 'fled']).toContain(c.phase);
   });
 
-  it('CREATE_MODULE refuse le doublon (plus de perte d’orbes)', () => {
+  it('FUSE_MODULES refuse le doublon (plus de perte de sources ni d’orbes)', () => {
     let s = reduce(initialState(), { type: 'START_RUN', seed: 1 });
     s = {
       ...s,
@@ -207,15 +207,18 @@ describe('bot IHM — scénario complet rejoué comme l’UI', () => {
         orbs: [
           { id: 'a', kind: 'primordial', element: 'feu', tier: 1 },
           { id: 'b', kind: 'primordial', element: 'feu', tier: 1 },
-          { id: 'c', kind: 'primordial', element: 'feu', tier: 1 },
+          { id: 'c', kind: 'primordial', element: 'eau', tier: 1 },
+          { id: 'd', kind: 'primordial', element: 'eau', tier: 1 },
         ],
       },
     };
-    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'combustion' });
+    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'trait-incandescent' });
+    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'condensation' });
+    s = reduce(s, { type: 'FUSE_MODULES', fusionId: 'fusion-combustion' });
     expect(s.run!.modules.map((m) => m.id)).toEqual(['combustion']);
     const before = s;
-    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'combustion' });
-    expect(s).toBe(before); // refusé : déjà créé, orbes non consommées
+    s = reduce(s, { type: 'FUSE_MODULES', fusionId: 'fusion-combustion' });
+    expect(s).toBe(before); // refusé : résultat déjà possédé, sources non consommées
   });
 });
 

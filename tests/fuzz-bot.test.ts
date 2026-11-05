@@ -6,6 +6,7 @@ import { initialState, reduce, type GameAction } from '../src/core/run/state';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../src/core/combat/combat';
 import { serialize, deserialize } from '../src/core/save/save';
 import { RECIPES } from '../src/data/recipes';
+import { MODULE_FUSIONS, MODULE_FUSION_BY_RESULT } from '../src/data/moduleFusions';
 import { MERCHANT_ITEMS, CRAFTABLE_EQUIPMENT } from '../src/data/equipment';
 import { CONTRACTS } from '../src/data/contracts';
 import { MONSTERS } from '../src/data/monsters';
@@ -49,6 +50,7 @@ function randomGameAction(s: GameState, rng: ReturnType<typeof createRng>): Game
     pool.push({ type: 'NEXT_FLOOR' });
     pool.push({ type: 'TICK_RUN', ticks: rng.int(50) });
     for (const r of RECIPES) pool.push({ type: 'CREATE_MODULE', recipeId: r.id });
+    for (const f of MODULE_FUSIONS) pool.push({ type: 'FUSE_MODULES', fusionId: f.id });
     pool.push({ type: 'FUSE_ORBS', indices: [0, 1].map(() => rng.int(Math.max(1, run.orbs.length))) });
     for (const id of Object.keys(COMPANION_BY_MONSTER)) {
       for (const sk of COMPANION_BY_MONSTER[id].skills) pool.push({ type: 'UPGRADE_SKILL', skillId: sk.id });
@@ -88,7 +90,11 @@ function randomCombatAction(c: CombatState, rng: ReturnType<typeof createRng>): 
   ];
   for (const item of c.items) pool.push({ type: 'USE_ITEM', itemId: item.def.id, target: rng.int(Math.max(1, c.enemies.length)) });
   for (const id of c.modules) pool.push({ type: 'CAST_MODULE', moduleId: id, target: rng.int(Math.max(1, c.enemies.length)) });
-  for (const r of RECIPES) pool.push({ type: 'CRAFT_MODULE', recipeId: r.id });
+  for (const r of RECIPES) {
+    if (MODULE_FUSION_BY_RESULT[r.id]) continue; // R11-01 (E1) : fusion-only, refusée en combat
+    pool.push({ type: 'CRAFT_MODULE', recipeId: r.id });
+  }
+  for (const f of MODULE_FUSIONS) pool.push({ type: 'FUSE_MODULES', fusionId: f.id });
   if (c.companion) {
     for (const skillId of Object.keys(c.companion.skills)) pool.push({ type: 'USE_COMPANION_SKILL', skillId });
   }

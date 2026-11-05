@@ -20,14 +20,16 @@ describe('R4-02 table des 18 recettes', () => {
   });
 
   it('la création consomme exactement les orbes requises', () => {
-    const orbs = [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c')];
-    const r = createModule(orbs, 'combustion');
+    const orbs = [orb('eau', 'a'), orb('eau', 'b'), orb('feu', 'c')];
+    const r = createModule(orbs, 'condensation');
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.module.id).toBe('combustion');
+      expect(r.module.id).toBe('condensation');
       expect(r.orbs.map((o) => o.id)).toEqual(['c']);
     }
-    expect(createModule(orbs, 'magma').ok).toBe(false); // feu+terre, orbe terre manquante... feu dispo mais pas terre
+    // R11-01 (E1) : les recettes de palier >= 2 ne se créent plus depuis les orbes
+    expect(createModule(orbs, 'combustion')).toMatchObject({ ok: false, reason: 'fusion-only' });
+    expect(createModule(orbs, 'magma')).toMatchObject({ ok: false, reason: 'fusion-only' });
   });
 
   it('chaque famille d’effet est produite en combat', () => {
@@ -54,10 +56,12 @@ describe('R4-02 table des 18 recettes', () => {
     expect(c.enemies[0].dot).toBeGreaterThan(0);
   });
 
-  it('craftableRecipes ne propose que le réalisable avec les orbes actuelles', () => {
+  it('craftableRecipes ne propose que le réalisable avec les orbes actuelles (hors fusion-only)', () => {
     const orbs = [orb('feu', 'a'), orb('feu', 'b')];
     const list = craftableRecipes(orbs, RECIPES.map((r) => r.id)).map((r) => r.id);
-    expect(list).toContain('combustion');
+    // R11-01 (E1) : combustion (feu+feu) est désormais fusion-only, jamais proposée
+    expect(list).not.toContain('combustion');
     expect(list).not.toContain('magma');
+    expect(list).toContain('trait-incandescent');
   });
 });

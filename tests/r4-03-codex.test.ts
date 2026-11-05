@@ -14,9 +14,12 @@ describe('R4-03 codex permanent', () => {
     let s = reduce(initialState(), { type: 'START_RUN', seed: 1 });
     s = {
       ...s,
-      run: { ...s.run!, orbs: [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c')] },
+      run: { ...s.run!, orbs: [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c'), orb('eau', 'd')] },
     };
-    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'combustion' });
+    // R11-01 (E1) : combustion s'obtient par fusion de modules (trait + condensation)
+    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'trait-incandescent' });
+    s = reduce(s, { type: 'CREATE_MODULE', recipeId: 'condensation' });
+    s = reduce(s, { type: 'FUSE_MODULES', fusionId: 'fusion-combustion' });
     expect(s.run!.modules.map((m) => m.id)).toContain('combustion');
     expect(s.run!.discoveredRecipes).toContain('combustion');
     expect(s.run!.orbs).toHaveLength(1); // orbes consommées à la création
@@ -33,11 +36,13 @@ describe('R4-03 codex permanent', () => {
     expect(s.forge.discoveredRecipes).toContain('combustion');
   });
 
-  it('en run, seules les recettes découvertes ET réalisables sont listées', () => {
+  it('en run, seules les recettes découvertes ET réalisables sont listées (hors fusion-only)', () => {
     const orbs = [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c'), orb('terre', 'd')];
     const all = craftableRecipes(orbs, RECIPES.map((r) => r.id)).map((r) => r.id);
+    // R11-01 (E1) : combustion est fusion-only, jamais listée par craftableRecipes
     const onlyDiscovered = craftableRecipes(orbs, ['combustion', 'trait-incandescent']).map((r) => r.id);
-    expect([...onlyDiscovered].sort()).toEqual(['combustion', 'trait-incandescent']);
+    expect(onlyDiscovered).toEqual(['trait-incandescent']);
+    expect(all).not.toContain('combustion');
     expect(all.length).toBeGreaterThan(onlyDiscovered.length);
   });
 });

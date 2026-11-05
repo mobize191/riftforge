@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
 import { startCombat, combatReduce, type CombatState } from '../src/core/combat/combat';
-import { createModule } from '../src/core/combat/createModule';
+import { craftOrFuseOnce } from './helpers/modules';
 import { pickEncounter } from '../src/core/run/encounter';
 import { MONSTERS } from '../src/data/monsters';
 import { RECIPES } from '../src/data/recipes';
@@ -56,18 +56,7 @@ function botPlay(seed: number, floor: number, state: ReturnType<typeof initialSt
 function simulateRun(seed: number): boolean {
   let s = reduce(initialState(), { type: 'START_RUN', seed });
   // le bot fabrique des modules dès qu'il a les orbes (création consomme les orbes)
-  const tryCraft = (st: typeof s) => {
-    for (const r of RECIPES) {
-      const res = createModule(st.run!.orbs, r.id);
-      if (res.ok) {
-        return reduce(st, {
-          type: 'CREATE_MODULE',
-          recipeId: r.id,
-        });
-      }
-    }
-    return st;
-  };
+  const tryCraft = (st: typeof s) => craftOrFuseOnce(st);
   s = tryCraft(s);
   while (s.run && s.mode === 'RUN') {
     const floor = s.run.floor;

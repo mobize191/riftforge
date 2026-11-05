@@ -11,17 +11,13 @@ import { RECIPES, RECIPE_BY_ID } from '../src/data/recipes';
 import { BALANCE } from '../src/data/balance';
 import { BOSS_BY_ID } from '../src/data/bosses';
 import { affinityMultiplier } from '../src/data/affinities';
-import { createModule } from '../src/core/combat/createModule';
+import { craftAndFuseAll } from './helpers/modules';
 import type { ElementId } from '../src/core/types';
 
-const CRAFT_PRIORITY = ['seve-synthetique', 'condensation', 'deflagration', 'combustion', 'souffle-thermique', 'obsidienne', 'magma', 'trait-incandescent', 'jet-pression', 'plaque-blindee'];
+const CRAFT_PRIORITY = ['seve-synthetique', 'condensation', 'deflagration', 'combustion', 'souffle-thermique', 'obsidienne', 'magma', 'trait-incandescent', 'jet-pression', 'ecran-gravats', 'souffle', 'plaque-blindee'];
 
 function craftAll(s: ReturnType<typeof initialState>) {
-  for (const id of CRAFT_PRIORITY) {
-    if (!s.run || s.run.modules.some((m) => m.id === id)) continue;
-    if (createModule(s.run.orbs, id).ok) s = reduce(s, { type: 'CREATE_MODULE', recipeId: id });
-  }
-  return s;
+  return craftAndFuseAll(s, CRAFT_PRIORITY);
 }
 function bfsNextStep(map: LevelMap, from: { x: number; y: number }, isTarget: (x: number, y: number) => boolean) {
   const prev = new Map<string, string>();

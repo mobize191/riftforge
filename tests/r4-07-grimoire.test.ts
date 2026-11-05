@@ -21,25 +21,44 @@ describe('R4-07 grimoire pré-enregistré', () => {
     expect(s).toBe(before);
   });
 
-  it('exécution en un clic : crée les modules si les orbes suffisent', () => {
+  it('exécution en un clic : crée les modules tier 1 puis fusionne la composition (E1)', () => {
     let s = initialState();
-    s = reduce(s, { type: 'SAVE_GRIMOIRE', slot: 0, name: 'Burn', recipeIds: ['combustion', 'trait-incandescent'] });
+    s = reduce(s, { type: 'SAVE_GRIMOIRE', slot: 0, name: 'Burn', recipeIds: ['trait-incandescent', 'condensation', 'combustion'] });
     s = reduce(s, { type: 'START_RUN', seed: 1 });
     s = {
       ...s,
-      run: { ...s.run!, orbs: [orb('feu', 'a'), orb('feu', 'b'), orb('feu', 'c')] },
+      run: { ...s.run!, orbs: [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c'), orb('eau', 'd')] },
     };
     s = reduce(s, { type: 'EXEC_GRIMOIRE', slot: 0 });
-    expect(s.run!.modules.map((m) => m.id).sort()).toEqual(['combustion', 'trait-incandescent']);
-    expect(s.run!.orbs).toHaveLength(0); // 3 feu consommés
+    // la fusion consomme trait-incandescent + condensation, ne reste que combustion
+    expect(s.run!.modules.map((m) => m.id)).toEqual(['combustion']);
+    expect(s.run!.orbs).toHaveLength(1); // 1 feu + 2 eau consommés
+  });
+
+  it('exécution en un clic : la fusion ne touche jamais les modules déjà possédés', () => {
+    let s = initialState();
+    s = reduce(s, { type: 'SAVE_GRIMOIRE', slot: 0, name: 'Burn', recipeIds: ['combustion'] });
+    s = reduce(s, { type: 'START_RUN', seed: 1 });
+    s = {
+      ...s,
+      run: {
+        ...s.run!,
+        orbs: [orb('feu', 'a'), orb('feu', 'b'), orb('eau', 'c'), orb('eau', 'd')],
+        modules: [{ id: 'trait-incandescent', name: 'Trait incandescent', tier: 1, effect: { kind: 'damage', power: 5 } }],
+      },
+    };
+    s = reduce(s, { type: 'EXEC_GRIMOIRE', slot: 0 });
+    // combustion est fusion-only : rien n'est créé, le trait déjà possédé n'est PAS consommé
+    expect(s.run!.modules.map((m) => m.id)).toEqual(['trait-incandescent']);
+    expect(s.run!.orbs).toHaveLength(4);
   });
 
   it('exécution stoppée si orbes insuffisantes', () => {
     let s = initialState();
-    s = reduce(s, { type: 'SAVE_GRIMOIRE', slot: 0, name: 'Burn', recipeIds: ['combustion', 'magma'] });
+    s = reduce(s, { type: 'SAVE_GRIMOIRE', slot: 0, name: 'Burn', recipeIds: ['trait-incandescent', 'condensation'] });
     s = reduce(s, { type: 'START_RUN', seed: 1 });
     s = { ...s, run: { ...s.run!, orbs: [orb('feu', 'a'), orb('feu', 'b')] } };
     s = reduce(s, { type: 'EXEC_GRIMOIRE', slot: 0 });
-    expect(s.run!.modules.map((m) => m.id)).toEqual(['combustion']); // magma (feu+terre) impossible
+    expect(s.run!.modules.map((m) => m.id)).toEqual(['trait-incandescent']); // condensation (2 eau) impossible
   });
 });

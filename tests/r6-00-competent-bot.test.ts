@@ -14,7 +14,7 @@ import { BOSS_BY_ID } from '../src/data/bosses';
 import { RECIPES, RECIPE_BY_ID } from '../src/data/recipes';
 import { BALANCE } from '../src/data/balance';
 import { affinityMultiplier } from '../src/data/affinities';
-import { createModule } from '../src/core/combat/createModule';
+import { craftAndFuseAll } from './helpers/modules';
 import { BIOME_1_STRUCTURE } from '../src/data/biomes';
 import type { ElementId, Orb } from '../src/core/types';
 import { COMPANION_BY_MONSTER } from '../src/data/companions';
@@ -37,14 +37,11 @@ const CRAFT_PRIORITY = [
   'vapeur',
   'plaque-blindee',
   'ecran-gravats',
+  'souffle',
 ];
 
 function craftAll(s: ReturnType<typeof initialState>) {
-  for (const id of CRAFT_PRIORITY) {
-    if (!s.run || s.run.modules.some((m) => m.id === id)) continue;
-    if (createModule(s.run.orbs, id).ok) s = reduce(s, { type: 'CREATE_MODULE', recipeId: id });
-  }
-  return s;
+  return craftAndFuseAll(s, CRAFT_PRIORITY);
 }
 
 function bfsNextStep(

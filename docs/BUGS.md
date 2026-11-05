@@ -160,3 +160,25 @@ Légende : ✅ corrigé (commit) · 🔄 à re-vérifier en playtest humain · �
   (`p-*`) reçoit `setDisplaySize(TILE, TILE)` à la création, et est re-bornée après
   `setTexture` dans `syncSprites()` (recréation / repositionnement des monstres).
   Les fallbacks restent inchangés (déjà à la taille d'une case).
+
+## B39 — E1 : conservation des orbes par le bot -> taux de victoire première-run doublé (0,2 % -> 0,4 %)
+
+- **Vu** : après l'introduction de la fusion module + module (R11-01, décision E1 —
+  les paliers >= 2 ne se créent plus depuis les orbes), les bandes §SPEC-2 passent de
+  0,200 % (2/1000, valeur d'équilibre R10) à 0,400 % (4/1000) sur `r9-01` et `r10-06`,
+  et les morts au biome 1 montent à 50,6 % (assert <= 50 %).
+- **Cause** : deux effets combinés du passage à E1.
+  1. L'ancien bot de simulation consommait ses orbes en créant directement des modules
+     tier 2/3 (désormais `fusion-only`) — il « brûlait » ses orbes et perdait les lancers
+     solo gratuits associés. En les conservant, le bot devient plus fort : taux doublé.
+  2. Le bot ne créait plus `ecran-gravats`/`souffle` (absents de sa liste de priorité) :
+     `seve-synthetique` (soin 12) devenait irréalisable par fusion (il exige `boue`,
+     elle-même issue de `jet-pression` + `ecran-gravats`). Le soin tombait à 6
+     (`condensation`) -> morts précoces accrues au biome 1.
+- **Fix** : bot de bande E1-conforme (tests) — création des 5 modules tier 1
+  (`trait-incandescent`, `jet-pression`, `ecran-gravats`, `souffle`, `condensation`)
+  puis fusions à résultat utile (dégâts/zone/DoT/soin/bouclier) ou ingrédient d'une
+  fusion utile (ex. `boue` -> `seve-synthetique`). Aucune valeur d'équilibrage modifiée
+  (bande retrouvée : 0,200 %, morts biome 1 = 46,2 %).
+- **Test** : `tests/r9-01-final-balance.test.ts` et `tests/r10-06-resim.test.ts`
+  (lecture `SIM_RUNS_FINAL`, B37) servent de gardes de régression — ils ont détecté le bug.

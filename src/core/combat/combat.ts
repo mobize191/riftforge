@@ -4,6 +4,8 @@ import { COMBAT_ITEMS, type ItemDef } from '../../data/items';
 import { RECIPES, RECIPE_BY_ID, type RecipeDef } from '../../data/recipes';
 import { CAPTURE } from '../../data/capture';
 import { applyFusion } from './fuse';
+import { fuseModules } from './fuseModules';
+import { MODULE_FUSION_BY_ID } from '../../data/moduleFusions';
 import { affinityMultiplier } from '../../data/affinities';
 import { BOSS_BY_ID } from '../../data/bosses';
 import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
@@ -91,6 +93,7 @@ export type CombatAction =
   | { type: 'CRAFT_MODULE'; recipeId: string }
   | { type: 'USE_COMPANION_SKILL'; skillId: string }
   | { type: 'FUSE_IN_COMBAT'; indices: number[] }
+  | { type: 'FUSE_MODULES'; fusionId: string } // R11-01 (E1) — fusion module + module, coûte le tour
   | { type: 'FLEE' };
 
 // Probabilité de capture : augmente quand les PV restants baissent (monotone, §R3-01).
@@ -646,6 +649,19 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
         .filter((o) => o.kind === 'primordial')
         .map((o) => o.element as ElementId);
       return afterActor({ ...state, orbs: newOrbs, log });
+    }
+    case 'FUSE_MODULES': {
+      // R11-01 (E1) : fusion de modules EN COMBAT — coûte le tour (comme la fusion
+      // d'orbes), aucune énergie. Refus propre avec message si ingrédients absents.
+      if (state.modules.includes(MODULE_FUSION_BY_ID[action.fusionId]?.resultId ?? '')) return state;
+      const res = fuseModules(state.modules, state.orbs.map((el, i) => ({ id: `m${i}`, kind: 'primordial' as const, element: el, tier: 1 })), action.fusionId);
+      if (!res.ok) {
+        log.push('Fusion de modules impossible : ingrédients absents.');
+        return { ...state, log };
+      }
+      log.push(`${res.module.name} obtenu par fusion de modules (coûte le tour).`);
+      // R11-01 (E1) : les sources consommées sont retirées (res.modules), le résultat ajouté.
+      return afterActor({ ...state, modules: [...res.modules, res.module.id], log });
     }
     case 'FLEE': {
       if (rng.next() < FLEE_CHANCE) {

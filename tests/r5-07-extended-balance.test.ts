@@ -4,7 +4,7 @@ import { startCombat, combatReduce } from '../src/core/combat/combat';
 import { pickEncounter } from '../src/core/run/encounter';
 import { MONSTERS } from '../src/data/monsters';
 import { RECIPES } from '../src/data/recipes';
-import { createModule } from '../src/core/combat/createModule';
+import { craftOrFuseOnce } from './helpers/modules';
 import { BIOME_1_STRUCTURE } from '../src/data/biomes';
 
 const FAMILY = MONSTERS.filter((m) => m.family === 'spore').map((m) => m.id);
@@ -38,12 +38,7 @@ function botCombat(c: ReturnType<typeof startCombat>, moduleUsage: Record<string
 
 function fullBiome1Run(seed: number, moduleUsage: Record<string, number>) {
   let s = reduce(initialState(), { type: 'START_RUN', seed });
-  const tryCraft = (st: typeof s) => {
-    for (const r of RECIPES) {
-      if (createModule(st.run!.orbs, r.id).ok) return reduce(st, { type: 'CREATE_MODULE', recipeId: r.id });
-    }
-    return st;
-  };
+  const tryCraft = (st: typeof s) => craftOrFuseOnce(st);
   s = tryCraft(s);
   let turns = 0;
   while (s.run && s.mode === 'RUN') {
