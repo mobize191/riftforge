@@ -22,8 +22,9 @@ const orbsKit = (): Orb[] => [
 ];
 
 describe('R11-01 table des fusions (data)', () => {
-  it('13 fusions : tier 2 = 2 modules tier 1 distincts, tier 3 = tier 2 + tier 1 (+ orbes)', () => {
-    expect(MODULE_FUSIONS).toHaveLength(13);
+  it('16 fusions (13 + 3 exclusives Labo R11-05) : tier 2 = 2 modules tier 1 distincts, tier 3 = tier 2 + tier 1 (+ orbes)', () => {
+    expect(MODULE_FUSIONS).toHaveLength(16);
+    expect(MODULE_FUSIONS.filter((f) => f.exclusive)).toHaveLength(3);
     for (const f of MODULE_FUSIONS) {
       expect(RECIPE_BY_ID[f.resultId]).toBeDefined();
       expect([2, 3]).toContain(f.tier);
@@ -72,7 +73,7 @@ describe('R11-01 table des fusions (data)', () => {
       }
       // une fusion à la fois, liste recalculée (chaque fusion consomme ses sources)
       for (;;) {
-        const f = achievableFusions(modules, cur).find((g) => !fused.has(g.resultId));
+        const f = achievableFusions(modules, cur).find((g) => !g.exclusive && !fused.has(g.resultId)); // R11-05 : exclusives Labo hors balayage
         if (!f) break;
         const res = fuseModules(modules, cur, f.id);
         expect(res.ok).toBe(true);
@@ -82,7 +83,7 @@ describe('R11-01 table des fusions (data)', () => {
       }
       if (fused.size === before) break;
     }
-    for (const f of MODULE_FUSIONS) expect(fused).toContain(f.resultId);
+    for (const f of MODULE_FUSIONS.filter((g) => !g.exclusive)) expect(fused).toContain(f.resultId); // exclusives Labo hors balayage (verrouillées sans déblocage)
   });
 });
 

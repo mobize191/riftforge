@@ -37,7 +37,7 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
 /** Déambule sur la carte en « épouvantail » (rangées) jusqu'à déclencher un combat. */
 async function marcherJusquAuCombat(page: Page): Promise<void> {
   let horiz = 'Droite';
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 900; i++) {
     if (await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false)) return;
     const horizBouge = await bouger(page, horiz);
     if (horizBouge === null) {

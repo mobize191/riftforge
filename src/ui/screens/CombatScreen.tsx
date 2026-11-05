@@ -285,7 +285,7 @@ export default function CombatScreen({
               {m.name} ({ELEMENTS[m.inputs[0]].name}) — {moduleEffectLabel(m)} — {moduleEnergyCost(m)} énergie
               {/* R11-04 (E4) : dégâts prévus avec l'ATK courante + faiblesse de la cible sélectionnée */}
               {(() => {
-                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null);
+                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null, combat.lab);
                 return pred > 0 ? ` — ${pred} PV` : '';
               })()}
             </button>
@@ -304,7 +304,7 @@ export default function CombatScreen({
               ▶ {m.name} — {moduleEffectLabel(m)} (créé — {moduleEnergyCost(m)} énergie)
               {/* R11-04 (E4) : dégâts prévus avec l'ATK courante + faiblesse de la cible sélectionnée */}
               {(() => {
-                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null);
+                const pred = predictedModuleDamage(m, combat.player.attack, aliveTarget >= 0 && combat.enemies[aliveTarget] ? combat.enemies[aliveTarget].id : null, combat.lab);
                 return pred > 0 ? ` — ${pred} PV` : '';
               })()}
             </button>

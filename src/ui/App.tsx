@@ -15,7 +15,9 @@ import { MONSTERS } from '../data/monsters';
 import { BIOME_ORDER, BIOME_BY_ID, BIOME_PALETTES } from '../data/biomes';
 import { RECIPES, RECIPE_BY_ID } from '../data/recipes';
 import { craftableRecipes } from '../core/combat/createModule';
+import { labModifiersOf } from '../core/forge/lab';
 import { achievableFusions } from '../core/combat/fuseModules';
+import { MODULE_FUSION_BY_ID } from '../data/moduleFusions';
 import { ELEMENTS } from '../data/elements';
 import { BALANCE } from '../data/balance';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
@@ -139,6 +141,8 @@ export default function App() {
           state.run.modules.map((m) => m.id),
           state.run.challengeId ?? undefined,
           state.run.activeModifiers,
+          labModifiersOf(state.forge), // R11-05 — améliorations permanentes du Labo appliquées en combat
+          state.forge.labFusions, // R11-05 — fusions exclusives débloquées à la Forge
         ),
       );
     }
@@ -162,6 +166,8 @@ export default function App() {
           prev.run.modules.map((m) => m.id),
           prev.run.challengeId ?? undefined,
           prev.run.activeModifiers,
+          labModifiersOf(prev.forge), // R11-05
+          prev.forge.labFusions, // R11-05
         ),
       );
       return reduce(prev, { type: 'ENTER_COMBAT', enemies, fromMap: true });
@@ -320,6 +326,15 @@ export default function App() {
     playSound('forge');
   }, []);
 
+  const onBuyLabUpgrade = useCallback((upgradeId: string) => {
+    playSound('ui-buy');
+    setState((prev) => (prev ? reduce(prev, { type: 'BUY_LAB_UPGRADE', upgradeId }) : prev));
+  }, []);
+  const onUnlockLabFusion = useCallback((fusionId: string) => {
+    playSound('ui-buy');
+    setState((prev) => (prev ? reduce(prev, { type: 'UNLOCK_LAB_FUSION', fusionId }) : prev));
+  }, []);
+
   const onDescend = useCallback(() => {
     const seed = Date.now() % 2147483647;
     setState((prev) => {
@@ -369,6 +384,8 @@ export default function App() {
         onEvolve={onEvolve}
         onLiaisonQuest={onLiaisonQuest}
         onPlaceBuilding={onPlaceBuilding}
+        onBuyLabUpgrade={onBuyLabUpgrade}
+        onUnlockLabFusion={onUnlockLabFusion}
       />
     );
   }
@@ -566,7 +583,12 @@ export default function App() {
             </div>
             {(() => {
               const selOrbs = run.orbs;
-              const preview = achievableFusions(fuseModSel, selOrbs).filter((f) =>
+              const allowed = new Set(
+                Object.values(MODULE_FUSION_BY_ID)
+                  .filter((f) => !f.exclusive || state.forge.labFusions.includes(f.id))
+                  .map((f) => f.id),
+              );
+              const preview = achievableFusions(fuseModSel, selOrbs, allowed).filter((f) =>
                 f.inputs.every((id) => fuseModSel.includes(id)) &&
                 f.inputs.length === fuseModSel.length,
               );
@@ -624,7 +646,13 @@ export default function App() {
             )}
             <p className="mt-2 text-sm font-semibold">Fusions réalisables avec vos modules et orbes actuels :</p>
             {(() => {
-              const fusions = achievableFusions(run.modules.map((m) => m.id), run.orbs);
+              // R11-05 : le codex n'affiche pas les fusions exclusives du Labo non débloquées.
+              const allowed = new Set(
+                Object.values(MODULE_FUSION_BY_ID)
+                  .filter((f) => !f.exclusive || state.forge.labFusions.includes(f.id))
+                  .map((f) => f.id),
+              );
+              const fusions = achievableFusions(run.modules.map((m) => m.id), run.orbs, allowed);
               if (fusions.length === 0) {
                 return <p className="text-sm opacity-60">Aucune fusion réalisable — créez ou conservez des modules sources.</p>;
               }

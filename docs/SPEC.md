@@ -176,6 +176,7 @@ En tour par tour, pas de chrono : les défis sont **« vaincre en X tours »** (
 - **Forge Arcane et Labo de canalisation existent dès le début** — ils ne sont pas au bout de la chaîne :
   - Tier 1 : leurs recettes ne demandent que du commun (essence + minerai brut). *« Tant que vous n'avez que du minerai, la forge se contente du minerai. »*
   - Tiers supérieurs : ils exigent des lingots, puis des composants, puis les ressources de biomes profonds.
+- **Amendement vague 2 / R11-05 — Labo permanent** : le Labo vend (a) des **améliorations permanentes** des modules (ex. -1 énergie, +10 % dégâts par palier — data `LAB_UPGRADES`, achetables avec des ressources de biomes profonds, **persistées en save v7**) et (b) des **fusions exclusives** (2-3 recettes tier 3 inédites, déblocables uniquement au Labo, verrouillées en run sinon). L'écran Labo sépare visuellement **PERMANENT** (persisté) vs **CETTE RUN** (codex de la run). Le Labo ne redébloque jamais un achat déjà acquis (pas de doublon).
   - La **chaîne matière** (Extracteur → Purificateur → Nanolathe) sert à *améliorer les intrants* disponibles pour la Forge et le Labo.
 
 ### 6.4 Bâtiments (V1 : ~10)

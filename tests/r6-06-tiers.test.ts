@@ -70,7 +70,7 @@ describe('R6-06 tiers supérieurs Forge & Labo', () => {
   });
 
   it('sauvegarde versionnée : round-trip v2 identique, migration v1 -> v2, version inconnue refusée', () => {
-    expect(SAVE_VERSION).toBe(6); // v6 depuis B29 (placement bâtiments) // v4 depuis R7-01 (modificateurs de Faille)
+    expect(SAVE_VERSION).toBe(7); // v7 depuis R11-05 (Labo permanent) // v6 depuis B29 (placement bâtiments) // v4 depuis R7-01 (modificateurs de Faille)
     let s = reduce(initialState(), { type: 'START_RUN', seed: 5 });
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });

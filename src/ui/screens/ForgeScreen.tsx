@@ -9,7 +9,9 @@ import { LIAISON_QUESTS } from '../../data/liaison';
 import { BOND_TIERS } from '../../data/bond';
 import { FORGE_GRID, BUILDINGS as BUILDING_DEFS } from '../../data/buildings';
 import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
-import { LAB } from '../../data/lab';
+import { LAB, LAB_UPGRADES, LAB_EXCLUSIVE_FUSIONS } from '../../data/lab';
+import { MODULE_FUSION_BY_ID } from '../../data/moduleFusions';
+import { RECIPE_BY_ID } from '../../data/recipes';
 import { RECIPES } from '../../data/recipes';
 import { canalizationSlots } from '../../core/forge/lab';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
@@ -59,6 +61,8 @@ export default function ForgeScreen({
   onEvolve,
   onLiaisonQuest,
   onPlaceBuilding,
+  onBuyLabUpgrade,
+  onUnlockLabFusion,
 }: {
   state: GameState;
   onBuy: (defId: string) => void;
@@ -78,6 +82,8 @@ export default function ForgeScreen({
   onEvolve: (monsterId: string) => void;
   onLiaisonQuest: (questId: string) => void;
   onPlaceBuilding: (buildingId: string, x: number, y: number) => void;
+  onBuyLabUpgrade: (upgradeId: string) => void; // R11-05
+  onUnlockLabFusion: (fusionId: string) => void; // R11-05
 }) {
   const f = state.forge;
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
@@ -157,10 +163,58 @@ export default function ForgeScreen({
       </section>
 
       <section className="w-full max-w-xl">
-        <h2 className="mb-2 font-semibold">Labo — débloquer des recettes de modules</h2>
+        <h2 className="mb-2 font-semibold">Labo de canalisation</h2>
+        {/* R11-05 : séparation visuelle PERMANENT (persisté en save) vs CETTE RUN */}
+        <h3 className="mb-1 text-sm font-semibold text-emerald-300">PERMANENT — conservé entre les runs (save)</h3>
+        <div className="mb-3 flex flex-col gap-2 rounded border border-emerald-500/40 p-2">
+          <p className="text-xs opacity-70">Améliorations permanentes des modules (ressources de biomes profonds) :</p>
+          {LAB_UPGRADES.map((u) => {
+            const owned = f.labUpgrades.includes(u.id);
+            const affordable = Object.entries(u.cost).every(([k, v]) => (f as unknown as Record<string, number>)[k] >= (v ?? 0));
+            return (
+              <button
+                key={u.id}
+                className={`${btn} border-emerald-300/70 disabled:opacity-40`}
+                style={btnStyle}
+                disabled={owned || !affordable}
+                onClick={() => onBuyLabUpgrade(u.id)}
+              >
+                {owned ? '✓ ' : ''}
+                {u.name} — {u.desc} {!owned && ` (${Object.entries(u.cost).map(([k, v]) => `${v} ${k}`).join(', ')})`}
+                {owned ? ' — achetée (permanent)' : ''}
+              </button>
+            );
+          })}
+          <p className="mt-1 text-xs opacity-70">Fusions exclusives (recettes inédites, déblocables uniquement ici) :</p>
+          {LAB_EXCLUSIVE_FUSIONS.map((fid) => {
+            const fd = MODULE_FUSION_BY_ID[fid];
+            const owned = f.labFusions.includes(fid);
+            const affordable = f.lingots >= 3 && f.mercurium >= 2 && f.optifibre >= 1; // TODO-BALANCE (coût en data core)
+            return (
+              <button
+                key={fid}
+                className={`${btn} border-fuchsia-300/70 disabled:opacity-40`}
+                style={btnStyle}
+                disabled={owned || !affordable}
+                onClick={() => onUnlockLabFusion(fid)}
+              >
+                {owned ? '✓ ' : ''}
+                {RECIPE_BY_ID[fd?.resultId ?? '']?.name ?? fid} — fusion exclusive (palier {fd?.tier})
+                {owned ? ' — débloquée (permanent)' : ' (3 lingots, 2 mercurium, 1 optifibre)'}
+              </button>
+            );
+          })}
+        </div>
+        <h3 className="mb-1 text-sm font-semibold text-sky-300">CETTE RUN — codex et recettes de la run</h3>
+        <div className="mb-2 flex flex-col gap-1 rounded border border-sky-500/40 p-2 text-sm">
+          {state.run ? (
+            <p className="opacity-80">Modules de la run en cours : {state.run.modules.map((m) => m.name).join(', ') || 'aucun'}</p>
+          ) : (
+            <p className="opacity-60">Aucune run en cours — les modules créés en Faille ne sont pas persistés.</p>
+          )}
+        </div>
         <p className="mb-2 text-sm opacity-70">
-          Les modules de palier 1 (un seul élément) se lancent gratuitement dès que vous tenez
-          l’orbe correspondante. Le Labo sert à <strong>débloquer les recettes de paliers
+          Le Labo sert aussi à <strong>débocker des recettes de paliers
           supérieurs</strong> (2+ orbes), contre un coût croissant : communs (palier 1), puis
           lingots (palier 2), puis ressources de biomes profonds (palier 3).
         </p>

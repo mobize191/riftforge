@@ -9,8 +9,8 @@ const orb = (element: 'feu' | 'eau' | 'terre' | 'air', id: string): Orb => ({
 });
 
 describe('R4-02 table des 18 recettes', () => {
-  it('les 18 recettes chargent avec un palier marqué', () => {
-    expect(RECIPES).toHaveLength(18);
+  it('les 21 recettes (18 + 3 exclusives Labo R11-05) chargent avec un palier marqué', () => {
+    expect(RECIPES).toHaveLength(21);
     for (const r of RECIPES) {
       expect(r.tier).toBeGreaterThanOrEqual(1);
       expect(r.effect.power).toBeGreaterThanOrEqual(0);

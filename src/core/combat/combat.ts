@@ -12,6 +12,8 @@ import { bossDefOf, isBossCombat, nextBossAttack } from './boss';
 import { CHALLENGE_BY_ID, type ChallengeDef } from '../../data/challenges';
 import { BALANCE } from '../../data/balance';
 import { COMPANION_BY_MONSTER, type CompanionDef, type CompanionSkill } from '../../data/companions';
+import { MODULE_FUSION_BY_ID as FUSION_BY_ID } from '../../data/moduleFusions';
+import type { LabCombatModifiers } from '../forge/lab';
 import { ELITE, MONSTER_LEVEL_BONUS, BLURRED_AFFINITY_VALUES, RARE_ORBS } from '../../data/riftModifiers';
 import type { ElementId } from '../types';
 
@@ -82,6 +84,8 @@ export interface CombatState {
   orbs: ElementId[];
   loot: CombatLoot | null;
   captureBonus: number; // R11-02 — bonus de capture accumulé (compétences capture-bonus du compagnon)
+  lab: LabCombatModifiers; // R11-05 — améliorations permanentes du Labo appliquées en combat
+  labFusionsUnlocked: string[]; // R11-05 — fusions exclusives du Labo débloquées à la Forge
   modifiers: string[];
   energy: number; // R10-02 (D1) : énergie de combat (régénérée à chaque round, remise à zéro à chaque combat)
   log: string[];
@@ -106,9 +110,11 @@ export function captureChance(hp: number, maxHp: number): number {
 
 // R10-02 (D1) : coût d'énergie du lancement d'un module, lu en data (TODO-BALANCE).
 // Accepte une recette ou un tier ; recette inconnue -> coût d'un tier 1.
-export function moduleEnergyCost(recipeOrTier: RecipeDef | number | undefined): number {
+export function moduleEnergyCost(recipeOrTier: RecipeDef | number | undefined, lab?: LabCombatModifiers): number {
   const tier = typeof recipeOrTier === 'number' ? recipeOrTier : recipeOrTier?.tier ?? 1;
-  return BALANCE.ENERGY_COST_MODULE_TIER[tier] ?? BALANCE.ENERGY_COST_MODULE_TIER[1];
+  const base = BALANCE.ENERGY_COST_MODULE_TIER[tier] ?? BALANCE.ENERGY_COST_MODULE_TIER[1];
+  // R11-05 : améliorations permanentes du Labo (-1 énergie sur un palier)
+  return Math.max(0, base - (lab?.energyMinus[tier] ?? 0));
 }
 
 export function availableSoloModules(orbs: ElementId[]): RecipeDef[] {
@@ -131,6 +137,8 @@ export function startCombat(
   modules: string[] = [],
   challengeId?: string,
   modifiers: string[] = [],
+  lab: LabCombatModifiers = { energyMinus: {}, dmgBonus: {} },
+  labFusionsUnlocked: string[] = [],
 ): CombatState {
   const challenge = challengeId ? CHALLENGE_BY_ID[challengeId] : undefined;
   const mkStatuses = () => ({ shield: 0, stunned: false, dot: 0, slowed: false, blinded: false, atkDown: 0 });
@@ -206,6 +214,8 @@ export function startCombat(
     orbs,
     loot: null,
     captureBonus: 0, // R11-02
+    lab, // R11-05
+    labFusionsUnlocked, // R11-05
     modifiers,
     energy: BALANCE.COMBAT_ENERGY_START, // R10-02 (D1) : énergie de départ du combat
     log: ['Un combat éclate !'],
@@ -288,11 +298,11 @@ export function companionSkillLabel(skill: CompanionSkill): string {
 // soigne si le héros est blessé, sinon la meilleure compétence offensive débloquée.
 // R11-04 (E4) : dégâts PRÉvus d'un module, calculés avec l'ATK courante et la
 // faiblesse de la cible — MÊME formule que CAST_MODULE (testé : affiché == infligé).
-export function predictedModuleDamage(recipe: RecipeDef, attack: number, targetEnemyId: string | null): number {
+export function predictedModuleDamage(recipe: RecipeDef, attack: number, targetEnemyId: string | null, lab?: LabCombatModifiers): number {
   const effect = recipe.effect;
   if (effect.kind !== 'damage' && effect.kind !== 'aoe') return 0;
   const element = recipe.inputs[0];
-  const power = effect.power + attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0);
+  const power = (effect.power + attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0)) * (1 + (lab?.dmgBonus[recipe.tier] ?? 0));
   let mult = 1;
   if (targetEnemyId) {
     const baseId = targetEnemyId.split('-')[0].replace(/^elite-/, '');
@@ -506,7 +516,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
     if (a.type === 'ATTACK') return BALANCE.ENERGY_COST_ATTACK;
     if (a.type === 'CAST_MODULE') {
       const r = RECIPE_BY_ID[a.moduleId] ?? RECIPES.find((x) => x.id === a.moduleId);
-      return moduleEnergyCost(r);
+      return moduleEnergyCost(r, state.lab); // R11-05 : -1 énergie si amélioration Labo achetée
     }
     return 0;
   };
@@ -602,7 +612,8 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
           if (blurred) mult = BLURRED_AFFINITY_VALUES[Math.floor(rng.next() * BLURRED_AFFINITY_VALUES.length)];
           // R9 : les modules scalent avec l'attaque du joueur (valeur en data) pour rester
           // utiles quand l'attaque de base one-shotte.
-          const power = effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0);
+          // R11-05 : +10 % dégâts par amélioration Focalisation du Labo (palier concerné)
+          const power = (effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0)) * (1 + (state.lab?.dmgBonus[recipe.tier] ?? 0));
           const dmg = Math.round(power * mult);
           return { ...e, hp: Math.max(0, e.hp - dmg) };
         };
@@ -648,7 +659,7 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       } else if (effect.kind === 'dot') {
         const enemy = enemies[target];
         if (!enemy || enemy.hp <= 0) return state;
-        const dotPower = Math.round(effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0));
+        const dotPower = Math.round((effect.power + state.player.attack * (BALANCE.MODULE_ATK_SCALING_BY_TIER[recipe.tier] ?? 0)) * (1 + (state.lab?.dmgBonus[recipe.tier] ?? 0)));
         enemies = enemies.map((e, i) => (i === target ? { ...e, dot: dotPower } : e));
         log.push(`${recipe.name} sur ${enemy.name} : poison ${dotPower}/tour.`);
       } else if (effect.kind === 'slow') {
@@ -804,6 +815,11 @@ export function combatReduce(state: CombatState, action: CombatAction): CombatSt
       // R11-01 (E1) : fusion de modules EN COMBAT — coûte le tour (comme la fusion
       // d'orbes), aucune énergie. Refus propre avec message si ingrédients absents.
       if (state.modules.includes(MODULE_FUSION_BY_ID[action.fusionId]?.resultId ?? '')) return state;
+      // R11-05 : fusion EXCLUSIVE du Labo refusée en combat si non débloquée à la Forge.
+      if (FUSION_BY_ID[action.fusionId]?.exclusive && !state.labFusionsUnlocked.includes(action.fusionId)) {
+        log.push('Fusion exclusive du Labo non débloquée à la Forge.');
+        return { ...state, log };
+      }
       const res = fuseModules(state.modules, state.orbs.map((el, i) => ({ id: `m${i}`, kind: 'primordial' as const, element: el, tier: 1 })), action.fusionId);
       if (!res.ok) {
         log.push('Fusion de modules impossible : ingrédients absents.');

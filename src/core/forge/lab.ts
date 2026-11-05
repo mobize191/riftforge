@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { LAB } from '../../data/lab';
+import { LAB, LAB_UPGRADE_BY_ID, LAB_EXCLUSIVE_FUSIONS } from '../../data/lab';
 import { spendResources } from './forge';
 import { RECIPES } from '../../data/recipes';
 
@@ -41,4 +41,49 @@ export function upgradeLab(state: GameState): GameState {
     ...next,
     forge: { ...next.forge, buildings: { ...next.forge.buildings, [LAB.id]: level + 1 } },
   };
+}
+
+// R11-05 : modificateurs de combat dérivés des améliorations permanentes du Labo.
+export interface LabCombatModifiers {
+  energyMinus: Record<number, number>; // palier -> énergie économisée
+  dmgBonus: Record<number, number>; // palier -> bonus de dégâts (0.1 = +10 %)
+}
+
+export function labModifiersOf(forge: GameState['forge']): LabCombatModifiers {
+  const energyMinus: Record<number, number> = {};
+  const dmgBonus: Record<number, number> = {};
+  for (const id of forge.labUpgrades) {
+    const u = LAB_UPGRADE_BY_ID[id];
+    if (!u) continue;
+    if (u.kind === 'energy-cost') energyMinus[u.tier] = (energyMinus[u.tier] ?? 0) + u.value;
+    else dmgBonus[u.tier] = (dmgBonus[u.tier] ?? 0) + u.value;
+  }
+  return { energyMinus, dmgBonus };
+}
+
+// Achat d'une amélioration permanente (R11-05) : coût en data, persistée, sans doublon.
+export function buyLabUpgrade(state: GameState, upgradeId: string): GameState {
+  if (state.mode !== 'FORGE') return state;
+  const u = LAB_UPGRADE_BY_ID[upgradeId];
+  if (!u) return state;
+  if (state.forge.labUpgrades.includes(upgradeId)) return state; // jamais de doublon
+  const next = spendResources(state, u.cost);
+  if (next === state) return state;
+  return { ...next, forge: { ...next.forge, labUpgrades: [...next.forge.labUpgrades, upgradeId] } };
+}
+
+// Déblocage d'une fusion exclusive du Labo (R11-05) : persisté, sans doublon.
+export function unlockLabFusion(state: GameState, fusionId: string): GameState {
+  if (state.mode !== 'FORGE') return state;
+  if (!LAB_EXCLUSIVE_FUSIONS.includes(fusionId)) return state;
+  if (state.forge.labFusions.includes(fusionId)) return state;
+  const cost = { lingots: 3, mercurium: 2, optifibre: 1 }; // TODO-BALANCE — déblocage recette exclusive
+  const next = spendResources(state, cost);
+  if (next === state) return state;
+  return { ...next, forge: { ...next.forge, labFusions: [...next.forge.labFusions, fusionId] } };
+}
+
+// Une fusion exclusive est-elle débloquée à la Forge ?
+export function isLabFusionUnlocked(forge: GameState['forge'], fusionId: string): boolean {
+  return forge.labFusions.includes(fusionId);
 }

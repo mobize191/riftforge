@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initialState, reduce } from '../src/core/run/state';
+import { BALANCE } from '../src/data/balance';
 import { CRAFTABLE_EQUIPMENT } from '../src/data/equipment';
 
 function forgeWith(credits: number, essence: number, mineraiBrut: number, lingots: number) {
@@ -28,11 +29,11 @@ describe('R2-05 craft d’équipement à la Forge Arcane', () => {
     let s = forgeWith(0, 0, 10, 5);
     s = reduce(s, { type: 'CRAFT_ITEM', defId: item.id });
     s = reduce(s, { type: 'START_RUN', seed: 1 });
-    expect(s.run!.playerMaxHp).toBe(20 + 10);
+    expect(s.run!.playerMaxHp).toBe(BALANCE.START_PLAYER_HP + 10);
     s = reduce(s, { type: 'DIE' });
     s = reduce(s, { type: 'RETURN_FORGE' });
     expect(s.forge.equipment).toHaveLength(1);
     s = reduce(s, { type: 'START_RUN', seed: 2 });
-    expect(s.run!.playerMaxHp).toBe(30);
+    expect(s.run!.playerMaxHp).toBe(BALANCE.START_PLAYER_HP + 10);
   });
 });

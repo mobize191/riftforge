@@ -2,7 +2,7 @@
 // TODO-BALANCE: aucune de ces valeurs n'est un arbitrage final.
 
 export const BALANCE = {
-  START_PLAYER_HP: 20, // TODO-BALANCE
+  START_PLAYER_HP: 21, // TODO-BALANCE (R11-05 : réajusté pour tenir <= 50 % de morts au biome 1)
   START_PLAYER_LEVEL: 1, // TODO-BALANCE
   START_FLOOR: 1, // TODO-BALANCE
   PLAYER_ATTACK: 2, // TODO-BALANCE (R11-04/E4 : ratios relevés -> ATQ de base ajustée pour tenir la bande §SPEC-2)

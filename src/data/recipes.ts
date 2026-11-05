@@ -29,6 +29,10 @@ export const RECIPES: RecipeDef[] = [
   { id: 'brume-corrosive', name: 'Brume corrosive', inputs: ['feu', 'eau', 'terre'], tier: 3, effect: { kind: 'dot', power: 4, duration: 3 } }, // TODO-BALANCE (Vapeur+Terre déplié)
   { id: 'obsidienne', name: 'Obsidienne', inputs: ['feu', 'terre', 'eau'], tier: 3, effect: { kind: 'damage', power: 8 } }, // TODO-BALANCE (ignore armure, Magma+Eau déplié)
   { id: 'deflagration', name: 'Déflagration', inputs: ['feu', 'feu', 'terre'], tier: 3, effect: { kind: 'aoe', power: 8 } }, // TODO-BALANCE (Combustion+Terre déplié)
+  // R11-05 : recettes EXCLUSIVES du Labo (fusion module+module verrouillée, voir moduleFusions.ts)
+  { id: 'nova', name: 'Nova', inputs: ['feu', 'air', 'terre'], tier: 3, effect: { kind: 'aoe', power: 12 } }, // TODO-BALANCE (exclusif Labo)
+  { id: 'abime', name: 'Abîme', inputs: ['eau', 'terre', 'air'], tier: 3, effect: { kind: 'damage', power: 14 } }, // TODO-BALANCE (exclusif Labo)
+  { id: 'singularite', name: 'Singularité', inputs: ['feu', 'eau', 'terre', 'air'], tier: 3, effect: { kind: 'aoe', power: 16, duration: 2 } }, // TODO-BALANCE (exclusif Labo)
 ];
 
 export const RECIPE_BY_ID: Record<string, RecipeDef> = Object.fromEntries(

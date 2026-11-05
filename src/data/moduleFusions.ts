@@ -13,6 +13,7 @@ export interface ModuleFusionDef {
   inputs: string[]; // modules sources consommés (distincts)
   orbs: ElementId[]; // orbes primordiales supplémentaires consommées
   tier: number; // palier du résultat (2 ou 3)
+  exclusive?: boolean; // R11-05 : fusion EXCLUSIVE du Labo — refusée tant que non débloquée à la Forge (persisté)
 }
 
 export const MODULE_FUSIONS: ModuleFusionDef[] = [
@@ -31,6 +32,10 @@ export const MODULE_FUSIONS: ModuleFusionDef[] = [
   { id: 'fusion-brume-corrosive', resultId: 'brume-corrosive', inputs: ['vapeur', 'ecran-gravats'], orbs: [], tier: 3 }, // TODO-BALANCE
   { id: 'fusion-obsidienne', resultId: 'obsidienne', inputs: ['magma', 'jet-pression'], orbs: ['eau'], tier: 3 }, // TODO-BALANCE
   { id: 'fusion-deflagration', resultId: 'deflagration', inputs: ['combustion', 'ecran-gravats'], orbs: ['terre'], tier: 3 }, // TODO-BALANCE
+  // --- R11-05 : fusions EXCLUSIVES du Labo (débloquables uniquement à la Forge, persistées en save) ---
+  { id: 'fusion-nova', resultId: 'nova', inputs: ['combustion', 'souffle'], orbs: ['air', 'terre'], tier: 3, exclusive: true }, // TODO-BALANCE
+  { id: 'fusion-abime', resultId: 'abime', inputs: ['boue', 'jet-pression'], orbs: ['air'], tier: 3, exclusive: true }, // TODO-BALANCE
+  { id: 'fusion-singularite', resultId: 'singularite', inputs: ['magma', 'jet-pression'], orbs: ['air', 'eau'], tier: 3, exclusive: true }, // TODO-BALANCE
 ];
 
 export const MODULE_FUSION_BY_ID: Record<string, ModuleFusionDef> = Object.fromEntries(

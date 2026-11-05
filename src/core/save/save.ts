@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const SAVE_KEY = 'riftforge-save';
 
 export interface SaveFile {
@@ -48,11 +48,28 @@ function withNoticeDefault(save: SaveFile): SaveFile {
   return { ...save, state: { ...save.state, forge: { ...f, notice: null } as typeof save.state.forge } };
 }
 
+// R11-05 : v6 -> v7 — champs du Labo permanent (labUpgrades, labFusions) remplis par défaut.
+function withLabDefaults(save: SaveFile): SaveFile {
+  const f = save.state.forge as Partial<typeof save.state.forge>;
+  return {
+    version: 7,
+    state: {
+      ...save.state,
+      forge: {
+        ...f,
+        labUpgrades: f.labUpgrades ?? [],
+        labFusions: f.labFusions ?? [],
+      } as typeof save.state.forge,
+    },
+  };
+}
+
 export function migrate(save: SaveFile): SaveFile {
   return withNoticeDefault(migrateInner(save));
 }
 
 function migrateInner(save: SaveFile): SaveFile {
+  if (save.version === 6) return withLabDefaults(save);
   if (save.version === 5) {
     // v5 -> v6 (B29) : placement des bâtiments sur la grille de la Forge
     const f = save.state.forge as Partial<typeof save.state.forge>;

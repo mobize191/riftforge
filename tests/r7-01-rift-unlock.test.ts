@@ -35,7 +35,7 @@ describe('R7-01 déblocage modificateurs de Faille', () => {
     expect(s.run!.activeModifiers).toEqual([]);
     const back = deserialize(serialize(s));
     expect(back.forge.riftModifiers['fibration']).toEqual(['elites', 'orbes-rares']);
-    expect(SAVE_VERSION).toBe(6); // v6 depuis B29 (placement bâtiments)
+    expect(SAVE_VERSION).toBe(7); // v7 depuis R11-05 (Labo permanent) // v6 depuis B29 (placement bâtiments)
   });
 
   it('tous les modificateurs sont des ids valides en data', () => {

@@ -8,13 +8,14 @@ import { PRIMORDIAL_ELEMENTS } from '../../data/elements';
 import { buyEquipment, craftEquipment, equipmentBonuses, upgradeBuilding } from '../forge/forge';
 import { STARTING_BUILDINGS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
-import { craftLabRecipe, upgradeLab } from '../forge/lab';
+import { craftLabRecipe, upgradeLab, buyLabUpgrade, unlockLabFusion, isLabFusionUnlocked } from '../forge/lab';
 import { advanceProduction } from '../forge/production';
 import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { applyChoice, type MilestoneChoice } from './milestone';
 import { createModule } from '../combat/createModule';
 import { applyFusion } from '../combat/fuse';
 import { fuseModules, achievableFusions } from '../combat/fuseModules';
+import { MODULE_FUSION_BY_ID } from '../../data/moduleFusions';
 import type { GrimoireSlot } from '../types';
 import { COMPANION_BY_MONSTER as CBM, SKILL_UPGRADE_ORB_COSTS, SKILL_MAX_LEVEL } from '../../data/companions';
 import { BIOME_1_STRUCTURE, BIOME_ORDER, BIOME_BY_ID, BIOME_STRUCTURES, type BiomeStructure } from '../../data/biomes';
@@ -99,7 +100,9 @@ export type GameAction =
   | { type: 'GIFT_COMPANION'; monsterId: string } // R8-01 — cadeau offert à un compagnon
   | { type: 'EVOLVE_COMPANION'; monsterId: string } // R8-03 — évolution au palier 4
   | { type: 'COMPLETE_LIAISON_QUEST'; questId: string } // R8-04 — quête de la Liaiseuse
-  | { type: 'PLACE_BUILDING'; buildingId: string; x: number; y: number }; // B29 — placement sur la grille
+  | { type: 'PLACE_BUILDING'; buildingId: string; x: number; y: number } // B29 — placement sur la grille
+  | { type: 'BUY_LAB_UPGRADE'; upgradeId: string } // R11-05 — amélioration permanente du Labo
+  | { type: 'UNLOCK_LAB_FUSION'; fusionId: string } // R11-05 — recette/fusion exclusive du Labo
 
 export function initialState(): GameState {
   return {
@@ -138,6 +141,8 @@ export function initialState(): GameState {
       buildings: { ...STARTING_BUILDINGS, [LAB.id]: 1 },
       pendingTicks: {},
       notice: null, // R11-02 (E2) — message FR explicite (ex. refus de départ), jamais de null silencieux
+      labUpgrades: [], // R11-05 — améliorations permanentes du Labo (save v7)
+      labFusions: [], // R11-05 — fusions exclusives du Labo débloquées (save v7)
     },
     run: null,
   };
@@ -401,6 +406,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       // illimitée. Consomme les modules sources (+ orbes exigées), produit le module
       // de la table en data. Refus propre si ingrédients absents ou doublon.
       if (state.mode !== 'RUN' || !state.run) return state;
+      // R11-05 : une fusion EXCLUSIVE du Labo est refusée tant qu'elle n'est pas débloquée à la Forge.
+      if (MODULE_FUSION_BY_ID[action.fusionId]?.exclusive && !isLabFusionUnlocked(state.forge, action.fusionId)) return state;
       const res = fuseModules(state.run.modules.map((m) => m.id), state.run.orbs, action.fusionId);
       if (!res.ok) return state;
       const remainingIds = new Set(res.modules); // sources consommées retirées
@@ -897,6 +904,12 @@ export function reduce(state: GameState, action: GameAction): GameState {
       if (state.forge.team[0]) return addBondXp(next, state.forge.team[0], BOND_XP.perForgeMoment);
       return next;
     }
+    case 'BUY_LAB_UPGRADE':
+      // R11-05 : amélioration permanente du Labo (persistée en save v7, appliquée en combat).
+      return buyLabUpgrade(state, action.upgradeId);
+    case 'UNLOCK_LAB_FUSION':
+      // R11-05 : déblocage d'une fusion exclusive du Labo (persisté, la fusion devient réalisable en run).
+      return unlockLabFusion(state, action.fusionId);
     case 'PLACE_BUILDING': {
       // B29 : place un bâtiment construit sur la grille de la Forge (une case par bâtiment).
       if (state.mode !== 'FORGE') return state;

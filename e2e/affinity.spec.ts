@@ -30,7 +30,7 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
 
 async function marcherJusquAuCombat(page: Page): Promise<void> {
   let horiz = 'Droite';
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 900; i++) {
     if (await page.getByRole('heading', { name: /COMBAT/ }).isVisible().catch(() => false)) return;
     if ((await bouger(page, horiz)) === null) {
       if ((await bouger(page, 'Bas')) === null) await bouger(page, 'Haut');

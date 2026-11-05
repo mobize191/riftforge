@@ -24,6 +24,8 @@ export function craftAndFuseAll(s: GameState, priority: string[] = RECIPES.map((
     }
     if (!s.run) return s;
     for (const f of achievableFusions(s.run.modules.map((m) => m.id), s.run.orbs, allowedFusions)) {
+      // R11-05 : une fusion exclusive du Labo non débloquée est ignorée (jamais de break précoce).
+      if (f.exclusive && !allowedFusions?.has(f.id)) continue;
       if (!BOT_FUSION_KINDS.has(RECIPE_BY_ID[f.resultId]?.effect.kind ?? '') && !FUSION_INGREDIENT_IDS.has(f.resultId)) continue;
       s = reduce(s, { type: 'FUSE_MODULES', fusionId: f.id });
     }
@@ -44,7 +46,9 @@ export function craftOrFuseOnce(s: GameState, priority: string[] = RECIPES.map((
     if (createModule(s.run.orbs, id).ok) return reduce(s, { type: 'CREATE_MODULE', recipeId: id });
   }
   if (!s.run) return s;
-  const fusions = achievableFusions(s.run.modules.map((m) => m.id), s.run.orbs, allowedFusions);
+  const fusions = achievableFusions(s.run.modules.map((m) => m.id), s.run.orbs, allowedFusions).filter(
+    (f) => !f.exclusive || allowedFusions?.has(f.id),
+  );
   if (fusions.length > 0) return reduce(s, { type: 'FUSE_MODULES', fusionId: fusions[0].id });
   return s;
 }
