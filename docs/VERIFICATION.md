@@ -122,3 +122,38 @@ Date : session locale R10, dernier commit `121e8b7`. Commandes rejouées pour ce
 ## Playtest humain en attente (R10-07)
 
 Un combat se comprend sans doc (énergie, coûts, affinités) : **EN ATTENTE DE VALIDATION HUMAINE** — jamais validé par l'agent.
+
+---
+
+# Phase R11 (refonte V1.2, vague 2) — re-exécutée fraîchement
+
+Date : session R11, dernier commit `f05497a` + commit R11-07. Toutes les commandes
+rejouées EN LOCAL dans le sandbox (recette Chromium : `playwright install chromium` +
+`scripts/setup-pw-libs.py` + `LD_LIBRARY_PATH`/`FONTCONFIG_FILE` + `PORT=4173`,
+jamais le port 3030 — voir docs/HANDOFF-R11.md).
+
+## Commandes de preuve (exit 0 partout)
+- `pnpm install` -> Done (exit 0)
+- `pnpm vitest run` -> **Test Files 90 passed (90), Tests 304 passed (304)** (exit 0)
+- `PORT=4173 pnpm test:e2e` -> **25 passed** (Chromium headless 390 px, exécuté réellement en local) (exit 0)
+- `pnpm build` -> ✓ Compiled successfully, static pages (5/5), export (2/2) (exit 0)
+
+## Simulations (N=1000, SIM_RUNS_FINAL uniquement — B37)
+- `[R11-06] runs=1000 victoires=2 taux=0.200% tours moyens=634.0 morts=998 par biome: biome1=284 biome2=408 biome3=288 biome4=18 niveau moyen (max) par biome: 2.0/2.3/1.4/0.1` — bande §SPEC-2 0,1-0,2 % tenue, morts biome1 28,5 % ≤ 50 %, 4 biomes visités, ~niveaux par biome cohérents (E3).
+- r9-01 et r10-06 (bot partagé E1+compagnon+niveaux) : 0,200 % également.
+
+## Nouveautés R11 prouvées en e2e réel (390 px, captures docs/SCREENSHOTS-R11/)
+- E1 fusion module+module : `fusion-modules.spec.ts` + captures 11..14.
+- E2 compagnons 16 arbres + refus explicite : `companions-r11.spec.ts` + captures 15..17.
+- E3 HUD niveau/XP 12 : `levels-r11.spec.ts` + capture 18.
+- E4 dégâts prédits sur boutons : `module-damage-r11.spec.ts` + capture 19.
+- R11-05 Labo permanent : `lab-permanent-r11.spec.ts` + captures 20..21.
+- R11-07 playtest auto : `playtest-r11.spec.ts` — parcours complet SANS erreur console
+  (0 pageerror, 0 console.error hors 404 ressources tolérées) + captures 22..25, et
+  compagnon vermine (4e famille) en combat + capture 26.
+
+## Playtest humain en attente (R11-07)
+- **EN ATTENTE DE VALIDATION HUMAINE** (jamais validé par l'agent) : le compagnon
+  apparaît en combat quel que soit le monstre capturé, la fusion module+module se
+  découvre sans doc, la montée de niveau continue sur le biome 2 — à jouer réellement
+  (390 px et 2560 px, `scripts/headed-final.mjs` en headed sur poste local).

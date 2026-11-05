@@ -192,9 +192,9 @@ Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'exis
 
 ## Vague 2 (R11) — session en cours
 
-- **Dernier commit** : commit R11-06 sur `main` (+ R11-05 = `c4985ae`).
-- **Preuves R11-06** (exécutées EN LOCAL, sorties dans le corps du commit) :
-  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **90 fichiers / 304 tests**, **23 tests e2e Playwright (390 px headless local)**.
+- **Dernier commit** : commit R11-07 sur `main` (R11-06 = `f05497a`, R11-05 = `c4985ae`). Vague R11 terminée : R11-01..R11-07 commités.
+- **Preuves R11-07** (exécutées EN LOCAL, sorties dans le corps du commit) :
+  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **90 fichiers / 304 tests**, **25 tests e2e Playwright (390 px headless local)**.
 
 | Ticket | État | Notes |
 |---|---|---|
@@ -204,7 +204,7 @@ Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'exis
 | R11-04 | done | commit « R11-04: scaling ATK visible (E4) » — ratios `MODULE_ATK_SCALING_BY_TIER {1:0.6, 2:1.0, 3:1.5}`, `predictedModuleDamage()` (core, même formule que CAST_MODULE) affiché sur les boutons solo/créés en combat (« — N PV » avec ATQ courante + faiblesse de la cible), tests `r11-04-atk-visible.test.ts` (prédit == infligé sur toute la table, corrélation ATQ stricte), e2e `module-damage-r11.spec.ts` (montant bouton == log, capture `19-combat-degats-predits.png`). `PLAYER_ATTACK` 4→2 en data pour tenir la bande : **0,100 %** (r9-01/r10-06). SPEC §5.2 (E4). |
 | R11-05 | done | commit « R11-05: Labo permanent + save v7 » — `LAB_UPGRADES` (5 améliorations permanentes : -1 énergie / +10 % dégâts par palier, coûts mercurium/optifibre), 3 fusions exclusives (`fusion-nova/abime/singularite`, recettes inédites tier 3, refusées en run/combat tant que non débloquées à la Forge), écran Labo scindé **PERMANENT** vs **CETTE RUN**, save **v7** + migration v6→v7 testée, appliquées en combat (`labModifiersOf` -> énergie/dégâts, prédiction incluse). Tests `r11-05-lab.test.ts` (persistance, doublon refusé, refus exclusif, combat -1 é/+10 %, migration), e2e `lab-permanent-r11.spec.ts` (achat -> retour Forge -> coût réduit visible en combat, captures `20..21-*.png`). Bot : exclusives ignorées par défaut. Bande **0,200 %**, morts biome1 43,0 % (START_PLAYER_HP 21). SPEC §6.3. |
 | R11-06 | done | commit « R11-06: re-simulation V1.2 (bot E1 + compagnon + niveaux) » — bot partagé `tests/helpers/simbot.ts` : fusion E1, compagnon Mousse joué à son tour (soin/dégâts), niveaux E3, exclusives Labo ignorées par défaut ; r9-01/r10-06 branchés sur ce bot. Nouveau `tests/r11-06-resim.test.ts` (N=1000 via **SIM_RUNS_FINAL uniquement**, B37) : `[R11-06] runs=1000 victoires=2 taux=0.200% morts=998 par biome: biome1=284 biome2=408 biome3=288 biome4=18 niveau moyen/max par biome: 2.0/2.3/1.4/0.1`. Rééquilibrage **data uniquement** : XP_PER_KILL_BY_BIOME [1,2,3,4], XP_BOSS_BONUS [3,6,10,18], HP_PER_LEVEL 5, START_PLAYER_HP 20, soin-simple 1 PV/niv, ATQ gremlins/élémentaires/vermine +1. Bande **0,200 %** tenue (r9-01/r10-06/r11-06). |
-| R11-07 | à faire | [playtest] — jamais validé par l'agent, voir docs/BRIEF-R11.md §3 |
+| R11-07 | **EN ATTENTE DE VALIDATION HUMAINE** [playtest] | commit « R11-07: playtest R11 + captures » — preuves auto exécutées en local : parcours complet 390 px **0 erreur console** (`e2e/playtest-r11.spec.ts`), captures `docs/SCREENSHOTS-R11/22..26-*.png` (titre/carte/combat/Forge + compagnon vermine en combat), SPEC à jour E1-E5, VERIFICATION.md phase R11 re-exécutée. **Validation humaine à faire** (jamais faite par l'agent) : compagnon en combat quel que soit le monstre capturé, fusion module+module se découvre sans doc, montée de niveau continue sur le biome 2 — 390 px + 2560 px + headed (`scripts/headed-final.mjs`). |
 
 - **B39** : bot de bande brûlait ses orbes en craft direct (taux doublé 0,2 % → 0,4 %) ; fix = bot E1-conforme (`tests/helpers/modules.ts`), aucune valeur d'équilibrage changée, bande 0,200 % restaurée.
 - **E2E sandbox** : recette Chromium vérifiée de bout en bout — `pnpm exec playwright install chromium` + `python3 scripts/setup-pw-libs.py` + `LD_LIBRARY_PATH`/`FONTCONFIG_FILE` + `PORT=4173 pnpm test:e2e` (jamais 3030) — voir docs/HANDOFF-R11.md.
