@@ -7,9 +7,13 @@ export const BALANCE = {
   START_FLOOR: 1, // TODO-BALANCE
   PLAYER_ATTACK: 4, // TODO-BALANCE
   // Progression de run : seuils d'XP pour atteindre chaque niveau, gains par niveau.
-  LEVEL_XP_THRESHOLDS: [0, 2, 5, 9, 14], // TODO-BALANCE (XP cumulée pour passer au niveau n+1)
-  HP_PER_LEVEL: 4, // TODO-BALANCE
-  ATK_PER_LEVEL: 1, // TODO-BALANCE
+  // R11-03 (E3) : niveau max 12, courbe croissante étalée sur les 4 biomes (~3 niveaux/biome).
+  LEVEL_XP_THRESHOLDS: [0, 6, 14, 26, 42, 62, 86, 114, 146, 182, 222, 266], // TODO-BALANCE (12 entrées -> niveau max 12 ; XP cumulée pour passer au niveau n+1)
+  HP_PER_LEVEL: 6, // TODO-BALANCE (E3 : gains relevés, x1.5)
+  ATK_PER_LEVEL: 2, // TODO-BALANCE (E3 : x2)
+  // R11-03 (E3) : XP gagnée croissante en profondeur (par ennemi tué, et bonus boss par biome).
+  XP_PER_KILL_BY_BIOME: [2, 3, 4, 5], // TODO-BALANCE (index = biome 1..4)
+  XP_BOSS_BONUS_BY_BIOME: [6, 12, 20, 32], // TODO-BALANCE
   CHEST_CREDITS_MIN: 4, // TODO-BALANCE
   CHEST_CREDITS_SPREAD: 8, // TODO-BALANCE
   // Entretien léger de la Forge, prélevé au retour de run (§SPEC-6.4). TODO-BALANCE.

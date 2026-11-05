@@ -12,7 +12,7 @@ import { BUILDINGS, ENTREPOS, UPGRADE_COSTS } from '../../data/buildings';
 import { LAB } from '../../data/lab';
 import { RECIPES } from '../../data/recipes';
 import { canalizationSlots } from '../../core/forge/lab';
-import { COMPANION_BY_MONSTER, unlockedSkillsOf } from '../../data/companions';
+import { COMPANION_BY_MONSTER } from '../../data/companions';
 import { companionSkillLabel } from '../../core/combat/combat';
 import { portraitUrl } from '../portraits';
 import { useState } from 'react';

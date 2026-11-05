@@ -17,6 +17,7 @@ import { RECIPES, RECIPE_BY_ID } from '../data/recipes';
 import { craftableRecipes } from '../core/combat/createModule';
 import { achievableFusions } from '../core/combat/fuseModules';
 import { ELEMENTS } from '../data/elements';
+import { BALANCE } from '../data/balance';
 import { startCombat, combatReduce, type CombatState, type CombatAction } from '../core/combat/combat';
 import { COMPANION_BY_MONSTER, type CompanionDef } from '../data/companions';
 
@@ -410,10 +411,29 @@ export default function App() {
       <main className="flex min-h-screen flex-col items-center gap-3 bg-[#0a0e1a] py-4 text-slate-100">
         <div className="flex w-full max-w-5xl items-center justify-between px-4">
           <span className="font-semibold tracking-widest">
-            RIFTFORGE — Sol {state.run.floor} · Niv {state.run.playerLevel} · PV {run.playerHp}/{run.playerMaxHp} ·{' '}
+            RIFTFORGE — Sol {state.run.floor} · Niv {state.run.playerLevel}/{BALANCE.LEVEL_XP_THRESHOLDS.length} · PV {run.playerHp}/{run.playerMaxHp} ·{' '}
             Butin : {run.lootCredits} crédits · {run.lootEssence} essence · {run.lootMinerai} minerai ·{' '}
             {run.lootSpores} spores
           </span>
+          {/* R11-03 (E3) : jauge d'XP de run visible (niveau max 12) */}
+          <span className="text-sm opacity-90" aria-label="XP de run">
+            XP {run.xp}/{BALANCE.LEVEL_XP_THRESHOLDS[Math.min(run.playerLevel, BALANCE.LEVEL_XP_THRESHOLDS.length - 1)] ?? 'max'}
+          </span>
+          <div
+            className="h-2 w-40 rounded border border-slate-500"
+            role="progressbar"
+            aria-valuenow={run.xp}
+            aria-valuemin={0}
+            aria-valuemax={BALANCE.LEVEL_XP_THRESHOLDS[Math.min(run.playerLevel, BALANCE.LEVEL_XP_THRESHOLDS.length - 1)] ?? 1}
+            aria-label="Progression XP"
+          >
+            <div
+              className="h-full rounded bg-violet-400"
+              style={{
+                width: `${Math.min(100, Math.round((run.xp / (BALANCE.LEVEL_XP_THRESHOLDS[Math.min(run.playerLevel, BALANCE.LEVEL_XP_THRESHOLDS.length - 1)] ?? 1)) * 100))}%`,
+              }}
+            />
+          </div>
           <button
             onClick={onQuit}
             className="rounded border border-slate-400 px-3 py-2"

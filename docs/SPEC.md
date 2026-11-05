@@ -47,6 +47,7 @@ FORGE (préparation : équipement, bâtiments, liens)
 ### 4.1 Structure
 
 - **Une seule grande run** composée de **4 biomes** en V1 (le 5ᵉ et suivants : post-V1 ; un 2ᵉ parcours façon NG+ : idée notée).
+- **Amendement E3 (R11) — niveaux 1→12 sur les 4 biomes** : `LEVEL_XP_THRESHOLDS` = 12 seuils (data) à courbe croissante, **~3 niveaux par biome** ; niveau max 12. Gains par niveau relevés (`HP_PER_LEVEL` x~1,5, `ATK_PER_LEVEL` x2, data TODO-BALANCE) pour rendre chaque niveau perceptible. **XP des monstres/boss croissante en profondeur** (`XP_PER_KILL_BY_BIOME`, `XP_BOSS_BONUS_BY_BIOME`, data). HUD de run : niveau (max 12) + jauge d'XP visibles.
 - Chaque biome : **3-4 niveaux + 1 boss**. Battre le boss ouvre le biome suivant.
 - Chaque biome a : une **famille de monstres** dominante, **1 ressource spécifique** (2 en V2), un **twist de gameplay**, une identité visuelle forte.
 - Biomes proposés (noms de travail) :

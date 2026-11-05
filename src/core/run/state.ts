@@ -495,13 +495,18 @@ export function reduce(state: GameState, action: GameAction): GameState {
           if (!id.startsWith('boss:')) run = { ...run, journal: [...run.journal, `kill-${id}`] };
         }
       }
+      // R11-03 (E3) : XP croissante en profondeur — par ennemi tué selon le biome + bonus boss.
+      const wasBossXp = (state.run.encounter ?? []).some((id) => id.startsWith('boss:'));
       if (action.victory && action.loot) {
+        const xpGain =
+          action.loot.kills * (BALANCE.XP_PER_KILL_BY_BIOME[state.run.biomeIndex] ?? 1) +
+          (wasBossXp ? (BALANCE.XP_BOSS_BONUS_BY_BIOME[state.run.biomeIndex] ?? 0) : 0);
         run = {
           ...run,
           lootCredits: run.lootCredits + action.loot.credits,
           lootEssence: run.lootEssence + action.loot.essence,
           lootMinerai: run.lootMinerai + action.loot.minerai,
-          xp: run.xp + action.loot.kills,
+          xp: run.xp + xpGain,
           companions: [...run.companions, ...action.loot.captured],
           orbs: [
             ...run.orbs,

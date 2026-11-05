@@ -192,15 +192,16 @@ Aucun — pas de coupe-circuit (3 échecs) déclenché. `docs/BLOCKED.md` n'exis
 
 ## Vague 2 (R11) — session en cours
 
-- **Dernier commit** : commit R11-02 sur `main` (R11-01 = `22fb820`).
-- **Preuves R11-02** (exécutées EN LOCAL, sorties dans le corps du commit) :
-  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **86 fichiers / 290 tests**, **20 tests e2e Playwright (390 px headless local)**.
+- **Dernier commit** : commit R11-03 sur `main` (R11-01 = `22fb820`, R11-02 = `b1f99f2`).
+- **Preuves R11-03** (exécutées EN LOCAL, sorties dans le corps du commit) :
+  `pnpm install && pnpm vitest run && pnpm test:e2e && pnpm build` -> exit 0 — **87 fichiers / 294 tests**, **21 tests e2e Playwright (390 px headless local)**.
 
 | Ticket | État | Notes |
 |---|---|---|
 | R11-01 | done | `22fb820` — 13 `ModuleFusionDef` (data), `fuseModules`/`achievableFusions` (core pur), refus `fusion-only`, `FUSE_MODULES` hors combat (libre) + en combat (coûte le tour), panneau ⚗ + codex « réalisables avec vos modules et orbes actuels », 13 tests unitaires, e2e réel 2 specs, 4 captures `11..14-*.png`, SPEC §5.2 (E1). Bandes r9-01/r10-06 à **0,200 %** tenues. |
 | R11-02 | done | commit « R11-02: compagnons 16 arbres (E2) + fin du null silencieux » — 16 defs `docs/COMPANIONS-R11.md` (1 compétence/palier 1→5, palier 5 = signature ⬔, `unlockTier` remplace `requires`), kinds nouveaux `stun`/`drain`/`debuff-atk`/`buff-energy`/`capture-bonus` (+`purify`) purs et seedés dans `USE_COMPANION_SKILL`, déblocage par palier de lien au départ en run, refus explicite `forge.notice` si compagnon d'équipe sans def (B40), écurie = arbre avec verrous par palier + marqueur combat/worker, menu Compagnons = compétences débloquées en FR, élites ×2. Tests `tests/r11-02-companions.test.ts` (invariants §4 + parcours 1 compagnon/famille), e2e `companions-r11.spec.ts` (gremlin en combat 390 px + refus de départ), captures `15..17-*.png`, SPEC §7.2 (E2). |
-| R11-03..R11-07 | à faire | ordre strict, voir docs/BRIEF-R11.md §3 |
+| R11-03 | done | commit « R11-03: niveaux 1→12 (E3) » — `LEVEL_XP_THRESHOLDS` ×12 `[0,6,14,26,42,62,86,114,146,182,222,266]` (monotone, max 12), gains `HP_PER_LEVEL: 6` / `ATK_PER_LEVEL: 2`, XP par biome `XP_PER_KILL_BY_BIOME [2,3,4,5]` + `XP_BOSS_BONUS_BY_BIOME [6,12,20,32]`, HUD run « Niv n/12 » + jauge XP (e2e `levels-r11.spec.ts`, capture `18-hud-xp.png`), bot sim extrait dans `tests/helpers/simbot.ts`. Sim : niveau max avant biome 4 = 6/7/8 (< 12 ✓). **Bande tenue : 0,100 %** (r9-01 + r10-06, SIM_RUNS_FINAL N=1000). SPEC §4.1 (E3). |
+| R11-04..R11-07 | à faire | ordre strict, voir docs/BRIEF-R11.md §3 |
 
 - **B39** : bot de bande brûlait ses orbes en craft direct (taux doublé 0,2 % → 0,4 %) ; fix = bot E1-conforme (`tests/helpers/modules.ts`), aucune valeur d'équilibrage changée, bande 0,200 % restaurée.
 - **E2E sandbox** : recette Chromium vérifiée de bout en bout — `pnpm exec playwright install chromium` + `python3 scripts/setup-pw-libs.py` + `LD_LIBRARY_PATH`/`FONTCONFIG_FILE` + `PORT=4173 pnpm test:e2e` (jamais 3030) — voir docs/HANDOFF-R11.md.
