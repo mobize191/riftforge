@@ -325,6 +325,7 @@ export default function App() {
         onAction={onCombatAction}
         onEnd={onCombatEnd}
         companionBondTier={state.forge.team[0] ? (state.forge.bondTier[state.forge.team[0]] ?? 1) : 1}
+        companionEvolved={state.forge.team[0] ? (state.forge.evolved[state.forge.team[0]] ?? false) : false}
       />
     );
   }

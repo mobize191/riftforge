@@ -3,7 +3,8 @@
 > 23 portraits générés par IA (Mistral) pour Riftforge, style anime cel-shadé cohérent,
 > palettes par biome respectées (cf. `BIOME_PALETTES` dans `src/data/biomes.ts`).
 > Licence : générés pour ce projet — utilisation libre dans Riftforge, tous droits réservés au projet.
-> **Fichiers déposés dans `public/assets/portraits/`** (session R10-08, 24 portraits, 512x512, ~10 Mo).
+> **Fichiers déposés dans `public/assets/portraits/`** (session R10-08, 24 portraits + 24 variantes `-evo`, 512x512, ~21 Mo).
+> Convention étendue : `<base>-evo.png` = portrait affiché quand le compagnon est **évolué** (palier 4, R8-03) — `portraitUrl(id, true)`.
 > Tant qu'un fichier est absent, le fallback code-gen reste la règle (BRIEF-6-9 §2) — jamais d'écran vide.
 
 ## Convention de nommage (fichets attendus dans `public/assets/portraits/`)

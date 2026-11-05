@@ -16,12 +16,14 @@ export default function CombatScreen({
   onAction,
   onEnd,
   companionBondTier = 1,
+  companionEvolved = false,
 }: {
   combat: CombatState;
   discovered: string[];
   onAction: (a: CombatAction) => void;
   onEnd: (result: 'won' | 'lost' | 'fled' | 'challenge-failed', loot: CombatState['loot'], ko?: boolean) => void;
   companionBondTier?: number; // R8-02 — teinte de lien par palier sur le portrait du compagnon
+  companionEvolved?: boolean; // R10-08 — portrait -evo.png si le compagnon est évolué (palier 4)
 }) {
   const [menu, setMenu] = useState<'root' | 'items' | 'attack' | 'companions'>('root');
   // R9-03 juice : flash d'impact par élément + tremblement sur gros dégâts + fondu d'entrée
@@ -120,7 +122,7 @@ export default function CombatScreen({
           {(() => {
             const def = Object.values(COMPANION_BY_MONSTER).find((d) => d.id === combat.companion!.defId);
             const mid = def?.monsterId ?? 'mousse';
-            const png = portraitUrl(mid);
+            const png = portraitUrl(mid, companionEvolved);
             const fallback = portraitFallbackUrl(mid);
             return (
               // eslint-disable-next-line @next/next/no-img-element

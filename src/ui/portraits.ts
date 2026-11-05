@@ -47,9 +47,11 @@ export function isEliteId(combatEnemyId: string): boolean {
 }
 
 // Chemin relatif du portrait PNG (sans extension vérifiée côté client).
-export function portraitUrl(entityId: string): string {
+// R10-08 : variante évoluée (`<base>-evo.png`) quand le compagnon est évolué (palier 4).
+export function portraitUrl(entityId: string, evolved = false): string {
   const file = PORTRAIT_FILE[entityId];
-  return file ? `${PORTRAIT_DIR}/${file}` : '';
+  if (!file) return '';
+  return `${PORTRAIT_DIR}/${evolved ? file.replace(/\.png$/, '-evo.png') : file}`;
 }
 
 // Fallback code-gen (R6-09) si le PNG est absent.

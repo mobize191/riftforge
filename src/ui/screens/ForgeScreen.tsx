@@ -240,6 +240,18 @@ export default function ForgeScreen({
           <ul className="flex flex-col gap-2">
             {f.roster.map((id) => (
               <li key={id} className="flex flex-wrap items-center gap-2 rounded border border-slate-500 px-3 py-2" style={btnStyle}>
+                {/* R10-08 : portrait du compagnon (variante -evo.png si évolué), fallback code-gen */}
+                <img
+                  src={portraitUrl(id, f.evolved[id] ?? false) || '/assets/forge.svg'}
+                  onError={(ev) => {
+                    const fb = `/assets/monster-${id}.svg`;
+                    if (!ev.currentTarget.src.endsWith(fb)) ev.currentTarget.src = fb;
+                  }}
+                  alt={f.companionNames[id] ?? id}
+                  width={40}
+                  height={40}
+                  className="shrink-0 rounded border border-slate-600 object-cover"
+                />
                 <input
                   value={nameDrafts[id] ?? f.companionNames[id] ?? id}
                   onChange={(e) => setNameDrafts((d) => ({ ...d, [id]: e.target.value }))}

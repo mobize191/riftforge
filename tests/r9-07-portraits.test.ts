@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 // R9-07 — Intégration UI des portraits IA (docs/ASSETS.md) : mapping entité -> fichier,
 // fallback code-gen si absent, télégraphie par flash, teintes lien/élite. UI uniquement.
 import { PORTRAIT_FILE, PORTRAIT_DIR, entityIdOf, isEliteId, portraitUrl, portraitFallbackUrl, bondTierTint, ELITE_TINT } from '../src/ui/portraits';
@@ -34,5 +36,23 @@ describe('R9-07 mapping portraits IA (docs/ASSETS.md)', () => {
     expect(bondTierTint(1)).toBe('');
     expect(bondTierTint(5)).toContain('drop-shadow');
     expect(ELITE_TINT).toContain('drop-shadow');
+  });
+});
+
+// R10-08 : variantes évoluées (-evo.png) — une par entité, et portraitUrl les résout.
+describe('R10-08 — variantes -evo des portraits', () => {
+  it('chaque entité a son fichier de base ET sa variante -evo déposée', () => {
+    for (const [entity, file] of Object.entries(PORTRAIT_FILE)) {
+      const base = path.join(__dirname, '..', 'public', PORTRAIT_DIR, file);
+      const evo = base.replace(/\.png$/, '-evo.png');
+      expect(fs.existsSync(base), `base manquante: ${file}`).toBe(true);
+      expect(fs.existsSync(evo), `evo manquante pour ${entity}`).toBe(true);
+    }
+  });
+
+  it('portraitUrl(entity, true) -> variante -evo.png', () => {
+    expect(portraitUrl('mousse')).toBe('assets/portraits/mousse.png');
+    expect(portraitUrl('mousse', true)).toBe('assets/portraits/mousse-evo.png');
+    expect(portraitUrl('cuirasse', true)).toBe('assets/portraits/champignon-cuirasse-evo.png');
   });
 });
