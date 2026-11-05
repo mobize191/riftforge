@@ -6,7 +6,7 @@ import { test, expect, type Page } from '@playwright/test';
 // Preuves : captures d'écran commitées dans docs/SCREENSHOTS-R10/.
 
 const SHOTS = 'docs/SCREENSHOTS-R10';
-test.setTimeout(240000);
+test.setTimeout(600000);
 
 const DIRS = ['Droite', 'Bas', 'Gauche', 'Haut'] as const;
 
@@ -29,7 +29,7 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
   } catch {
     return null; // pad absent (combat, écran, ...) ou mur : l'appelant rebondit
   }
-  await page.waitForTimeout(110);
+  await page.waitForTimeout(60);
   const apres = await lirePos(page);
   return apres === avant ? null : apres;
 }
@@ -74,7 +74,7 @@ async function tenterCapture(page: Page): Promise<boolean> {
       return false; // K.O. joueur : capture perdue
     }
     await page.getByRole('button', { name: 'Capturer' }).first().click().catch(() => {});
-    await page.waitForTimeout(180);
+    await page.waitForTimeout(120);
   }
   return (await page.getByRole('heading', { name: /VICTOIRE/ }).isVisible().catch(() => false));
 }

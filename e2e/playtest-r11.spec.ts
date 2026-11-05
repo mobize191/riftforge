@@ -26,7 +26,7 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
   } catch {
     return null;
   }
-  await page.waitForTimeout(110);
+  await page.waitForTimeout(60);
   const apres = await lirePos(page);
   return apres === avant ? null : apres;
 }

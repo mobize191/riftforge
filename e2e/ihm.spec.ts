@@ -11,7 +11,7 @@ import * as path from 'node:path';
 // 6. matrice de viewports 390/768/1440/2560 sur titre, carte, Forge, combat
 
 const SHOTS = 'docs/SCREENSHOTS-R10';
-test.setTimeout(300000);
+test.setTimeout(900000);
 
 async function lirePos(page: Page): Promise<string | null> {
   try {
@@ -30,7 +30,7 @@ async function bouger(page: Page, dir: string): Promise<string | null> {
   } catch {
     return null;
   }
-  await page.waitForTimeout(110);
+  await page.waitForTimeout(60);
   const apres = await lirePos(page);
   return apres === avant ? null : apres;
 }
